@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uni-con - 룸메이트 매칭</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Uni-con</a>
+            <div class="navbar-nav ms-auto">
+                <div id="auth-buttons" class="d-flex gap-2">
+                    <button class="btn btn-outline-light" onclick="showLogin()">로그인</button>
+                    <button class="btn btn-light" onclick="showSignup()">회원가입</button>
+                </div>
+                <div id="user-info" class="d-none">
+                    <span class="navbar-text me-3" id="user-name"></span>
+                    <button class="btn btn-outline-light" onclick="logout()">로그아웃</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 메인 화면 -->
+        <div id="main-screen" class="text-center">
+            <div class="hero-section">
+                <h1 class="display-4 mb-4">완벽한 룸메이트를 찾아보세요</h1>
+                <p class="lead mb-4">간단한 질문을 통해 당신과 가장 잘 맞는 룸메이트를 매칭해드립니다.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button class="btn btn-primary btn-lg" onclick="showLogin()">로그인</button>
+                    <button class="btn btn-outline-primary btn-lg" onclick="showSignup()">회원가입</button>
+                    <button class="btn btn-outline-secondary btn-lg" onclick="testAPI()">API 테스트</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 순차적 질문 화면 -->
+        <div id="questionnaire-screen" class="d-none">
+            <div class="container-fluid" style="max-width: 500px;">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body p-4">
+                        <!-- 진행률 표시 -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small" id="question-progress">1 / 6</span>
+                                <span class="text-muted small" id="question-category"></span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar" id="progress-bar" role="progressbar" style="width: 16.67%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 질문 내용 -->
+                        <div class="text-center mb-4">
+                            <h4 id="current-question" class="mb-4">질문을 불러오는 중...</h4>
+                            <div id="question-options">
+                                <!-- 옵션들이 여기에 동적으로 추가됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 네비게이션 버튼 -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-secondary" id="prev-btn" onclick="previousQuestion()" disabled>
+                                <i class="fas fa-arrow-left me-2"></i>이전
+                            </button>
+                            <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>
+                                다음<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+
+                        <!-- 완료 버튼 (마지막 질문에서만 표시) -->
+                        <div class="text-center mt-3 d-none" id="complete-section">
+                            <button class="btn btn-success btn-lg" onclick="completeQuestionnaire()">
+                                프로필 완성하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 로그인 폼 -->
+        <div id="login-form" class="card mx-auto d-none" style="max-width: 400px;">
+            <div class="card-header">
+                <h3 class="text-center mb-0">로그인</h3>
+            </div>
+            <div class="card-body">
+                <form onsubmit="login(event)">
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label">이메일</label>
+                        <input type="email" class="form-control" id="login-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="login-password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">로그인</button>
+                </form>
+                <div class="text-center mt-3">
+                    <small>계정이 없으신가요? <a href="#" onclick="showSignup()">회원가입</a></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 회원가입 폼 -->
+        <div id="signup-form" class="card mx-auto d-none" style="max-width: 400px;">
+            <div class="card-header">
+                <h3 class="text-center mb-0">회원가입</h3>
+            </div>
+            <div class="card-body">
+                <form onsubmit="signup(event)">
+                    <div class="mb-3">
+                        <label for="signup-name" class="form-label">이름</label>
+                        <input type="text" class="form-control" id="signup-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="signup-email" class="form-label">이메일</label>
+                        <input type="email" class="form-control" id="signup-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="signup-password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="signup-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">회원가입</button>
+                </form>
+                <div class="text-center mt-3">
+                    <small>이미 계정이 있으신가요? <a href="#" onclick="showLogin()">로그인</a></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 대시보드 -->
+        <div id="dashboard" class="d-none">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">프로필 설정</h5>
+                            <span id="profile-status" class="badge bg-secondary">미완성</span>
+                        </div>
+                        <div class="card-body text-center">
+                            <div id="profile-welcome" class="py-5">
+                                <h4 class="mb-3">환영합니다! 🎉</h4>
+                                <p class="text-muted mb-4">
+                                    룸메이트 매칭을 위해 간단한 질문에 답해주세요.<br>
+                                    약 2-3분이면 완료됩니다.
+                                </p>
+                                <button class="btn btn-primary btn-lg" onclick="startQuestionnaireLoggedIn()">
+                                    <i class="fas fa-play me-2"></i>질문 시작하기
+                                </button>
+                            </div>
+                            
+                            <!-- 프로필이 완성된 경우 표시될 내용 -->
+                            <div id="profile-completed" class="d-none py-4">
+                                <h5 class="text-success mb-3">✅ 프로필 완성!</h5>
+                                <p class="text-muted mb-4">모든 질문을 완료했습니다. 이제 매칭을 찾아보세요!</p>
+                                <div class="d-flex justify-content-center gap-3">
+                                    <button class="btn btn-outline-primary" onclick="startQuestionnaireLoggedIn()">
+                                        프로필 수정하기
+                                    </button>
+                                    <button class="btn btn-success" onclick="findMatches()">
+                                        매칭 찾기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">내 정보</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="user-profile-info">
+                                <!-- 사용자 정보가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 매칭 결과 -->
+        <div id="matches-section" class="d-none">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">매칭 결과</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="showDashboard()">프로필로 돌아가기</button>
+                </div>
+                <div class="card-body">
+                    <div id="matches-list">
+                        <!-- 매칭 결과가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API 테스트 섹션 -->
+        <div id="api-test" class="d-none">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">API 테스트</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="hideApiTest()">닫기</button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>기본 API 테스트</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" onclick="testServerStatus()">서버 상태 확인</button>
+                                <button class="btn btn-outline-info" onclick="testQuestions()">질문 목록 조회</button>
+                                <button class="btn btn-outline-success" onclick="checkDatabase()">데이터베이스 확인</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>테스트 결과</h6>
+                            <div id="api-test-results" class="border p-3" style="height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                                <!-- 테스트 결과가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div class="modal fade" id="alertModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalTitle">알림</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- 알림 내용 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
