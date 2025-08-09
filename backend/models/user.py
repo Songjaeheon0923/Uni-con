@@ -16,8 +16,3 @@ class User(BaseModel):
     id: int
     email: str
     name: str
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str

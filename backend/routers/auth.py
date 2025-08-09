@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
-from datetime import timedelta
-from models.user import UserCreate, UserLogin, User, Token
+from models.user import UserCreate, UserLogin, User
 from database.connection import get_user_by_email, create_user
 from utils.security import verify_password, get_password_hash
-from auth.jwt_handler import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+import session
 
 router = APIRouter()
 
@@ -28,18 +27,26 @@ async def signup(user_data: UserCreate):
     return User(id=user["id"], email=user["email"], name=user["name"])
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=User)
 async def login(user_data: UserLogin):
     user = get_user_by_email(user_data.email)
     if not user or not verify_password(user_data.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Incorrect email or password"
         )
     
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["email"]}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    # 간단한 세션에 사용자 정보 저장 (MVP용)
+    session.current_user_session = {
+        "id": user["id"],
+        "email": user["email"], 
+        "name": user["name"]
+    }
+    
+    return User(id=user["id"], email=user["email"], name=user["name"])
+
+
+@router.post("/logout")
+async def logout():
+    session.current_user_session = None
+    return {"message": "Successfully logged out"}
