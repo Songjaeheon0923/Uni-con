@@ -49,5 +49,6 @@ class RoomPin(BaseModel):
     price_monthly: int
     transaction_type: str
     area: float
+    rooms: Optional[int] = 1
     risk_score: int
     favorite_count: int

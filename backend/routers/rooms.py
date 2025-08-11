@@ -26,7 +26,7 @@ async def search_rooms_on_map(
         # 기본 쿼리
         query = """
             SELECT room_id, address, latitude, longitude, price_deposit, price_monthly,
-                   transaction_type, area, risk_score, favorite_count
+                   transaction_type, area, rooms, risk_score, favorite_count
             FROM rooms
             WHERE is_active = 1
             AND latitude BETWEEN ? AND ?
@@ -66,8 +66,9 @@ async def search_rooms_on_map(
                 price_monthly=row[5],
                 transaction_type=row[6],
                 area=row[7],
-                risk_score=row[8],
-                favorite_count=row[9],
+                rooms=row[8] or 1,  # rooms 필드 추가
+                risk_score=row[9],
+                favorite_count=row[10],
             )
             rooms.append(room)
 

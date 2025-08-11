@@ -156,7 +156,7 @@ async def remove_favorite(room_id: str):
 
 @router.get("/{room_id}/users", response_model=List[FavoriteUser])
 async def get_room_favorites(room_id: str):
-    """특정 방을 찜한 사람들 리스트"""
+    """특정 방을 찜한 사람들 리스트 (로그인 불필요)"""
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -164,7 +164,7 @@ async def get_room_favorites(room_id: str):
     try:
         # 방이 존재하는지 확인
         cursor.execute(
-            "SELECT room_id FROM rooms WHERE room_id = ? AND is_active = 1", (room_id,)
+            "SELECT room_id FROM rooms WHERE room_id = ?", (room_id,)
         )
         room_exists = cursor.fetchone()
         if not room_exists:
@@ -189,14 +189,14 @@ async def get_room_favorites(room_id: str):
         favorite_users = []
         for row in results:
             user = FavoriteUser(
-                user_id=row[0],
+                user_id=str(row[0]),  # integer를 string으로 변환
                 nickname=row[1] or "Unknown",  # name을 nickname으로 사용
                 age=22,  # 기본값
                 gender="Unknown",  # 기본값
                 occupation="대학생",  # 기본값
                 profile_image=None,  # 기본값
                 matching_score=0,  # 나중에 매칭 알고리즘 구현
-                favorite_date=row[2],
+                favorite_date=str(row[2]) if row[2] else "",  # datetime을 string으로 변환
             )
             favorite_users.append(user)
 
