@@ -1,9 +1,17 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import init_db
 from routers import auth, users, profile
 
-app = FastAPI(title="Uni-con API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title="Uni-con API", version="1.0.0", lifespan=lifespan)
+
 
 # CORS 설정
 app.add_middleware(
@@ -19,15 +27,12 @@ app.include_router(users.router, prefix="/users")
 app.include_router(profile.router)
 
 
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-
-
 @app.get("/")
 async def root():
     return {"message": "Uni-con API is running"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="127.0.0.1", port=8080)
