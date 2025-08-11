@@ -57,7 +57,7 @@ export default function ProfileScreen({ user, onLogout }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await ApiService.removeFavorite(roomId, String(userData.id));
+              await ApiService.removeFavorite(roomId);
               setFavorites(favorites.filter(room => room.room_id !== roomId));
               Alert.alert('성공', '찜 목록에서 제거되었습니다.');
             } catch (error) {

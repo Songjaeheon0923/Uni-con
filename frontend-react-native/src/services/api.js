@@ -69,8 +69,8 @@ class ApiService {
     });
   }
 
-  async removeFavorite(roomId, userId) {
-    return this.request(`/favorites/${userId}/${roomId}`, {
+  async removeFavorite(roomId) {
+    return this.request(`/favorites/${roomId}`, {
       method: 'DELETE',
     });
   }

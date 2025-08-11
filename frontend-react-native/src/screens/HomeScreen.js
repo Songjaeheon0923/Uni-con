@@ -84,7 +84,7 @@ export default function HomeScreen({ navigation, user }) {
     
     try {
       if (isFavorited) {
-        await ApiService.removeFavorite(roomId, String(userData.id));
+        await ApiService.removeFavorite(roomId);
         setFavorites(favorites.filter(id => id !== roomId));
       } else {
         await ApiService.addFavorite(roomId, String(userData.id));
