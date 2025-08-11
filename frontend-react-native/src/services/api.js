@@ -1,6 +1,9 @@
 // 환경변수에서 API URL을 가져오되, 없으면 기본값 사용
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080';
 
+// 디버그: 실제 사용되는 API URL 확인
+console.log('🌐 API_BASE_URL:', API_BASE_URL);
+
 class ApiService {
   async request(endpoint, options = {}) {
     try {
