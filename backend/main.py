@@ -2,13 +2,14 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import init_db
-from routers import auth, users, profile
+from routers import auth, users, profile, rooms, favorites
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
+
 
 app = FastAPI(title="Uni-con API", version="1.0.0", lifespan=lifespan)
 
@@ -25,6 +26,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth")
 app.include_router(users.router, prefix="/users")
 app.include_router(profile.router)
+app.include_router(rooms.router)
+app.include_router(favorites.router)
 
 
 @app.get("/")
