@@ -512,6 +512,301 @@ async function checkDatabase() {
     }
 }
 
+// ==================== ROOMS API 테스트 ====================
+
+// 방 검색 테스트 (지도 범위)
+async function testRoomSearch() {
+    addTestResult('방 검색 API 테스트 중...', 'info');
+    
+    try {
+        // 서울 지역 좌표로 검색
+        const params = new URLSearchParams({
+            lat_min: 37.4,
+            lat_max: 37.6,
+            lng_min: 126.9,
+            lng_max: 127.2
+        });
+        
+        const response = await fetch(`${API_BASE_URL}/rooms/search?${params}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 방 검색 성공: ${data.length}개 방 조회됨`, 'success');
+            if (data.length > 0) {
+                addTestResult(`첫 번째 방: ${data[0].address} (${data[0].transaction_type}, ${data[0].price_deposit}만원)`, 'success');
+            }
+        } else {
+            addTestResult(`❌ 방 검색 실패: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 방 검색 오류: ${error.message}`, 'error');
+    }
+}
+
+// 방 상세 정보 테스트
+async function testRoomDetail() {
+    addTestResult('방 상세 정보 API 테스트 중...', 'info');
+    
+    try {
+        // 먼저 방 목록을 가져와서 첫 번째 방의 ID 사용
+        const searchResponse = await fetch(`${API_BASE_URL}/rooms/search?lat_min=37.4&lat_max=37.6&lng_min=126.9&lng_max=127.2`);
+        const rooms = await searchResponse.json();
+        
+        if (rooms.length === 0) {
+            addTestResult('❌ 테스트할 방이 없습니다', 'error');
+            return;
+        }
+        
+        const roomId = rooms[0].room_id;
+        const response = await fetch(`${API_BASE_URL}/rooms/${roomId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 방 상세 정보 조회 성공`, 'success');
+            addTestResult(`방 정보: ${data.address}, ${data.area}㎡, ${data.description}`, 'success');
+            addTestResult(`집주인: ${data.landlord_name}, 조회수: ${data.view_count}`, 'success');
+        } else {
+            addTestResult(`❌ 방 상세 정보 조회 실패: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 방 상세 정보 오류: ${error.message}`, 'error');
+    }
+}
+
+// 시세 분석 테스트
+async function testMarketPrice() {
+    addTestResult('시세 분석 API 테스트 중...', 'info');
+    
+    try {
+        // 먼저 방 목록을 가져와서 첫 번째 방의 ID 사용
+        const searchResponse = await fetch(`${API_BASE_URL}/rooms/search?lat_min=37.4&lat_max=37.6&lng_min=126.9&lng_max=127.2`);
+        const rooms = await searchResponse.json();
+        
+        if (rooms.length === 0) {
+            addTestResult('❌ 테스트할 방이 없습니다', 'error');
+            return;
+        }
+        
+        const roomId = rooms[0].room_id;
+        const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/market-price`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 시세 분석 성공`, 'success');
+            addTestResult(`현재가: ${data.current_price}만원, 평균가: ${data.average_price}만원`, 'success');
+            addTestResult(`평당가: ${data.price_per_sqm}만원, 주변 매물: ${data.nearby_count}개`, 'success');
+            
+            if (data.price_analysis.is_expensive) {
+                addTestResult(`⚠️ 시세보다 ${data.price_analysis.price_difference_percent}% 비쌈`, 'warning');
+            } else if (data.price_analysis.is_cheap) {
+                addTestResult(`💰 시세보다 ${Math.abs(data.price_analysis.price_difference_percent)}% 저렴`, 'success');
+            } else {
+                addTestResult(`✅ 적정 시세`, 'success');
+            }
+        } else {
+            addTestResult(`❌ 시세 분석 실패: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 시세 분석 오류: ${error.message}`, 'error');
+    }
+}
+
+// 방 등록 테스트
+async function testRoomCreate() {
+    addTestResult('방 등록 API 테스트 중...', 'info');
+    
+    try {
+        const roomData = {
+            address: "서울특별시 서초구 테스트동 123-45",
+            latitude: 37.4833,
+            longitude: 127.0322,
+            transaction_type: "월세",
+            price_deposit: 1500,
+            price_monthly: 70,
+            area: 28.5,
+            rooms: 1,
+            floor: 2,
+            building_year: 2019,
+            description: "테스트용 방 등록 - 서초역 근처 깔끔한 원룸",
+            landlord_name: "테스트",
+            landlord_phone: "010-0000-0000"
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/rooms/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(roomData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 방 등록 성공: ${data.room_id}`, 'success');
+            addTestResult(`등록 메시지: ${data.message}`, 'success');
+        } else {
+            addTestResult(`❌ 방 등록 실패: ${response.status} - ${data.detail}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 방 등록 오류: ${error.message}`, 'error');
+    }
+}
+
+// ==================== FAVORITES API 테스트 ====================
+
+// 찜 목록 추가 테스트
+async function testAddFavorite() {
+    addTestResult('찜 추가 API 테스트 중...', 'info');
+    
+    try {
+        // 먼저 방 목록을 가져와서 첫 번째 방의 ID 사용
+        const searchResponse = await fetch(`${API_BASE_URL}/rooms/search?lat_min=37.4&lat_max=37.6&lng_min=126.9&lng_max=127.2`);
+        const rooms = await searchResponse.json();
+        
+        if (rooms.length === 0) {
+            addTestResult('❌ 테스트할 방이 없습니다', 'error');
+            return;
+        }
+        
+        const favoriteData = {
+            user_id: "1",
+            room_id: rooms[0].room_id
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/favorites/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(favoriteData)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 찜 추가 성공`, 'success');
+            addTestResult(`메시지: ${data.message}`, 'success');
+        } else {
+            if (response.status === 400) {
+                addTestResult(`⚠️ 이미 찜한 방입니다`, 'warning');
+            } else {
+                addTestResult(`❌ 찜 추가 실패: ${response.status} - ${data.detail}`, 'error');
+            }
+        }
+    } catch (error) {
+        addTestResult(`❌ 찜 추가 오류: ${error.message}`, 'error');
+    }
+}
+
+// 사용자 찜 목록 조회 테스트
+async function testUserFavorites() {
+    addTestResult('사용자 찜 목록 조회 테스트 중...', 'info');
+    
+    try {
+        const userId = "1";
+        const response = await fetch(`${API_BASE_URL}/favorites/user/${userId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 찜 목록 조회 성공: ${data.length}개`, 'success');
+            if (data.length > 0) {
+                addTestResult(`첫 번째 찜: ${data[0].address} (${data[0].transaction_type})`, 'success');
+            }
+        } else {
+            addTestResult(`❌ 찜 목록 조회 실패: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 찜 목록 조회 오류: ${error.message}`, 'error');
+    }
+}
+
+// 방을 찜한 사용자 목록 테스트
+async function testRoomFavorites() {
+    addTestResult('방을 찜한 사용자 목록 테스트 중...', 'info');
+    
+    try {
+        // 먼저 방 목록을 가져와서 첫 번째 방의 ID 사용
+        const searchResponse = await fetch(`${API_BASE_URL}/rooms/search?lat_min=37.4&lat_max=37.6&lng_min=126.9&lng_max=127.2`);
+        const rooms = await searchResponse.json();
+        
+        if (rooms.length === 0) {
+            addTestResult('❌ 테스트할 방이 없습니다', 'error');
+            return;
+        }
+        
+        const roomId = rooms[0].room_id;
+        const response = await fetch(`${API_BASE_URL}/favorites/${roomId}/users`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 찜한 사용자 목록 조회 성공: ${data.length}명`, 'success');
+            if (data.length > 0) {
+                addTestResult(`첫 번째 사용자: ${data[0].nickname} (매칭점수: ${data[0].matching_score}%)`, 'success');
+            }
+        } else {
+            addTestResult(`❌ 찜한 사용자 목록 조회 실패: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 찜한 사용자 목록 오류: ${error.message}`, 'error');
+    }
+}
+
+// 찜 상태 확인 테스트
+async function testFavoriteStatus() {
+    addTestResult('찜 상태 확인 테스트 중...', 'info');
+    
+    try {
+        // 먼저 방 목록을 가져와서 첫 번째 방의 ID 사용
+        const searchResponse = await fetch(`${API_BASE_URL}/rooms/search?lat_min=37.4&lat_max=37.6&lng_min=126.9&lng_max=127.2`);
+        const rooms = await searchResponse.json();
+        
+        if (rooms.length === 0) {
+            addTestResult('❌ 테스트할 방이 없습니다', 'error');
+            return;
+        }
+        
+        const userId = "1";
+        const roomId = rooms[0].room_id;
+        const response = await fetch(`${API_BASE_URL}/favorites/${userId}/${roomId}/check`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            addTestResult(`✅ 찜 상태 확인 성공`, 'success');
+            addTestResult(`찜 상태: ${data.is_favorite ? '찜함' : '찜하지 않음'}`, 'success');
+        } else {
+            addTestResult(`❌ 찜 상태 확인 실패: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        addTestResult(`❌ 찜 상태 확인 오류: ${error.message}`, 'error');
+    }
+}
+
+// 전체 API 테스트 실행
+async function runAllRoomTests() {
+    addTestResult('=== 전체 Rooms API 테스트 시작 ===', 'info');
+    await testRoomSearch();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await testRoomDetail();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await testMarketPrice();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await testRoomCreate();
+    addTestResult('=== Rooms API 테스트 완료 ===', 'info');
+}
+
+async function runAllFavoriteTests() {
+    addTestResult('=== 전체 Favorites API 테스트 시작 ===', 'info');
+    await testAddFavorite();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await testUserFavorites();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await testRoomFavorites();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await testFavoriteStatus();
+    addTestResult('=== Favorites API 테스트 완료 ===', 'info');
+}
+
 // 테스트 결과 추가
 function addTestResult(message, type) {
     const container = document.getElementById('api-test-results');
