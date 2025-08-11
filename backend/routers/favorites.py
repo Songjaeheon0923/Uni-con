@@ -29,8 +29,7 @@ async def add_favorite(favorite_data: Favorite):
         cursor.execute(
             """
             SELECT id FROM favorites
-            WHERE user_id = ? AND room_id = ? AND is_active = 1
-        """,
+            WHERE user_id = ? AND room_id = ?         """,
             (user_id, room_id),
         )
 
@@ -108,8 +107,7 @@ async def remove_favorite(room_id: str):
         cursor.execute(
             """
             SELECT id FROM favorites
-            WHERE user_id = ? AND room_id = ? AND is_active = 1
-        """,
+            WHERE user_id = ? AND room_id = ?         """,
             (user_id, room_id),
         )
 
@@ -182,8 +180,7 @@ async def get_room_favorites(room_id: str):
                    u.profile_image, f.created_at
             FROM favorites f
             JOIN users u ON f.user_id = u.id
-            WHERE f.room_id = ? AND f.is_active = 1
-            ORDER BY f.created_at DESC
+            WHERE f.room_id = ?             ORDER BY f.created_at DESC
         """,
             (room_id,),
         )
@@ -231,7 +228,7 @@ async def get_user_favorites(user_id: str):
                    r.transaction_type, r.area, r.risk_score
             FROM favorites f
             JOIN rooms r ON f.room_id = r.room_id
-            WHERE f.user_id = ? AND f.is_active = 1 AND r.is_active = 1
+            WHERE f.user_id = ? AND r.is_active = 1
             ORDER BY f.created_at DESC
         """,
             (user_id,),
@@ -335,8 +332,7 @@ async def check_favorite_status(room_id: str):
         cursor.execute(
             """
             SELECT id FROM favorites
-            WHERE user_id = ? AND room_id = ? AND is_active = 1
-        """,
+            WHERE user_id = ? AND room_id = ?         """,
             (user_id, room_id),
         )
 
