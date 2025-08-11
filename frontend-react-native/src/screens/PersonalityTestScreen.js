@@ -161,7 +161,7 @@ export default function PersonalityTestScreen({ navigation }) {
             <Ionicons 
               name={getCategoryIcon(currentQuestion.id)} 
               size={24} 
-              color="#8B4513" 
+              color="#FF6600" 
             />
           </View>
           <Text style={styles.categoryText}>
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#8B4513',
+    color: '#FF6600',
   },
   questionText: {
     fontSize: 22,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
   },
   optionButtonSelected: {
-    borderColor: '#8B4513',
+    borderColor: '#FF6600',
     backgroundColor: '#F3F8FF',
   },
   optionContent: {
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   radioButtonSelected: {
-    borderColor: '#8B4513',
+    borderColor: '#FF6600',
   },
   radioButtonInner: {
     width: 10,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTextSelected: {
-    color: '#8B4513',
+    color: '#FF6600',
     fontWeight: '600',
   },
   navigationContainer: {

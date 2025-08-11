@@ -356,12 +356,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#8B4513',
+    borderColor: '#FF6600',
   },
   contactButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#8B4513',
+    color: '#FF6600',
     marginLeft: 6,
   },
   emptyContainer: {
@@ -392,11 +392,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F8FF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#8B4513',
+    borderColor: '#FF6600',
   },
   retryButtonText: {
     fontSize: 14,
-    color: '#8B4513',
+    color: '#FF6600',
     marginLeft: 6,
     fontWeight: '500',
   },

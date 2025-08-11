@@ -21,7 +21,7 @@ function HomeStack({ user }) {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#007AFF',
+          backgroundColor: '#FF6600',
         },
         headerTintColor: '#fff',
         headerTitleStyle: {
@@ -94,7 +94,7 @@ function MainApp({ user, onLogout }) {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: '#FF6600',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
       })}
@@ -109,7 +109,7 @@ function MainApp({ user, onLogout }) {
           headerShown: true,
           headerTitle: '방 찾기',
           headerStyle: {
-            backgroundColor: '#007AFF',
+            backgroundColor: '#FF6600',
           },
           headerTintColor: '#fff',
           headerTitleStyle: {
@@ -123,7 +123,7 @@ function MainApp({ user, onLogout }) {
           headerShown: true,
           headerTitle: '내 정보',
           headerStyle: {
-            backgroundColor: '#007AFF',
+            backgroundColor: '#FF6600',
           },
           headerTintColor: '#fff',
           headerTitleStyle: {

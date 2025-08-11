@@ -103,7 +103,7 @@ export default function ProfileScreen({ user, onLogout }) {
   const ProfileItem = ({ icon, label, value, onPress }) => (
     <TouchableOpacity style={styles.profileItem} onPress={onPress}>
       <View style={styles.profileItemLeft}>
-        <Ionicons name={icon} size={20} color="#8B4513" />
+        <Ionicons name={icon} size={20} color="#FF6600" />
         <Text style={styles.profileItemLabel}>{label}</Text>
       </View>
       <View style={styles.profileItemRight}>
@@ -118,7 +118,7 @@ export default function ProfileScreen({ user, onLogout }) {
       {/* 프로필 헤더 */}
       <View style={styles.header}>
         <View style={styles.profileImageContainer}>
-          <Ionicons name="person-circle" size={80} color="#8B4513" />
+          <Ionicons name="person-circle" size={80} color="#FF6600" />
         </View>
         <Text style={styles.userName}>{userData.name}</Text>
         <Text style={styles.userEmail}>{userData.email}</Text>
@@ -172,7 +172,7 @@ export default function ProfileScreen({ user, onLogout }) {
           style={styles.refreshButton}
           onPress={loadFavorites}
         >
-          <Ionicons name="refresh" size={16} color="#8B4513" />
+          <Ionicons name="refresh" size={16} color="#FF6600" />
           <Text style={styles.refreshButtonText}>새로고침</Text>
         </TouchableOpacity>
       </ProfileSection>
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   refreshButtonText: {
     fontSize: 16,
-    color: '#8B4513',
+    color: '#FF6600',
     marginLeft: 5,
   },
   logoutButton: {
