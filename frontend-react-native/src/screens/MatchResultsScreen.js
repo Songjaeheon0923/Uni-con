@@ -109,7 +109,7 @@ export default function MatchResultsScreen({ navigation }) {
         style={styles.contactButton}
         onPress={() => Alert.alert('연락하기', `${item.name}님께 메시지를 보내시겠습니까?`)}
       >
-        <Ionicons name="chatbubble-ellipses" size={16} color="#007AFF" />
+        <Ionicons name="chatbubble-ellipses" size={16} color="#228B22" />
         <Text style={styles.contactButtonText}>연락하기</Text>
       </TouchableOpacity>
     </View>
@@ -148,7 +148,7 @@ export default function MatchResultsScreen({ navigation }) {
         style={styles.retryButton}
         onPress={onRefresh}
       >
-        <Ionicons name="refresh" size={16} color="#007AFF" />
+        <Ionicons name="refresh" size={16} color="#228B22" />
         <Text style={styles.retryButtonText}>새로고침</Text>
       </TouchableOpacity>
     </View>
@@ -174,7 +174,7 @@ export default function MatchResultsScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>매칭 결과</Text>
         <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-          <Ionicons name="refresh" size={22} color="#007AFF" />
+          <Ionicons name="refresh" size={22} color="#228B22" />
         </TouchableOpacity>
       </View>
 
@@ -356,12 +356,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#8B4513',
   },
   contactButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#8B4513',
     marginLeft: 6,
   },
   emptyContainer: {
@@ -392,11 +392,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F8FF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#8B4513',
   },
   retryButtonText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#8B4513',
     marginLeft: 6,
     fontWeight: '500',
   },

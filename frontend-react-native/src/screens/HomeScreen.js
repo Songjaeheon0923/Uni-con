@@ -330,8 +330,8 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   filterButtonSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#8B4513',
+    borderColor: '#8B4513',
   },
   filterButtonText: {
     fontSize: 14,
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   newsTag: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#228B22',
     marginBottom: 4,
   },
   newsTitle: {

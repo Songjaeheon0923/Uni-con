@@ -60,7 +60,7 @@ export default function LoginScreen({ navigation, onLogin }) {
           {/* 로고/일러스트레이션 영역 */}
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Ionicons name="home-outline" size={60} color="#007AFF" />
+              <Ionicons name="home-outline" size={60} color="#8B4513" />
             </View>
           </View>
 
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#8B4513',
     marginBottom: 8,
   },
   subtitle: {
@@ -215,12 +215,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#8B4513',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#007AFF',
+    shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#228B22',
     fontWeight: '600',
   },
   testContainer: {

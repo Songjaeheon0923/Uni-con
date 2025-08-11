@@ -161,7 +161,7 @@ export default function PersonalityTestScreen({ navigation }) {
             <Ionicons 
               name={getCategoryIcon(currentQuestion.id)} 
               size={24} 
-              color="#007AFF" 
+              color="#8B4513" 
             />
           </View>
           <Text style={styles.categoryText}>
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#228B22',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#228B22',
     borderRadius: 3,
   },
   content: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#8B4513',
   },
   questionText: {
     fontSize: 22,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
   },
   optionButtonSelected: {
-    borderColor: '#007AFF',
+    borderColor: '#8B4513',
     backgroundColor: '#F3F8FF',
   },
   optionContent: {
@@ -372,13 +372,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   radioButtonSelected: {
-    borderColor: '#007AFF',
+    borderColor: '#8B4513',
   },
   radioButtonInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#228B22',
   },
   optionText: {
     fontSize: 16,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTextSelected: {
-    color: '#007AFF',
+    color: '#8B4513',
     fontWeight: '600',
   },
   navigationContainer: {
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   nextButtonEnabled: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#228B22',
   },
   navButtonText: {
     fontSize: 16,

@@ -7,9 +7,12 @@ Uni-con은 대학생들이 생활 패턴과 성향을 기반으로 최적의 룸
 ## 🌟 주요 기능
 
 - **🔐 사용자 인증**: 안전한 회원가입 및 로그인 시스템
+- **🏠 방 탐색**: 서울 지역 부동산 매물 검색 및 지도 보기
+- **❤️ 찜하기**: 관심 있는 방을 찜 목록에 추가/삭제
 - **📋 프로필 설정**: 6개 카테고리의 생활 패턴 질문지
 - **🤝 스마트 매칭**: 호환성 기반 룸메이트 추천 알고리즘
-- **📱 모바일 최적화**: 반응형 웹 디자인으로 모든 기기에서 사용 가능
+- **📱 크로스 플랫폼**: React Native로 iOS/Android 지원
+- **🗺️ 인터랙티브 맵**: 매물 위치를 지도에서 확인
 
 ## 🛠️ 기술 스택
 
@@ -62,6 +65,7 @@ python serve.py
 # 3-B. 모바일 앱 실행
 cd frontend-react-native
 npm install
+cp .env.example .env  # 환경변수 설정 후 IP 주소 수정 필요
 npx expo start
 
 # 4. 웹: http://localhost:3000 또는 모바일: Expo Go 앱으로 접속
@@ -85,11 +89,11 @@ cd backend
 # Python 의존성 설치
 pip install -r requirements.txt
 
-# 서버 실행
+# 서버 실행 (모바일 접근을 위해 0.0.0.0으로 바인딩)
 python main.py
 ```
 
-✅ 백엔드 서버가 **http://127.0.0.1:8080**에서 실행됩니다.
+✅ 백엔드 서버가 **http://0.0.0.0:8080** (모든 인터페이스)에서 실행되어 모바일에서도 접근 가능합니다.
 
 ### 3. 프론트엔드 서버 실행 (새 터미널)
 
@@ -114,16 +118,51 @@ cd frontend-react-native
 # 의존성 설치
 npm install
 
+# 환경변수 설정 (중요!)
+cp .env.example .env
+# .env 파일을 열어서 YOUR_LOCAL_IP를 본인의 IP 주소로 변경
+# 예: EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080
+
 # Expo 개발 서버 실행
 npx expo start
 ```
 
 ✅ Expo 개발 서버가 실행되며, QR 코드로 모바일에서 접속 가능합니다.
 
+**🚨 중요**: 모바일에서 접근하려면 `.env` 파일의 `EXPO_PUBLIC_API_BASE_URL`을 본인의 실제 IP 주소로 설정해야 합니다.
+
 ### 4. 서비스 접속
 
 - **웹**: 브라우저에서 **http://localhost:3000**으로 접속
 - **모바일**: Expo Go 앱으로 QR 코드 스캔하여 접속
+
+## 🚨 모바일 개발 환경 설정
+
+### IP 주소 확인 및 설정
+
+모바일에서 백엔드 서버에 접속하려면 `localhost` 대신 실제 IP 주소를 사용해야 합니다.
+
+```bash
+# 맥에서 IP 주소 확인
+ifconfig | grep "inet " | grep -v 127.0.0.1
+
+# 예시 출력: inet 192.168.1.100 netmask 0xffffff00 broadcast 192.168.1.255
+```
+
+`.env` 파일 설정:
+```bash
+# frontend-react-native/.env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080  # 본인의 IP로 변경
+```
+
+### 네트워크 문제 해결
+
+**"Network request failed" 오류 시 확인사항:**
+
+1. ✅ 백엔드 서버가 `0.0.0.0:8080`에서 실행 중인지 확인
+2. ✅ `.env` 파일의 IP 주소가 올바른지 확인  
+3. ✅ 모바일과 컴퓨터가 같은 Wi-Fi에 연결되어 있는지 확인
+4. ✅ 방화벽이 8080 포트를 차단하지 않는지 확인
 
 ## 📱 사용법
 
@@ -172,9 +211,10 @@ Uni-con/
 ├── 📁 frontend-react-native/       # 모바일 앱 (React Native)
 │   ├── 📱 App.js                 # 메인 앱 컴포넌트
 │   ├── 📄 package.json           # 의존성 관리
+│   ├── 🔧 .env.example          # 환경변수 예시
 │   ├── 📂 src/                   # 소스 코드
 │   │   ├── 📂 components/        # 재사용 가능한 컴포넌트
-│   │   ├── 📂 screens/           # 화면 컴포넌트
+│   │   ├── 📂 screens/           # 화면 컴포넌트 (Home, Map, Profile, Login, Signup 등)
 │   │   ├── 📂 services/          # API 서비스
 │   │   └── 📂 data/              # 더미 데이터
 │   └── 🎨 app.json              # Expo 설정
@@ -196,13 +236,28 @@ Uni-con/
 - `GET /users/me` - 내 정보 조회
 - `PUT /users/profile/me` - 프로필 업데이트
 
+### 방/매물 (`/rooms`)
+
+- `GET /rooms/search` - 매물 검색 (경계 좌표 기반)
+- `GET /rooms/{id}` - 특정 매물 상세 정보
+- `GET /rooms/{id}/market-price` - 시세 정보
+- `POST /rooms/` - 새 매물 등록
+
+### 찜하기 (`/favorites`)
+
+- `POST /favorites/` - 찜 추가
+- `DELETE /favorites/{room_id}` - 찜 삭제
+- `GET /favorites/user/{user_id}` - 사용자 찜 목록
+- `GET /favorites/{room_id}/users` - 특정 방을 찜한 사용자들
+- `GET /favorites/{user_id}/{room_id}/check` - 찜 상태 확인
+
 ### 프로필 (`/profile`)
 
 - `GET /profile/questions` - 질문지 조회
 - `GET /profile/me` - 내 프로필 조회
 - `GET /profile/matches` - 매칭 결과 조회
 
-📖 **상세 API 문서**: http://127.0.0.1:8080/docs (Swagger UI)
+📖 **상세 API 문서**: http://0.0.0.0:8080/docs (Swagger UI)
 
 ## 🧠 매칭 알고리즘
 
@@ -251,6 +306,39 @@ CREATE TABLE user_profiles (
     noise_sensitivity TEXT,
     is_complete BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Rooms 테이블
+
+```sql
+CREATE TABLE rooms (
+    room_id TEXT PRIMARY KEY,
+    address TEXT NOT NULL,
+    transaction_type TEXT NOT NULL,
+    price_deposit INTEGER NOT NULL,
+    price_monthly INTEGER DEFAULT 0,
+    area REAL NOT NULL,
+    rooms INTEGER NOT NULL,
+    bathrooms INTEGER NOT NULL,
+    floor_info TEXT,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    risk_score INTEGER DEFAULT 0,
+    favorite_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Favorites 테이블
+
+```sql
+CREATE TABLE favorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    room_id TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, room_id)
 );
 ```
 

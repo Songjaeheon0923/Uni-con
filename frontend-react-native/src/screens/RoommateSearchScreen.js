@@ -40,7 +40,7 @@ export default function RoommateSearchScreen({ navigation }) {
         <View style={styles.illustrationContainer}>
           <View style={styles.illustrationPlaceholder}>
             <View style={styles.phoneIcon}>
-              <Ionicons name="phone-portrait" size={60} color="#007AFF" />
+              <Ionicons name="phone-portrait" size={60} color="#8B4513" />
             </View>
             <View style={styles.personIcon}>
               <Ionicons name="person" size={40} color="#666" />
