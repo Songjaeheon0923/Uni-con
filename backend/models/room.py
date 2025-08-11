@@ -13,9 +13,14 @@ class Room(BaseModel):
     area: float
     rooms: Optional[int] = 1
     floor: Optional[int] = None
+    building_year: Optional[int] = None
     description: Optional[str] = None
     landlord_name: Optional[str] = None
     landlord_phone: Optional[str] = None
+    risk_score: Optional[int] = 0
+    view_count: Optional[int] = 0
+    favorite_count: Optional[int] = 0
+    created_at: Optional[str] = None
 
 
 class RoomCreate(BaseModel):
@@ -26,6 +31,12 @@ class RoomCreate(BaseModel):
     price_deposit: int
     price_monthly: Optional[int] = 0
     area: float
+    rooms: Optional[int] = 1
+    floor: Optional[int] = None
+    building_year: Optional[int] = None
+    description: Optional[str] = None
+    landlord_name: Optional[str] = None
+    landlord_phone: Optional[str] = None
 
 
 class RoomPin(BaseModel):
