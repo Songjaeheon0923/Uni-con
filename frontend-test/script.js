@@ -67,7 +67,7 @@ function showUserInterface() {
 }
 
 function hideAllScreens() {
-    const screens = ['main-screen', 'login-form', 'signup-form', 'dashboard', 'matches-section', 'api-test', 'questionnaire-screen'];
+    const screens = ['main-screen', 'login-form', 'signup-form', 'dashboard', 'matches-section', 'api-test', 'questionnaire-screen', 'contract-verification'];
     screens.forEach(screen => {
         document.getElementById(screen).classList.add('d-none');
     });
@@ -729,4 +729,229 @@ async function completeQuestionnaire() {
         console.error('Save profile error:', error);
         showAlert('오류', '서버 연결에 실패했습니다.');
     }
+}
+
+// ==================== 계약서 검증 기능 ====================
+
+// 계약서 검증 화면 표시
+function showContractVerification() {
+    hideAllScreens();
+    document.getElementById('contract-verification').classList.remove('d-none');
+}
+
+// 계약서 검증 실행
+function verifyContract() {
+    // 입력값 수집
+    const propertyType = document.getElementById('property-type').value;
+    const location = document.getElementById('property-location').value;
+    const deposit = parseFloat(document.getElementById('deposit').value) || 0;
+    const monthlyRent = parseFloat(document.getElementById('monthly-rent').value) || 0;
+    const maintenanceFee = parseFloat(document.getElementById('maintenance-fee').value) || 0;
+    const contractPeriod = document.getElementById('contract-period').value;
+    
+    // 필수값 체크
+    if (!propertyType || !location || deposit === 0) {
+        showAlert('입력 오류', '물건 유형, 지역, 보증금은 필수 입력 항목입니다.');
+        return;
+    }
+    
+    // 검증 결과 생성
+    const results = analyzeContract({
+        propertyType,
+        location,
+        deposit,
+        monthlyRent,
+        maintenanceFee,
+        contractPeriod
+    });
+    
+    // 결과 표시
+    displayVerificationResults(results);
+}
+
+// 계약서 분석 로직
+function analyzeContract(contractData) {
+    const { propertyType, location, deposit, monthlyRent, maintenanceFee, contractPeriod } = contractData;
+    
+    let results = {
+        overallScore: 0,
+        warnings: [],
+        recommendations: [],
+        priceAnalysis: {},
+        riskFactors: []
+    };
+    
+    // 1. 가격 적정성 분석
+    results.priceAnalysis = analyzePricing(propertyType, location, deposit, monthlyRent);
+    
+    // 2. 위험 요소 체크
+    results.riskFactors = checkRiskFactors(deposit, monthlyRent, contractPeriod);
+    
+    // 3. 경고사항 생성
+    if (deposit < 1000) {
+        results.warnings.push('⚠️ 보증금이 1,000만원 미만입니다. 월세 연체 위험을 고려하세요.');
+    }
+    
+    if (monthlyRent > deposit * 0.1) {
+        results.warnings.push('⚠️ 월세가 보증금 대비 높습니다. (권장: 보증금의 10% 이하)');
+    }
+    
+    if (maintenanceFee > monthlyRent * 0.3) {
+        results.warnings.push('⚠️ 관리비가 월세의 30%를 초과합니다. 적정성을 확인하세요.');
+    }
+    
+    // 4. 추천사항 생성
+    results.recommendations.push('✅ 계약 전 등기부등본을 반드시 확인하세요.');
+    results.recommendations.push('✅ 주변 시세와 비교 검토를 권장합니다.');
+    results.recommendations.push('✅ 임대인의 신분증과 인감증명서를 확인하세요.');
+    
+    if (contractPeriod === '12') {
+        results.recommendations.push('💡 1년 계약의 경우 재계약 조건을 미리 협의하세요.');
+    }
+    
+    // 5. 종합 점수 계산 (100점 만점)
+    let score = 70; // 기본 점수
+    
+    if (results.warnings.length === 0) score += 15;
+    else if (results.warnings.length === 1) score += 10;
+    else if (results.warnings.length === 2) score += 5;
+    
+    if (results.priceAnalysis.priceLevel === 'appropriate') score += 15;
+    else if (results.priceAnalysis.priceLevel === 'slightly_high') score += 10;
+    
+    results.overallScore = Math.min(score, 100);
+    
+    return results;
+}
+
+// 가격 분석
+function analyzePricing(propertyType, location, deposit, monthlyRent) {
+    // 간단한 시세 분석 (실제로는 외부 API나 DB 연동 필요)
+    let analysis = {
+        priceLevel: 'appropriate',
+        marketComparison: '시세 적정',
+        depositToRentRatio: (deposit / monthlyRent).toFixed(1)
+    };
+    
+    // 보증금 대비 월세 비율 분석
+    const ratio = deposit / monthlyRent;
+    if (ratio < 10) {
+        analysis.priceLevel = 'high';
+        analysis.marketComparison = '시세 대비 높음';
+    } else if (ratio < 15) {
+        analysis.priceLevel = 'slightly_high';
+        analysis.marketComparison = '시세 대비 약간 높음';
+    } else if (ratio > 30) {
+        analysis.priceLevel = 'low';
+        analysis.marketComparison = '시세 대비 낮음 (재확인 필요)';
+    }
+    
+    return analysis;
+}
+
+// 위험 요소 체크
+function checkRiskFactors(deposit, monthlyRent, contractPeriod) {
+    let risks = [];
+    
+    if (deposit < 500) {
+        risks.push({
+            level: 'high',
+            description: '보증금이 매우 낮아 임대인의 신용도를 확인해야 합니다.'
+        });
+    }
+    
+    if (monthlyRent === 0 && deposit > 5000) {
+        risks.push({
+            level: 'medium',
+            description: '전세 계약의 경우 임대인의 채무 상황을 확인하세요.'
+        });
+    }
+    
+    if (contractPeriod === 'other') {
+        risks.push({
+            level: 'low',
+            description: '비표준 계약 기간으로 세부 조건을 명확히 하세요.'
+        });
+    }
+    
+    return risks;
+}
+
+// 검증 결과 표시
+function displayVerificationResults(results) {
+    const resultsDiv = document.getElementById('verification-results');
+    
+    const scoreColor = results.overallScore >= 80 ? 'success' : 
+                      results.overallScore >= 60 ? 'warning' : 'danger';
+    
+    let html = `
+        <div class="text-center mb-3">
+            <h5>계약서 안전도</h5>
+            <div class="progress mb-2" style="height: 25px;">
+                <div class="progress-bar bg-${scoreColor}" style="width: ${results.overallScore}%">
+                    ${results.overallScore}점
+                </div>
+            </div>
+            <small class="text-muted">
+                ${results.overallScore >= 80 ? '🟢 안전한 계약' : 
+                  results.overallScore >= 60 ? '🟡 주의 필요' : '🔴 위험 요소 있음'}
+            </small>
+        </div>
+        
+        <div class="mb-3">
+            <h6>💰 가격 분석</h6>
+            <div class="small">
+                <div>시세 평가: <span class="badge bg-info">${results.priceAnalysis.marketComparison}</span></div>
+                <div>보증금/월세 비율: ${results.priceAnalysis.depositToRentRatio} (권장: 15-25)</div>
+            </div>
+        </div>
+    `;
+    
+    if (results.warnings.length > 0) {
+        html += `
+            <div class="mb-3">
+                <h6>⚠️ 주의사항</h6>
+                <div class="small">
+                    ${results.warnings.map(warning => `<div class="text-warning">• ${warning}</div>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    if (results.riskFactors.length > 0) {
+        html += `
+            <div class="mb-3">
+                <h6>🚨 위험 요소</h6>
+                <div class="small">
+                    ${results.riskFactors.map(risk => 
+                        `<div class="text-${risk.level === 'high' ? 'danger' : risk.level === 'medium' ? 'warning' : 'info'}">
+                            • ${risk.description}
+                        </div>`
+                    ).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += `
+        <div class="mb-3">
+            <h6>💡 추천사항</h6>
+            <div class="small">
+                ${results.recommendations.map(rec => `<div class="text-success">• ${rec}</div>`).join('')}
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="generateContractReport()">
+                📄 상세 보고서 생성
+            </button>
+        </div>
+    `;
+    
+    resultsDiv.innerHTML = html;
+}
+
+// 상세 보고서 생성
+function generateContractReport() {
+    showAlert('보고서 생성', '상세 보고서 기능은 추후 업데이트 예정입니다.\n현재는 화면의 검증 결과를 참고해주세요.');
 }

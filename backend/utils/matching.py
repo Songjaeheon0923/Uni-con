@@ -13,56 +13,98 @@ def calculate_compatibility(user_profile: UserProfile, other_profile: UserProfil
     score = 0.0
     total_weight = 0.0
     
-    # 1. 기상/취침 시간 호환성 (가중치: 0.2)
-    sleep_weight = 0.2
+    # 1. 기상/취침 시간 호환성 (가중치: 0.1)
+    sleep_weight = 0.1
     if user_profile.sleep_type == other_profile.sleep_type:
         score += sleep_weight * 1.0
     else:
         score += sleep_weight * 0.3  # 다르면 약간의 점수
     total_weight += sleep_weight
     
-    # 2. 집에 머무는 시간대 호환성 (가중치: 0.15)
+    # 2. 집에 머무는 시간대 호환성 (가중치: 0.15) - 다른 시간대일 때 더 높은 점수
     home_time_weight = 0.15
-    if user_profile.home_time == other_profile.home_time:
-        score += home_time_weight * 1.0
+    if user_profile.home_time != other_profile.home_time and \
+       user_profile.home_time != "irregular" and other_profile.home_time != "irregular":
+        score += home_time_weight * 1.0  # 다른 시간대일 때 가장 높은 점수
     elif user_profile.home_time == "irregular" or other_profile.home_time == "irregular":
         score += home_time_weight * 0.7  # 불규칙한 경우 중간 점수
     else:
-        score += home_time_weight * 0.4  # 다른 시간대
+        score += home_time_weight * 0.4  # 같은 시간대일 때 낮은 점수
     total_weight += home_time_weight
     
-    # 3. 청소 빈도 호환성 (가중치: 0.2)
-    cleaning_freq_weight = 0.2
-    freq_compatibility = {
-        ("daily", "daily"): 1.0,
-        ("daily", "weekly"): 0.6,
-        ("daily", "as_needed"): 0.2,
-        ("weekly", "weekly"): 1.0,
-        ("weekly", "as_needed"): 0.7,
-        ("as_needed", "as_needed"): 1.0
-    }
-    key = (user_profile.cleaning_frequency, other_profile.cleaning_frequency)
-    reverse_key = (other_profile.cleaning_frequency, user_profile.cleaning_frequency)
-    score += cleaning_freq_weight * freq_compatibility.get(key, freq_compatibility.get(reverse_key, 0.5))
-    total_weight += cleaning_freq_weight
+    # 3. 청소 관련 종합 호환성 (가중치: 0.25) - 빈도와 민감도를 통합한 매트릭스
+    cleaning_weight = 0.25
     
-    # 4. 청소 민감도 호환성 (가중치: 0.15)
-    cleaning_sens_weight = 0.15
-    sens_compatibility = {
-        ("very_sensitive", "very_sensitive"): 1.0,
-        ("very_sensitive", "normal"): 0.6,
-        ("very_sensitive", "not_sensitive"): 0.1,
-        ("normal", "normal"): 1.0,
-        ("normal", "not_sensitive"): 0.8,
-        ("not_sensitive", "not_sensitive"): 1.0
+    # 청소 빈도와 민감도를 결합한 통합 매트릭스
+    cleaning_compatibility = {
+        # 매일 청소하는 경우
+        ("daily", "very_sensitive", "daily", "very_sensitive"): 1.0,      # 완벽 매치
+        ("daily", "very_sensitive", "daily", "normal"): 0.9,              # 거의 완벽
+        ("daily", "very_sensitive", "daily", "not_sensitive"): 0.8,       # 좋음
+        ("daily", "very_sensitive", "weekly", "very_sensitive"): 0.4,     # 빈도 차이
+        ("daily", "very_sensitive", "weekly", "normal"): 0.3,
+        ("daily", "very_sensitive", "weekly", "not_sensitive"): 0.2,
+        ("daily", "very_sensitive", "as_needed", "very_sensitive"): 0.2,  # 큰 빈도 차이
+        ("daily", "very_sensitive", "as_needed", "normal"): 0.1,
+        ("daily", "very_sensitive", "as_needed", "not_sensitive"): 0.1,
+        
+        ("daily", "normal", "daily", "normal"): 1.0,                      # 완벽 매치
+        ("daily", "normal", "daily", "not_sensitive"): 0.9,               # 거의 완벽
+        ("daily", "normal", "weekly", "very_sensitive"): 0.5,
+        ("daily", "normal", "weekly", "normal"): 0.6,                     # 빈도 차이 있지만 괜찮음
+        ("daily", "normal", "weekly", "not_sensitive"): 0.7,
+        ("daily", "normal", "as_needed", "very_sensitive"): 0.2,
+        ("daily", "normal", "as_needed", "normal"): 0.3,
+        ("daily", "normal", "as_needed", "not_sensitive"): 0.4,
+        
+        ("daily", "not_sensitive", "daily", "not_sensitive"): 1.0,        # 완벽 매치
+        ("daily", "not_sensitive", "weekly", "very_sensitive"): 0.6,
+        ("daily", "not_sensitive", "weekly", "normal"): 0.7,
+        ("daily", "not_sensitive", "weekly", "not_sensitive"): 0.8,       # 빈도 차이 있지만 관대함
+        ("daily", "not_sensitive", "as_needed", "very_sensitive"): 0.3,
+        ("daily", "not_sensitive", "as_needed", "normal"): 0.5,
+        ("daily", "not_sensitive", "as_needed", "not_sensitive"): 0.6,
+        
+        # 주 1-2회 청소하는 경우
+        ("weekly", "very_sensitive", "weekly", "very_sensitive"): 1.0,    # 완벽 매치
+        ("weekly", "very_sensitive", "weekly", "normal"): 0.8,
+        ("weekly", "very_sensitive", "weekly", "not_sensitive"): 0.7,
+        ("weekly", "very_sensitive", "as_needed", "very_sensitive"): 0.6, # 빈도 차이
+        ("weekly", "very_sensitive", "as_needed", "normal"): 0.4,
+        ("weekly", "very_sensitive", "as_needed", "not_sensitive"): 0.3,
+        
+        ("weekly", "normal", "weekly", "normal"): 1.0,                    # 완벽 매치
+        ("weekly", "normal", "weekly", "not_sensitive"): 0.9,
+        ("weekly", "normal", "as_needed", "very_sensitive"): 0.5,
+        ("weekly", "normal", "as_needed", "normal"): 0.7,                 # 적당한 호환성
+        ("weekly", "normal", "as_needed", "not_sensitive"): 0.8,
+        
+        ("weekly", "not_sensitive", "weekly", "not_sensitive"): 1.0,      # 완벽 매치
+        ("weekly", "not_sensitive", "as_needed", "very_sensitive"): 0.6,
+        ("weekly", "not_sensitive", "as_needed", "normal"): 0.8,
+        ("weekly", "not_sensitive", "as_needed", "not_sensitive"): 0.9,   # 둘 다 관대함
+        
+        # 필요할 때만 청소하는 경우
+        ("as_needed", "very_sensitive", "as_needed", "very_sensitive"): 1.0,  # 완벽 매치
+        ("as_needed", "very_sensitive", "as_needed", "normal"): 0.8,
+        ("as_needed", "very_sensitive", "as_needed", "not_sensitive"): 0.7,
+        
+        ("as_needed", "normal", "as_needed", "normal"): 1.0,              # 완벽 매치
+        ("as_needed", "normal", "as_needed", "not_sensitive"): 0.9,
+        
+        ("as_needed", "not_sensitive", "as_needed", "not_sensitive"): 1.0 # 완벽 매치
     }
-    key = (user_profile.cleaning_sensitivity, other_profile.cleaning_sensitivity)
-    reverse_key = (other_profile.cleaning_sensitivity, user_profile.cleaning_sensitivity)
-    score += cleaning_sens_weight * sens_compatibility.get(key, sens_compatibility.get(reverse_key, 0.5))
-    total_weight += cleaning_sens_weight
     
-    # 5. 흡연 호환성 (가중치: 0.2)
-    smoking_weight = 0.2
+    key = (user_profile.cleaning_frequency, user_profile.cleaning_sensitivity, 
+           other_profile.cleaning_frequency, other_profile.cleaning_sensitivity)
+    reverse_key = (other_profile.cleaning_frequency, other_profile.cleaning_sensitivity,
+                   user_profile.cleaning_frequency, user_profile.cleaning_sensitivity)
+    
+    score += cleaning_weight * cleaning_compatibility.get(key, cleaning_compatibility.get(reverse_key, 0.5))
+    total_weight += cleaning_weight
+    
+    # 4. 흡연 호환성 (가중치: 0.3)
+    smoking_weight = 0.3
     smoking_compatibility = {
         ("non_smoker_strict", "non_smoker_strict"): 1.0,
         ("non_smoker_strict", "non_smoker_ok"): 1.0,
@@ -80,8 +122,8 @@ def calculate_compatibility(user_profile: UserProfile, other_profile: UserProfil
     score += smoking_weight * smoking_compatibility.get(key, smoking_compatibility.get(reverse_key, 0.5))
     total_weight += smoking_weight
     
-    # 6. 소음 민감도 호환성 (가중치: 0.1)
-    noise_weight = 0.1
+    # 5. 소음 민감도 호환성 (가중치: 0.2)
+    noise_weight = 0.2
     noise_compatibility = {
         ("sensitive", "sensitive"): 1.0,
         ("sensitive", "normal"): 0.7,
@@ -102,11 +144,14 @@ def get_matching_details(user_profile: UserProfile, other_profile: UserProfile) 
     """매칭 세부 정보를 반환합니다"""
     return {
         "sleep_type_match": user_profile.sleep_type == other_profile.sleep_type,
-        "home_time_match": user_profile.home_time == other_profile.home_time,
+        "home_time_different": user_profile.home_time != other_profile.home_time and \
+                              user_profile.home_time != "irregular" and other_profile.home_time != "irregular",
         "cleaning_frequency_compatible": abs(
             ["daily", "weekly", "as_needed"].index(user_profile.cleaning_frequency) -
             ["daily", "weekly", "as_needed"].index(other_profile.cleaning_frequency)
         ) <= 1,
+        "cleaning_sensitivity_compatible": user_profile.cleaning_sensitivity == other_profile.cleaning_sensitivity or \
+                                         (user_profile.cleaning_sensitivity == "not_sensitive" or other_profile.cleaning_sensitivity == "not_sensitive"),
         "smoking_compatible": not (
             user_profile.smoking_status == "non_smoker_strict" and 
             other_profile.smoking_status in ["smoker_indoor_no", "smoker_indoor_yes"]
@@ -115,6 +160,7 @@ def get_matching_details(user_profile: UserProfile, other_profile: UserProfile) 
             "sleep_type": other_profile.sleep_type,
             "home_time": other_profile.home_time,
             "cleaning_frequency": other_profile.cleaning_frequency,
+            "cleaning_sensitivity": other_profile.cleaning_sensitivity,
             "smoking_status": other_profile.smoking_status
         }
     }

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uni-con - 룸메이트 매칭</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -171,13 +172,192 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card">
+                    <div class="card mb-3">
                         <div class="card-header">
                             <h5 class="mb-0">내 정보</h5>
                         </div>
                         <div class="card-body">
                             <div id="user-profile-info">
                                 <!-- 사용자 정보가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 계약서 검증 섹션 -->
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">📄 계약서 검증</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                임대차 계약서의 중요 조건들을 검증하고<br>
+                                안전한 계약을 위한 체크리스트를 제공합니다.
+                            </p>
+                            <div class="d-grid">
+                                <button class="btn btn-warning" onclick="showContractVerification()">
+                                    <i class="fas fa-shield-check me-2"></i>계약서 검증하기
+                                </button>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    ✓ 보증금 및 월세 적정성 검토<br>
+                                    ✓ 계약 조건 위험 요소 분석<br>
+                                    ✓ 필수 확인 사항 체크리스트
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 계약서 검증 화면 -->
+        <div id="contract-verification" class="d-none">
+            <div class="card">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📄 계약서 검증 시스템</h5>
+                    <button class="btn btn-sm btn-outline-dark" onclick="showDashboard()">돌아가기</button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 계약서 정보 입력 -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">📝 계약서 정보 입력</h6>
+                            <form id="contract-form">
+                                <div class="mb-3">
+                                    <label class="form-label">물건 유형</label>
+                                    <select class="form-select" id="property-type">
+                                        <option value="">선택해주세요</option>
+                                        <option value="oneroom">원룸</option>
+                                        <option value="tworoom">투룸</option>
+                                        <option value="officetel">오피스텔</option>
+                                        <option value="apartment">아파트</option>
+                                        <option value="house">단독주택</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">지역</label>
+                                    <input type="text" class="form-control" id="property-location" placeholder="예: 서울시 강남구">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label class="form-label">보증금 (만원)</label>
+                                        <input type="number" class="form-control" id="deposit" placeholder="1000">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">월세 (만원)</label>
+                                        <input type="number" class="form-control" id="monthly-rent" placeholder="50">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">관리비 (만원)</label>
+                                    <input type="number" class="form-control" id="maintenance-fee" placeholder="5">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">계약 기간 (개월)</label>
+                                    <select class="form-select" id="contract-period">
+                                        <option value="">선택해주세요</option>
+                                        <option value="12">1년</option>
+                                        <option value="24">2년</option>
+                                        <option value="36">3년</option>
+                                        <option value="other">기타</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-warning" onclick="verifyContract()">
+                                        <i class="fas fa-search me-2"></i>계약서 검증하기
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- 검증 결과 -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">🔍 검증 결과</h6>
+                            <div id="verification-results" class="border rounded p-3" style="min-height: 400px; background-color: #f8f9fa;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <p>계약서 정보를 입력하고<br>'계약서 검증하기' 버튼을 클릭하세요.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 체크리스트 섹션 -->
+                    <div class="mt-4">
+                        <h6 class="mb-3">✅ 필수 확인 체크리스트</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0">계약 전 필수 확인사항</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check1">
+                                            <label class="form-check-label" for="check1">
+                                                등기부등본 확인 (소유권, 근저당 등)
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check2">
+                                            <label class="form-check-label" for="check2">
+                                                임대인 신분증 및 인감증명서 확인
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check3">
+                                            <label class="form-check-label" for="check3">
+                                                건물 실제 상태 점검 (누수, 곰팡이 등)
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check4">
+                                            <label class="form-check-label" for="check4">
+                                                주변 시세 비교 조사
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">계약서 작성 시 주의사항</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check5">
+                                            <label class="form-check-label" for="check5">
+                                                특약사항 꼼꼼히 검토
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check6">
+                                            <label class="form-check-label" for="check6">
+                                                수리 및 하자 책임 범위 명시
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check7">
+                                            <label class="form-check-label" for="check7">
+                                                중도금, 잔금 지급 일정 확인
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="check8">
+                                            <label class="form-check-label" for="check8">
+                                                전입신고 및 확정일자 받기
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
