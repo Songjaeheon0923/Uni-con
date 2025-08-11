@@ -22,10 +22,17 @@ Uni-con은 대학생들이 생활 패턴과 성향을 기반으로 최적의 룸
 
 ### Frontend
 
+#### Web (frontend-test)
 - **Vanilla JavaScript** - 순수 자바스크립트 SPA
 - **Bootstrap 5** - 모던 UI 컴포넌트
 - **CSS3** - 커스텀 스타일링
 - **HTML5** - 시맨틱 마크업
+
+#### Mobile (frontend-react-native)
+- **React Native** - 크로스 플랫폼 모바일 개발
+- **Expo** - React Native 개발 플랫폼
+- **React Navigation** - 네비게이션 라이브러리
+- **React Native Maps** - 지도 및 위치 서비스
 
 ## 🚀 빠른 시작
 
@@ -47,11 +54,17 @@ pip install -r requirements.txt
 python main.py
 
 # 새 터미널을 열고:
-# 3. 프론트엔드 실행
-cd frontend
+# 3-A. 웹 프론트엔드 실행
+cd frontend-test
 python serve.py
 
-# 4. 브라우저에서 http://localhost:3000 접속
+# 또는
+# 3-B. 모바일 앱 실행
+cd frontend-react-native
+npm install
+npx expo start
+
+# 4. 웹: http://localhost:3000 또는 모바일: Expo Go 앱으로 접속
 ```
 
 ### 단계별 실행 (상세)
@@ -80,19 +93,37 @@ python main.py
 
 ### 3. 프론트엔드 서버 실행 (새 터미널)
 
-```bash
-# 프론트엔드 디렉토리로 이동
-cd frontend
+#### Option A: 웹 버전 실행
 
-# 프론트엔드 서버 실행
+```bash
+# 웹 프론트엔드 디렉토리로 이동
+cd frontend-test
+
+# 웹 프론트엔드 서버 실행
 python serve.py
 ```
 
-✅ 프론트엔드가 **http://localhost:3000**에서 실행됩니다.
+✅ 웹 프론트엔드가 **http://localhost:3000**에서 실행됩니다.
 
-### 4. 웹 서비스 접속
+#### Option B: 모바일 앱 실행
 
-브라우저에서 **http://localhost:3000**으로 접속하여 Uni-con을 사용해보세요!
+```bash
+# React Native 디렉토리로 이동
+cd frontend-react-native
+
+# 의존성 설치
+npm install
+
+# Expo 개발 서버 실행
+npx expo start
+```
+
+✅ Expo 개발 서버가 실행되며, QR 코드로 모바일에서 접속 가능합니다.
+
+### 4. 서비스 접속
+
+- **웹**: 브라우저에서 **http://localhost:3000**으로 접속
+- **모바일**: Expo Go 앱으로 QR 코드 스캔하여 접속
 
 ## 📱 사용법
 
@@ -122,25 +153,34 @@ python serve.py
 
 ```
 Uni-con/
-├── 📁 backend/                 # 백엔드 FastAPI 애플리케이션
-│   ├── 🐍 main.py             # 서버 진입점
-│   ├── 📄 requirements.txt    # Python 의존성
-│   ├── 🗄️ users.db           # SQLite 데이터베이스
-│   ├── 📂 routers/           # API 라우터들
-│   │   ├── auth.py           # 인증 API
-│   │   ├── users.py          # 사용자 API
-│   │   └── profile.py        # 프로필 API
-│   ├── 📂 models/            # 데이터 모델
-│   ├── 📂 database/          # DB 연결 관리
-│   └── 📂 utils/             # 유틸리티 함수
-├── 📁 frontend/               # 프론트엔드 웹 애플리케이션
-│   ├── 🌐 index.html         # 메인 페이지
-│   ├── ⚡ script.js          # JavaScript 로직
-│   ├── 🎨 style.css          # 커스텀 스타일
-│   └── 🐍 serve.py           # 개발 서버
-├── 📄 README.md              # 이 파일
-├── 📄 CLAUDE.md              # 개발 가이드
-└── 📄 package.json           # 프로젝트 메타데이터
+├── 📁 backend/                     # 백엔드 FastAPI 애플리케이션
+│   ├── 🐍 main.py                 # 서버 진입점
+│   ├── 📄 requirements.txt        # Python 의존성
+│   ├── 🗄️ users.db               # SQLite 데이터베이스
+│   ├── 📂 routers/               # API 라우터들
+│   │   ├── auth.py               # 인증 API
+│   │   ├── users.py              # 사용자 API
+│   │   └── profile.py            # 프로필 API
+│   ├── 📂 models/                # 데이터 모델
+│   ├── 📂 database/              # DB 연결 관리
+│   └── 📂 utils/                 # 유틸리티 함수
+├── 📁 frontend-test/               # 웹 프론트엔드 (테스트)
+│   ├── 🌐 index.html             # 메인 페이지
+│   ├── ⚡ script.js              # JavaScript 로직
+│   ├── 🎨 style.css              # 커스텀 스타일
+│   └── 🐍 serve.py               # 개발 서버
+├── 📁 frontend-react-native/       # 모바일 앱 (React Native)
+│   ├── 📱 App.js                 # 메인 앱 컴포넌트
+│   ├── 📄 package.json           # 의존성 관리
+│   ├── 📂 src/                   # 소스 코드
+│   │   ├── 📂 components/        # 재사용 가능한 컴포넌트
+│   │   ├── 📂 screens/           # 화면 컴포넌트
+│   │   ├── 📂 services/          # API 서비스
+│   │   └── 📂 data/              # 더미 데이터
+│   └── 🎨 app.json              # Expo 설정
+├── 📄 README.md                  # 이 파일
+├── 📄 CLAUDE.md                  # 개발 가이드
+└── 📄 package.json               # 프로젝트 메타데이터
 ```
 
 ## 🔧 API 엔드포인트
