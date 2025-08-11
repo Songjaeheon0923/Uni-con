@@ -117,11 +117,10 @@ async def remove_favorite(room_id: str):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Favorite not found"
             )
 
-        # 찜 삭제 (soft delete)
+        # 찜 삭제 (hard delete - favorites 테이블에 is_active 컬럼 없음)
         cursor.execute(
             """
-            UPDATE favorites
-            SET is_active = 0
+            DELETE FROM favorites
             WHERE user_id = ? AND room_id = ?
         """,
             (user_id, room_id),
