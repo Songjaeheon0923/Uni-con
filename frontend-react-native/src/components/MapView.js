@@ -11,10 +11,10 @@ export default function PropertyMapView({
   selectedPropertyId,
 }) {
   const [region, setRegion] = useState({
-    latitude: 37.5665,
+    latitude: 37.5665, // 서울 시청 위치
     longitude: 126.978,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitudeDelta: 0.15,  // 서울 전체가 보이도록 확대
+    longitudeDelta: 0.12,
   });
   const [userLocation, setUserLocation] = useState(null);
   const mapRef = useRef(null);
@@ -42,11 +42,20 @@ export default function PropertyMapView({
           longitude: userLoc.coords.longitude,
         };
         setUserLocation(userCoords);
-        setRegion({
-          ...userCoords,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
+        // 사용자 위치가 서울 지역인지 확인
+        const isInSeoul = userCoords.latitude >= 37.4 && userCoords.latitude <= 37.7 && 
+                         userCoords.longitude >= 126.8 && userCoords.longitude <= 127.2;
+        
+        if (isInSeoul) {
+          setRegion({
+            ...userCoords,
+            latitudeDelta: 0.05,  // 사용자 위치 중심으로 줌인
+            longitudeDelta: 0.04,
+          });
+        } else {
+          // 사용자가 서울 외 지역에 있으면 서울 중심으로 유지
+          console.log('사용자가 서울 외 지역에 있어 서울 중심으로 유지합니다');
+        }
       }
     } catch (error) {
       console.log("Location error:", error);
@@ -54,8 +63,8 @@ export default function PropertyMapView({
       setRegion({
         latitude: 37.5665,
         longitude: 126.978,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.15,
+        longitudeDelta: 0.12,
       });
     }
   };
