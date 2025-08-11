@@ -42,6 +42,7 @@ coverage.xml
 cover/
 
 # Virtual environments
+.env*
 .env
 .venv
 env/
@@ -49,6 +50,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+## Exceptions
+!.env.example
+!.env.sample
 
 # IDE
 .vscode/
