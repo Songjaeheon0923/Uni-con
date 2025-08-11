@@ -53,8 +53,8 @@ export default function LoginScreen({ navigation, onLogin }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* 헤더 */}
           <View style={styles.header}>
-            <Text style={styles.title}>Uni-con</Text>
-            <Text style={styles.subtitle}>유니콘에 오신 것을 환영합니다</Text>
+            <Text style={styles.title}>WEROOM</Text>
+            <Text style={styles.subtitle}>위룸에 오신 것을 환영합니다</Text>
           </View>
 
           {/* 로고/일러스트레이션 영역 */}

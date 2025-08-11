@@ -12,6 +12,7 @@ import PersonalityTestScreen from "./src/screens/PersonalityTestScreen";
 import MatchResultsScreen from "./src/screens/MatchResultsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
+import ChatScreen from "./src/screens/ChatScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -20,19 +21,13 @@ function HomeStack({ user }) {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: '#FF6600',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerShown: false,  // 헤더 완전히 숨기기
       }}
     >
       <Stack.Screen 
         name="HomeMain" 
         options={{
-          headerTitle: 'Uni-con 홈',
+          headerShown: false,
         }}
       >
         {(props) => <HomeScreen {...props} user={user} />}
@@ -54,6 +49,13 @@ function HomeStack({ user }) {
       <Stack.Screen 
         name="MatchResults" 
         component={MatchResultsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="Chat" 
+        component={ChatScreen}
         options={{
           headerShown: false,
         }}

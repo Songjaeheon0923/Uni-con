@@ -3,9 +3,121 @@ from models.profile import UserProfile, MatchingResult
 from database.connection import get_user_by_email
 
 
+def calculate_gender_compatibility(user_profile: UserProfile, other_profile: UserProfile) -> float:
+    """성별 선호도 호환성 계산"""
+    user_gender = user_profile.gender
+    other_gender = other_profile.gender
+    user_pref = user_profile.gender_preference
+    other_pref = other_profile.gender_preference
+    
+    if not all([user_gender, other_gender, user_pref, other_pref]):
+        return 0.5  # 정보 부족시 중간 점수
+    
+    # 양방향 호환성 체크
+    user_accepts_other = (
+        user_pref == "any" or
+        (user_pref == "same" and user_gender == other_gender) or
+        (user_pref == "opposite" and user_gender != other_gender)
+    )
+    
+    other_accepts_user = (
+        other_pref == "any" or
+        (other_pref == "same" and other_gender == user_gender) or
+        (other_pref == "opposite" and other_gender != user_gender)
+    )
+    
+    if user_accepts_other and other_accepts_user:
+        return 1.0  # 완벽 매치
+    elif user_accepts_other or other_accepts_user:
+        return 0.3  # 일방적 매치
+    else:
+        return 0.0  # 호환 불가
+
+
+def calculate_age_compatibility(user_profile: UserProfile, other_profile: UserProfile) -> float:
+    """나이 호환성 계산 (±5세 이내 높은 점수)"""
+    if not (user_profile.age and other_profile.age):
+        return 0.5
+    
+    age_diff = abs(user_profile.age - other_profile.age)
+    if age_diff <= 2:
+        return 1.0
+    elif age_diff <= 5:
+        return 0.8
+    elif age_diff <= 10:
+        return 0.5
+    else:
+        return 0.2
+
+
+def calculate_lifestyle_compatibility(user_profile: UserProfile, other_profile: UserProfile) -> float:
+    """라이프스타일 호환성 계산"""
+    if not (user_profile.lifestyle_type and other_profile.lifestyle_type):
+        return 0.5
+    
+    # 같은 라이프스타일일 때 높은 점수
+    if user_profile.lifestyle_type == other_profile.lifestyle_type:
+        return 1.0
+    
+    # 학생-프리랜서, 직장인-프리랜서는 중간 점수
+    compatible_pairs = [
+        ("student", "freelancer"),
+        ("worker", "freelancer")
+    ]
+    
+    pair = (user_profile.lifestyle_type, other_profile.lifestyle_type)
+    reverse_pair = (other_profile.lifestyle_type, user_profile.lifestyle_type)
+    
+    if pair in compatible_pairs or reverse_pair in compatible_pairs:
+        return 0.7
+    else:
+        return 0.4
+
+
+def calculate_budget_compatibility(user_profile: UserProfile, other_profile: UserProfile) -> float:
+    """예산 호환성 계산"""
+    if not (user_profile.budget_range and other_profile.budget_range):
+        return 0.5
+    
+    if user_profile.budget_range == other_profile.budget_range:
+        return 1.0
+    
+    # 인접한 예산 범위는 중간 점수
+    budget_levels = {"low": 0, "medium": 1, "high": 2}
+    user_level = budget_levels[user_profile.budget_range]
+    other_level = budget_levels[other_profile.budget_range]
+    
+    if abs(user_level - other_level) == 1:
+        return 0.6
+    else:
+        return 0.2
+
+
+def calculate_personality_compatibility(user_profile: UserProfile, other_profile: UserProfile) -> float:
+    """성격 호환성 계산 (보완적 관계 고려)"""
+    if not (user_profile.personality_type and other_profile.personality_type):
+        return 0.5
+    
+    # 같은 성격 타입
+    if user_profile.personality_type == other_profile.personality_type:
+        return 0.8
+    
+    # 보완적 관계 (내향-외향)
+    if (user_profile.personality_type == "introverted" and other_profile.personality_type == "extroverted") or \
+       (user_profile.personality_type == "extroverted" and other_profile.personality_type == "introverted"):
+        return 0.9
+    
+    # 중간형과의 매치
+    if user_profile.personality_type == "mixed" or other_profile.personality_type == "mixed":
+        return 0.7
+    
+    return 0.5
+
+
 def calculate_compatibility(user_profile: UserProfile, other_profile: UserProfile) -> float:
     """
     두 사용자 프로필 간의 호환성 점수를 계산합니다 (0.0 ~ 1.0)
+    고도화된 매칭 알고리즘: 9개 요소를 종합적으로 고려
     """
     if not (user_profile.is_complete and other_profile.is_complete):
         return 0.0
@@ -13,13 +125,14 @@ def calculate_compatibility(user_profile: UserProfile, other_profile: UserProfil
     score = 0.0
     total_weight = 0.0
     
-    # 1. 기상/취침 시간 호환성 (가중치: 0.1)
-    sleep_weight = 0.1
-    if user_profile.sleep_type == other_profile.sleep_type:
-        score += sleep_weight * 1.0
-    else:
-        score += sleep_weight * 0.3  # 다르면 약간의 점수
-    total_weight += sleep_weight
+    # 1. 성별 선호도 호환성 (가중치: 0.25 - 가장 중요)
+    gender_weight = 0.25
+    gender_score = calculate_gender_compatibility(user_profile, other_profile)
+    score += gender_weight * gender_score
+    total_weight += gender_weight
+    
+    # 2. 흡연 호환성 (가중치: 0.2)
+    smoking_weight = 0.2
     
     # 2. 집에 머무는 시간대 호환성 (가중치: 0.15) - 다른 시간대일 때 더 높은 점수
     home_time_weight = 0.15

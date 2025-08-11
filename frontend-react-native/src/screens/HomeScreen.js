@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
   Alert,
   RefreshControl,
   FlatList,
-  Dimensions
+  Dimensions,
+  SafeAreaView
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from 'expo-location';
 import ApiService from "../services/api";
+import RoomDetailModal from "../components/RoomDetailModal";
 
 const { width } = Dimensions.get('window');
 
@@ -21,7 +24,10 @@ export default function HomeScreen({ navigation, user }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('찜 많은 순');
-  
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState('성북구');
+
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user || {
     id: "1",
@@ -33,7 +39,39 @@ export default function HomeScreen({ navigation, user }) {
 
   useEffect(() => {
     loadData();
+    getCurrentLocation();
   }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('위치 권한이 거부되었습니다');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      // 역 지오코딩으로 주소 가져오기
+      let address = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      if (address.length > 0) {
+        const locationInfo = address[0];
+        // 구 또는 동 정보 추출
+        const district = locationInfo.district || locationInfo.subLocality || locationInfo.city;
+        if (district) {
+          setCurrentLocation(district.replace(/구$|시$/, '')); // "성북구" 형태로 설정
+        }
+      }
+    } catch (error) {
+      console.error('위치 가져오기 실패:', error);
+      // 실패 시 기본값 유지
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -55,7 +93,7 @@ export default function HomeScreen({ navigation, user }) {
         lngMin: 126.9,
         lngMax: 127.2,
       };
-      
+
       const roomData = await ApiService.searchRooms(bounds);
       setRooms(roomData);
     } catch (error) {
@@ -79,9 +117,9 @@ export default function HomeScreen({ navigation, user }) {
 
   const toggleFavorite = async (roomId, event) => {
     if (event) event.stopPropagation();
-    
+
     const isFavorited = favorites.includes(roomId);
-    
+
     try {
       if (isFavorited) {
         await ApiService.removeFavorite(roomId);
@@ -89,6 +127,13 @@ export default function HomeScreen({ navigation, user }) {
       } else {
         await ApiService.addFavorite(roomId, String(userData.id));
         setFavorites([...favorites, roomId]);
+      }
+      // 찜 상태 변경 시 저장하여 다른 화면에서 감지할 수 있도록 함
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.setItem('favoriteChanged', Date.now().toString());
+      } catch (storageError) {
+        console.log('Storage update failed:', storageError);
       }
     } catch (error) {
       Alert.alert('오류', isFavorited ? '찜 삭제에 실패했습니다.' : '찜하기에 실패했습니다.');
@@ -109,7 +154,7 @@ export default function HomeScreen({ navigation, user }) {
 
   const getFilteredRooms = () => {
     let filteredRooms = [...rooms];
-    
+
     switch(selectedFilter) {
       case '찜 많은 순':
         return filteredRooms.sort((a, b) => b.favorite_count - a.favorite_count);
@@ -126,24 +171,46 @@ export default function HomeScreen({ navigation, user }) {
     }
   };
 
+  const handleRoomPress = (room) => {
+    console.log('🏠 HomeScreen selected room:', room); // 디버그용
+    setSelectedRoom(room);
+    setShowModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setSelectedRoom(null);
+  };
+
+  const handleNavigateToChat = (otherUser) => {
+    handleModalClose();
+    navigation.navigate('Chat', {
+      user: otherUser,
+      currentUser: userData
+    });
+  };
+
   const renderRoomCard = ({ item }) => (
-    <View style={styles.roomCard}>
+    <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
       <View style={styles.roomImageContainer}>
         <View style={styles.placeholderImage}>
           <Ionicons name="home" size={30} color="#ccc" />
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.heartButton}
-          onPress={(event) => toggleFavorite(item.room_id, event)}
+          onPress={(event) => {
+            event.stopPropagation();
+            toggleFavorite(item.room_id, event);
+          }}
         >
-          <Ionicons 
-            name={favorites.includes(item.room_id) ? "heart" : "heart-outline"} 
-            size={18} 
-            color={favorites.includes(item.room_id) ? "#ff4757" : "#fff"} 
+          <Ionicons
+            name={favorites.includes(item.room_id) ? "heart" : "heart-outline"}
+            size={18}
+            color={favorites.includes(item.room_id) ? "#ff4757" : "#fff"}
           />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.roomCardInfo}>
         <Text style={styles.roomType}>
           {item.rooms === 1 ? '원룸' : item.rooms === 2 ? '투룸' : '다가구'}, {item.transaction_type} {item.price_deposit}
@@ -156,11 +223,11 @@ export default function HomeScreen({ navigation, user }) {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const FilterButton = ({ title, isSelected, onPress }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.filterButton, isSelected && styles.filterButtonSelected]}
       onPress={onPress}
     >
@@ -179,8 +246,9 @@ export default function HomeScreen({ navigation, user }) {
   }
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <SafeAreaView style={styles.safeContainer}>
+    <ScrollView
+      style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
@@ -192,8 +260,13 @@ export default function HomeScreen({ navigation, user }) {
       {/* 나만의 룸메이트 찾기 박스 */}
       <TouchableOpacity style={styles.roommateBox} onPress={handleRoommateSearch}>
         <View style={styles.roommateBoxContent}>
-          <Text style={styles.roommateBoxTitle}>나만의 룸메이트 찾기</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
+          <View style={styles.roommateTextContainer}>
+            <Text style={styles.roommateBoxTitle}>나만의 룸메이트 찾기</Text>
+            <Text style={styles.roommateBoxSubtitle}>내 성향 파악하고 딱 맞는 룸메이트를 찾아보세요!</Text>
+          </View>
+          <View style={styles.chevronContainer}>
+            <Ionicons name="chevron-forward" size={20} color="#666" />
+          </View>
         </View>
       </TouchableOpacity>
 
@@ -207,11 +280,11 @@ export default function HomeScreen({ navigation, user }) {
 
       {/* 인기 매물 섹션 */}
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>{userData.location} 인기 매물</Text>
-        
+        <Text style={styles.sectionTitle}>{currentLocation} 인기 매물</Text>
+
         {/* 필터 버튼들 */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterContainer}
         >
@@ -239,7 +312,7 @@ export default function HomeScreen({ navigation, user }) {
       {/* 주요 정책 NEWS */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>주요 정책 NEWS</Text>
-        
+
         <View style={styles.newsBox}>
           <View style={styles.newsContent}>
             <Text style={styles.newsTag}>#청년 정책</Text>
@@ -251,13 +324,27 @@ export default function HomeScreen({ navigation, user }) {
         </View>
       </View>
     </ScrollView>
+
+    {/* Room Detail Modal */}
+    <RoomDetailModal
+      visible={showModal}
+      room={selectedRoom}
+      user={userData}
+      onClose={handleModalClose}
+      onNavigateToChat={handleNavigateToChat}
+    />
+  </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
@@ -269,7 +356,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   greeting: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -277,18 +364,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     marginHorizontal: 20,
     marginTop: 15,
-    padding: 20,
+    paddingVertical: 45,
+    paddingHorizontal: 20,
     borderRadius: 12,
   },
   roommateBoxContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  roommateTextContainer: {
+    flex: 1,
+    alignItems: 'flex-start',
   },
   roommateBoxTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 4,
+  },
+  roommateBoxSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#666',
+    lineHeight: 20,
+  },
+  chevronContainer: {
+    marginTop: 8,
   },
   contractBox: {
     backgroundColor: '#f0f0f0',

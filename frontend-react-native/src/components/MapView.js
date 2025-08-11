@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Text, Dimensions, Platform } from "react-native";
+import React, { useState, useEffect, useRef, forwardRef } from "react";
+import { View, StyleSheet, Text, Dimensions } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 
 const { width, height } = Dimensions.get("window");
 
-export default function PropertyMapView({
+const PropertyMapView = forwardRef(({
   properties = [],
   onMarkerPress,
   selectedPropertyId,
-}) {
+}, ref) => {
   const [region, setRegion] = useState({
     latitude: 37.5665, // 서울 시청 위치
     longitude: 126.978,
@@ -147,7 +147,7 @@ export default function PropertyMapView({
   return (
     <View style={styles.container}>
       <MapView
-        ref={mapRef}
+        ref={ref || mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={region}
@@ -177,7 +177,9 @@ export default function PropertyMapView({
       </MapView>
     </View>
   );
-}
+});
+
+export default PropertyMapView;
 
 // 직방 스타일 지도 테마
 const zigbangMapStyle = [

@@ -87,7 +87,11 @@ class ApiService {
   }
 
   async checkFavoriteStatus(roomId, userId) {
-    return this.request(`/favorites/${userId}/${roomId}/check`);
+    return this.request(`/favorites/${roomId}/check`);
+  }
+
+  async getMatchedRoommates(roomId) {
+    return this.request(`/favorites/${roomId}/matched`);
   }
 
   // 프로필/매칭 관련 API

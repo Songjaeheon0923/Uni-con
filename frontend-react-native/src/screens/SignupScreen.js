@@ -103,7 +103,7 @@ export default function SignupScreen({ navigation }) {
 
           {/* 안내 텍스트 */}
           <View style={styles.infoContainer}>
-            <Text style={styles.infoTitle}>Uni-con 가입하기</Text>
+            <Text style={styles.infoTitle}>WEROOM 가입하기</Text>
             <Text style={styles.infoSubtitle}>나만의 룸메이트를 찾아보세요</Text>
           </View>
 

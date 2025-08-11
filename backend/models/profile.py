@@ -39,24 +39,71 @@ class NoiseSensitivity(str, Enum):
     NOT_SENSITIVE = "not_sensitive"  # 둔감함
 
 
+class Gender(str, Enum):
+    MALE = "male"  # 남성
+    FEMALE = "female"  # 여성
+    OTHER = "other"  # 기타
+
+
+class GenderPreference(str, Enum):
+    SAME = "same"  # 동성
+    OPPOSITE = "opposite"  # 이성
+    ANY = "any"  # 무관
+
+
+class PersonalityType(str, Enum):
+    INTROVERTED = "introverted"  # 내향적
+    EXTROVERTED = "extroverted"  # 외향적
+    MIXED = "mixed"  # 중간
+
+
+class LifestyleType(str, Enum):
+    STUDENT = "student"  # 학생
+    WORKER = "worker"  # 직장인
+    FREELANCER = "freelancer"  # 프리랜서
+    OTHER = "other"  # 기타
+
+
+class BudgetRange(str, Enum):
+    LOW = "low"  # ~50만원
+    MEDIUM = "medium"  # 50-100만원
+    HIGH = "high"  # 100만원+
+
+
 class UserProfile(BaseModel):
     user_id: int
+    # 기존 필드들
     sleep_type: Optional[SleepType] = None
     home_time: Optional[HomeTime] = None
     cleaning_frequency: Optional[CleaningFrequency] = None
     cleaning_sensitivity: Optional[CleaningSensitivity] = None
     smoking_status: Optional[SmokingStatus] = None
     noise_sensitivity: Optional[NoiseSensitivity] = None
+    # 새로운 필드들
+    age: Optional[int] = None
+    gender: Optional[Gender] = None
+    gender_preference: Optional[GenderPreference] = None
+    personality_type: Optional[PersonalityType] = None
+    lifestyle_type: Optional[LifestyleType] = None
+    budget_range: Optional[BudgetRange] = None
     is_complete: bool = False
 
 
 class ProfileUpdateRequest(BaseModel):
+    # 기존 필드들
     sleep_type: Optional[SleepType] = None
     home_time: Optional[HomeTime] = None
     cleaning_frequency: Optional[CleaningFrequency] = None
     cleaning_sensitivity: Optional[CleaningSensitivity] = None
     smoking_status: Optional[SmokingStatus] = None
     noise_sensitivity: Optional[NoiseSensitivity] = None
+    # 새로운 필드들
+    age: Optional[int] = None
+    gender: Optional[Gender] = None
+    gender_preference: Optional[GenderPreference] = None
+    personality_type: Optional[PersonalityType] = None
+    lifestyle_type: Optional[LifestyleType] = None
+    budget_range: Optional[BudgetRange] = None
 
 
 class MatchingResult(BaseModel):

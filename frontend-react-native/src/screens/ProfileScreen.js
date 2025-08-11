@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
   Text, 
@@ -33,6 +34,31 @@ export default function ProfileScreen({ user, onLogout }) {
   useEffect(() => {
     loadFavorites();
   }, []);
+
+  // 화면이 포커스될 때마다 찜 목록 새로고침
+  useFocusEffect(
+    React.useCallback(() => {
+      loadFavorites();
+      
+      // AsyncStorage에서 찜 변경 감지
+      const checkFavoriteChanges = async () => {
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          const lastChanged = await AsyncStorage.getItem('favoriteChanged');
+          const lastLoaded = await AsyncStorage.getItem('favoriteLastLoaded');
+          
+          if (lastChanged && lastChanged !== lastLoaded) {
+            loadFavorites();
+            await AsyncStorage.setItem('favoriteLastLoaded', lastChanged);
+          }
+        } catch (error) {
+          console.log('Storage check failed:', error);
+        }
+      };
+      
+      checkFavoriteChanges();
+    }, [userData.id])
+  );
 
   const loadFavorites = async () => {
     setLoading(true);
@@ -195,7 +221,7 @@ export default function ProfileScreen({ user, onLogout }) {
           icon="information-circle" 
           label="앱 정보" 
           value="v1.0.0"
-          onPress={() => Alert.alert('앱 정보', 'Uni-con v1.0.0\n대학생을 위한 방 찾기 앱')}
+          onPress={() => Alert.alert('앱 정보', 'WEROOM v1.0.0\n대학생을 위한 룸메이트 매칭 앱')}
         />
         <TouchableOpacity 
           style={styles.logoutButton}

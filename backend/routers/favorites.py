@@ -291,15 +291,27 @@ async def get_matched_roommates(room_id: str):
         # 일단 기본 찜한 사람들 가져오기
         favorite_users = await get_room_favorites(room_id)
 
-        # 나 자신은 제외
-        favorite_users = [user for user in favorite_users if user.user_id != user_id]
+        # 나 자신은 제외 (문자열과 정수 모두 고려)
+        favorite_users = [user for user in favorite_users if str(user.user_id) != str(user_id)]
 
-        # TODO: 매칭 알고리즘 구현
-        # 지금은 임시로 랜덤 점수 부여
-        import random
-
-        for user in favorite_users:
-            user.matching_score = random.randint(60, 95)
+        # 고도화된 매칭 알고리즘 사용
+        from database.connection import get_user_profile
+        from utils.matching_enhanced import calculate_compatibility
+        
+        user_profile = get_user_profile(user_id)
+        if user_profile and user_profile.is_complete:
+            for user in favorite_users:
+                other_profile = get_user_profile(int(user.user_id))
+                if other_profile and other_profile.is_complete:
+                    compatibility = calculate_compatibility(user_profile, other_profile)
+                    user.matching_score = int(compatibility * 100)  # 0-1을 0-100으로 변환
+                else:
+                    user.matching_score = 0  # 프로필이 완성되지 않은 경우
+        else:
+            # 현재 사용자의 프로필이 완성되지 않은 경우 랜덤 점수
+            import random
+            for user in favorite_users:
+                user.matching_score = random.randint(50, 80)
 
         # 매칭 점수 높은 순으로 정렬
         favorite_users.sort(key=lambda x: x.matching_score, reverse=True)

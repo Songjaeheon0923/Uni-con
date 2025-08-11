@@ -1,14 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from 'expo-location';
 import PropertyMapView from "../components/MapView";
 import ApiService from "../services/api";
+import RoomDetailModal from "../components/RoomDetailModal";
 
-export default function MapScreen() {
+export default function MapScreen({ navigation }) {
   const [rooms, setRooms] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState('전체');
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const mapViewRef = useRef(null);
+  
+  // Mock user data
+  const userData = {
+    id: "1",
+    name: "김대학생",
+  };
 
   const filterOptions = ['전체', '원룸', '투룸', '전세', '월세', '매매'];
 
@@ -94,45 +105,74 @@ export default function MapScreen() {
     setRooms(filteredRooms);
   };
 
+  const goToCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('위치 권한 필요', '현재 위치를 보려면 위치 권한이 필요합니다.');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      
+      // 맵을 현재 위치로 이동
+      if (mapViewRef.current) {
+        mapViewRef.current.animateToRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('현재 위치 가져오기 실패:', error);
+      Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
+    }
+  };
+
   const handleMarkerPress = async (room) => {
     setSelectedPropertyId(room.id);
     try {
       // 방 상세 정보 가져오기
       const roomDetail = await ApiService.getRoomDetail(room.id);
-      const marketPrice = await ApiService.getMarketPrice(room.id);
       
-      let alertMessage = `${roomDetail.address}\n\n`;
-      alertMessage += `${roomDetail.transaction_type}: ${roomDetail.price_deposit}만원`;
-      if (roomDetail.price_monthly > 0) {
-        alertMessage += ` / ${roomDetail.price_monthly}만원`;
-      }
-      alertMessage += `\n면적: ${roomDetail.area}㎡`;
-      alertMessage += `\n층수: ${roomDetail.floor}층`;
-      if (roomDetail.building_year) {
-        alertMessage += `\n건축년도: ${roomDetail.building_year}년`;
-      }
-      alertMessage += `\n찜 수: ${roomDetail.favorite_count}개`;
-      alertMessage += `\n위험도: ${roomDetail.risk_score}/10`;
+      // 모달에 필요한 형태로 데이터 변환
+      const formattedRoom = {
+        room_id: roomDetail.room_id,
+        address: roomDetail.address,
+        transaction_type: roomDetail.transaction_type,
+        price_deposit: roomDetail.price_deposit,
+        price_monthly: roomDetail.price_monthly,
+        area: roomDetail.area,
+        rooms: roomDetail.rooms || 1,
+        bathrooms: roomDetail.bathrooms || 1,
+        floor_info: roomDetail.floor_info || roomDetail.floor,
+        risk_score: roomDetail.risk_score,
+        latitude: roomDetail.latitude,
+        longitude: roomDetail.longitude,
+        favorite_count: roomDetail.favorite_count || 0,
+      };
       
-      if (marketPrice) {
-        alertMessage += `\n\n📊 시세 정보:`;
-        alertMessage += `\n현재가: ${marketPrice.current_price}만원`;
-        alertMessage += `\n평균가: ${marketPrice.average_price}만원`;
-        if (marketPrice.price_analysis.is_expensive) {
-          alertMessage += `\n⚠️ 시세보다 ${marketPrice.price_analysis.price_difference_percent}% 비쌈`;
-        } else if (marketPrice.price_analysis.is_cheap) {
-          alertMessage += `\n💰 시세보다 ${Math.abs(marketPrice.price_analysis.price_difference_percent)}% 저렴`;
-        }
-      }
-      
-      if (roomDetail.description) {
-        alertMessage += `\n\n📝 ${roomDetail.description}`;
-      }
-      
-      Alert.alert(room.title, alertMessage);
+      setSelectedRoom(formattedRoom);
+      setShowModal(true);
     } catch (error) {
-      Alert.alert(room.title, `${room.address}\n${room.description}`);
+      console.error('방 상세 정보 로드 실패:', error);
+      Alert.alert('오류', '방 정보를 불러오는데 실패했습니다.');
     }
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+    setSelectedRoom(null);
+  };
+
+  const handleNavigateToChat = (otherUser) => {
+    handleModalClose();
+    navigation.navigate('Chat', { 
+      user: otherUser, 
+      currentUser: userData 
+    });
   };
 
   const FilterButton = ({ title, isSelected, onPress }) => (
@@ -173,10 +213,30 @@ export default function MapScreen() {
       </View>
 
       {/* 지도 */}
-      <PropertyMapView
-        properties={rooms}
-        onMarkerPress={handleMarkerPress}
-        selectedPropertyId={selectedPropertyId}
+      <View style={styles.mapContainer}>
+        <PropertyMapView
+          ref={mapViewRef}
+          properties={rooms}
+          onMarkerPress={handleMarkerPress}
+          selectedPropertyId={selectedPropertyId}
+        />
+        
+        {/* 현재 위치 버튼 */}
+        <TouchableOpacity 
+          style={styles.currentLocationButton}
+          onPress={goToCurrentLocation}
+        >
+          <Ionicons name="locate" size={24} color="#FF6600" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Room Detail Modal */}
+      <RoomDetailModal
+        visible={showModal}
+        room={selectedRoom}
+        user={userData}
+        onClose={handleModalClose}
+        onNavigateToChat={handleNavigateToChat}
       />
     </View>
   );
@@ -231,5 +291,27 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 4,
     fontWeight: '500',
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  currentLocationButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
 });

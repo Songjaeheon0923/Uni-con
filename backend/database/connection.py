@@ -26,7 +26,7 @@ def init_db():
         )
     ''')
     
-    # 새로운 user_profiles 테이블
+    # 새로운 user_profiles 테이블 (고도화된 버전)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,6 +37,12 @@ def init_db():
             cleaning_sensitivity TEXT,
             smoking_status TEXT,
             noise_sensitivity TEXT,
+            age INTEGER,
+            gender TEXT,
+            gender_preference TEXT,
+            personality_type TEXT,
+            lifestyle_type TEXT,
+            budget_range TEXT,
             is_complete BOOLEAN DEFAULT FALSE,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -86,6 +92,7 @@ def init_db():
     
     # 더미 데이터 생성
     create_dummy_data(cursor, conn)
+    create_test_users_and_profiles(cursor, conn)
     
     conn.close()
 
@@ -261,7 +268,9 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
     cursor = conn.cursor()
     cursor.execute("""
         SELECT user_id, sleep_type, home_time, cleaning_frequency, 
-               cleaning_sensitivity, smoking_status, noise_sensitivity, is_complete
+               cleaning_sensitivity, smoking_status, noise_sensitivity,
+               age, gender, gender_preference, personality_type, 
+               lifestyle_type, budget_range, is_complete
         FROM user_profiles WHERE user_id = ?
     """, (user_id,))
     profile = cursor.fetchone()
@@ -276,7 +285,13 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
             cleaning_sensitivity=profile[4],
             smoking_status=profile[5],
             noise_sensitivity=profile[6],
-            is_complete=bool(profile[7])
+            age=profile[7],
+            gender=profile[8],
+            gender_preference=profile[9],
+            personality_type=profile[10],
+            lifestyle_type=profile[11],
+            budget_range=profile[12],
+            is_complete=bool(profile[13])
         )
     return None
 
@@ -303,7 +318,7 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
     current = cursor.fetchone()
     
     if current:
-        # 모든 필드가 채워졌는지 확인
+        # 모든 필드가 채워졌는지 확인 (고도화된 버전)
         profile_dict = profile_data.dict(exclude_unset=True)
         current_data = {
             'sleep_type': current[2] or profile_dict.get('sleep_type'),
@@ -311,7 +326,13 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
             'cleaning_frequency': current[4] or profile_dict.get('cleaning_frequency'),
             'cleaning_sensitivity': current[5] or profile_dict.get('cleaning_sensitivity'),
             'smoking_status': current[6] or profile_dict.get('smoking_status'),
-            'noise_sensitivity': current[7] or profile_dict.get('noise_sensitivity')
+            'noise_sensitivity': current[7] or profile_dict.get('noise_sensitivity'),
+            'age': current[8] or profile_dict.get('age'),
+            'gender': current[9] or profile_dict.get('gender'),
+            'gender_preference': current[10] or profile_dict.get('gender_preference'),
+            'personality_type': current[11] or profile_dict.get('personality_type'),
+            'lifestyle_type': current[12] or profile_dict.get('lifestyle_type'),
+            'budget_range': current[13] or profile_dict.get('budget_range')
         }
         
         is_complete = all(value is not None for value in current_data.values())
@@ -333,7 +354,9 @@ def get_completed_profiles() -> List[UserProfile]:
     cursor = conn.cursor()
     cursor.execute("""
         SELECT user_id, sleep_type, home_time, cleaning_frequency, 
-               cleaning_sensitivity, smoking_status, noise_sensitivity, is_complete
+               cleaning_sensitivity, smoking_status, noise_sensitivity,
+               age, gender, gender_preference, personality_type, 
+               lifestyle_type, budget_range, is_complete
         FROM user_profiles WHERE is_complete = TRUE
     """)
     profiles = cursor.fetchall()
@@ -348,7 +371,205 @@ def get_completed_profiles() -> List[UserProfile]:
             cleaning_sensitivity=profile[4],
             smoking_status=profile[5],
             noise_sensitivity=profile[6],
-            is_complete=bool(profile[7])
+            age=profile[7],
+            gender=profile[8],
+            gender_preference=profile[9],
+            personality_type=profile[10],
+            lifestyle_type=profile[11],
+            budget_range=profile[12],
+            is_complete=bool(profile[13])
         )
         for profile in profiles
     ]
+
+
+def create_test_users_and_profiles(cursor, conn):
+    """테스트용 사용자들과 완성된 프로필 생성"""
+    import hashlib
+    
+    # 이미 테스트 사용자가 있는지 확인
+    cursor.execute("SELECT COUNT(*) FROM users WHERE email LIKE 'test%@example.com'")
+    user_count = cursor.fetchone()[0]
+    
+    if user_count > 0:
+        return  # 이미 테스트 사용자가 있으면 스킵
+    
+    # 패스워드 해시 생성 (간단한 예시)
+    def hash_password(password):
+        return hashlib.sha256(password.encode()).hexdigest()
+    
+    # 테스트 사용자들 데이터
+    test_users = [
+        {
+            'email': 'test1@example.com',
+            'name': '김민수',
+            'password': 'test123',
+            'profile': {
+                'age': 23,
+                'gender': 'male',
+                'gender_preference': 'same',
+                'sleep_type': 'morning',
+                'home_time': 'night',
+                'cleaning_frequency': 'daily',
+                'cleaning_sensitivity': 'very_sensitive',
+                'smoking_status': 'non_smoker_strict',
+                'noise_sensitivity': 'sensitive',
+                'personality_type': 'introverted',
+                'lifestyle_type': 'student',
+                'budget_range': 'medium'
+            }
+        },
+        {
+            'email': 'test2@example.com',
+            'name': '박지영',
+            'password': 'test123',
+            'profile': {
+                'age': 25,
+                'gender': 'female',
+                'gender_preference': 'same',
+                'sleep_type': 'evening',
+                'home_time': 'day',
+                'cleaning_frequency': 'weekly',
+                'cleaning_sensitivity': 'normal',
+                'smoking_status': 'non_smoker_ok',
+                'noise_sensitivity': 'normal',
+                'personality_type': 'extroverted',
+                'lifestyle_type': 'worker',
+                'budget_range': 'high'
+            }
+        },
+        {
+            'email': 'test3@example.com',
+            'name': '이동욱',
+            'password': 'test123',
+            'profile': {
+                'age': 22,
+                'gender': 'male',
+                'gender_preference': 'any',
+                'sleep_type': 'morning',
+                'home_time': 'irregular',
+                'cleaning_frequency': 'daily',
+                'cleaning_sensitivity': 'not_sensitive',
+                'smoking_status': 'smoker_indoor_no',
+                'noise_sensitivity': 'not_sensitive',
+                'personality_type': 'mixed',
+                'lifestyle_type': 'student',
+                'budget_range': 'low'
+            }
+        },
+        {
+            'email': 'test4@example.com',
+            'name': '최서연',
+            'password': 'test123',
+            'profile': {
+                'age': 27,
+                'gender': 'female',
+                'gender_preference': 'opposite',
+                'sleep_type': 'evening',
+                'home_time': 'night',
+                'cleaning_frequency': 'as_needed',
+                'cleaning_sensitivity': 'very_sensitive',
+                'smoking_status': 'non_smoker_strict',
+                'noise_sensitivity': 'sensitive',
+                'personality_type': 'introverted',
+                'lifestyle_type': 'freelancer',
+                'budget_range': 'medium'
+            }
+        },
+        {
+            'email': 'test5@example.com',
+            'name': '정태현',
+            'password': 'test123',
+            'profile': {
+                'age': 24,
+                'gender': 'male',
+                'gender_preference': 'same',
+                'sleep_type': 'morning',
+                'home_time': 'day',
+                'cleaning_frequency': 'weekly',
+                'cleaning_sensitivity': 'normal',
+                'smoking_status': 'non_smoker_ok',
+                'noise_sensitivity': 'normal',
+                'personality_type': 'extroverted',
+                'lifestyle_type': 'student',
+                'budget_range': 'medium'
+            }
+        },
+        {
+            'email': 'test6@example.com',
+            'name': '안혜진',
+            'password': 'test123',
+            'profile': {
+                'age': 26,
+                'gender': 'female',
+                'gender_preference': 'any',
+                'sleep_type': 'evening',
+                'home_time': 'irregular',
+                'cleaning_frequency': 'as_needed',
+                'cleaning_sensitivity': 'not_sensitive',
+                'smoking_status': 'smoker_indoor_yes',
+                'noise_sensitivity': 'not_sensitive',
+                'personality_type': 'extroverted',
+                'lifestyle_type': 'worker',
+                'budget_range': 'high'
+            }
+        }
+    ]
+    
+    # 사용자와 프로필 생성
+    for user_data in test_users:
+        try:
+            # 사용자 생성
+            cursor.execute(
+                "INSERT INTO users (email, name, hashed_password) VALUES (?, ?, ?)",
+                (user_data['email'], user_data['name'], hash_password(user_data['password']))
+            )
+            user_id = cursor.lastrowid
+            
+            # 프로필 생성
+            profile = user_data['profile']
+            cursor.execute("""
+                INSERT INTO user_profiles (
+                    user_id, age, gender, gender_preference, sleep_type, home_time,
+                    cleaning_frequency, cleaning_sensitivity, smoking_status, noise_sensitivity,
+                    personality_type, lifestyle_type, budget_range, is_complete
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id, profile['age'], profile['gender'], profile['gender_preference'],
+                profile['sleep_type'], profile['home_time'], profile['cleaning_frequency'],
+                profile['cleaning_sensitivity'], profile['smoking_status'], profile['noise_sensitivity'],
+                profile['personality_type'], profile['lifestyle_type'], profile['budget_range'], True
+            ))
+            
+            print(f"Created test user: {user_data['name']} (ID: {user_id})")
+            
+        except Exception as e:
+            print(f"Error creating user {user_data['name']}: {e}")
+    
+    conn.commit()
+    
+    # 테스트 찜하기 데이터 생성 (첫 번째 방을 여러 사용자가 찜하도록)
+    cursor.execute("SELECT room_id FROM rooms LIMIT 1")
+    first_room = cursor.fetchone()
+    
+    if first_room:
+        room_id = first_room[0]
+        # 사용자 2, 3, 4, 5가 첫 번째 방을 찜하도록 설정
+        test_favorites = [(2, room_id), (3, room_id), (4, room_id), (5, room_id)]
+        
+        for user_id, room_id in test_favorites:
+            try:
+                cursor.execute(
+                    "INSERT INTO favorites (user_id, room_id) VALUES (?, ?)",
+                    (user_id, room_id)
+                )
+                # 방의 찜 횟수 증가
+                cursor.execute(
+                    "UPDATE rooms SET favorite_count = favorite_count + 1 WHERE room_id = ?",
+                    (room_id,)
+                )
+            except Exception as e:
+                print(f"Error creating favorite for user {user_id}: {e}")
+    
+    conn.commit()
+    print("Test users, profiles, and favorites created successfully!")
