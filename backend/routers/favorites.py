@@ -175,8 +175,7 @@ async def get_room_favorites(room_id: str):
         # 찜한 사용자들 조회 (users 테이블과 조인)
         cursor.execute(
             """
-            SELECT f.user_id, u.nickname, u.age, u.gender, u.occupation,
-                   u.profile_image, f.created_at
+            SELECT f.user_id, u.name, f.created_at
             FROM favorites f
             JOIN users u ON f.user_id = u.id
             WHERE f.room_id = ?             ORDER BY f.created_at DESC
@@ -186,18 +185,18 @@ async def get_room_favorites(room_id: str):
 
         results = cursor.fetchall()
 
-        # FavoriteUser 모델로 변환
+        # FavoriteUser 모델로 변환 (기본값 사용)
         favorite_users = []
         for row in results:
             user = FavoriteUser(
                 user_id=row[0],
-                nickname=row[1] or "Unknown",
-                age=row[2],
-                gender=row[3],
-                occupation=row[4],
-                profile_image=row[5],
+                nickname=row[1] or "Unknown",  # name을 nickname으로 사용
+                age=22,  # 기본값
+                gender="Unknown",  # 기본값
+                occupation="대학생",  # 기본값
+                profile_image=None,  # 기본값
                 matching_score=0,  # 나중에 매칭 알고리즘 구현
-                favorite_date=row[6],
+                favorite_date=row[2],
             )
             favorite_users.append(user)
 
