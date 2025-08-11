@@ -294,9 +294,9 @@ async def get_matched_roommates(room_id: str):
         # 나 자신은 제외 (문자열과 정수 모두 고려)
         favorite_users = [user for user in favorite_users if str(user.user_id) != str(user_id)]
 
-        # 고도화된 매칭 알고리즘 사용
+        # 6개 요소 매칭 알고리즘 사용
         from database.connection import get_user_profile
-        from utils.matching_enhanced import calculate_compatibility
+        from utils.matching import calculate_compatibility
         
         user_profile = get_user_profile(user_id)
         if user_profile and user_profile.is_complete:
