@@ -13,17 +13,33 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "이 앱은 매물 위치를 표시하기 위해 위치 정보가 필요합니다."
+        }
+      ]
+    ]
   }
 }
