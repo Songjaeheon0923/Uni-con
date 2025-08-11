@@ -37,7 +37,7 @@ export default function ProfileScreen({ user, onLogout }) {
   const loadFavorites = async () => {
     setLoading(true);
     try {
-      const favoriteData = await ApiService.getUserFavorites(userData.id);
+      const favoriteData = await ApiService.getUserFavorites(String(userData.id));
       setFavorites(favoriteData);
     } catch (error) {
       console.error('찜 목록 로드 실패:', error);
@@ -57,7 +57,7 @@ export default function ProfileScreen({ user, onLogout }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await ApiService.removeFavorite(roomId, userData.id);
+              await ApiService.removeFavorite(roomId, String(userData.id));
               setFavorites(favorites.filter(room => room.room_id !== roomId));
               Alert.alert('성공', '찜 목록에서 제거되었습니다.');
             } catch (error) {

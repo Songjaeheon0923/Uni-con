@@ -65,7 +65,7 @@ export default function HomeScreen({ navigation, user }) {
 
   const loadFavorites = async () => {
     try {
-      const favoriteData = await ApiService.getUserFavorites(userData.id);
+      const favoriteData = await ApiService.getUserFavorites(String(String(userData.id)));
       setFavorites(favoriteData.map(room => room.room_id));
     } catch (error) {
       console.error('찜 목록 로드 실패:', error);
@@ -84,10 +84,10 @@ export default function HomeScreen({ navigation, user }) {
     
     try {
       if (isFavorited) {
-        await ApiService.removeFavorite(roomId, userData.id);
+        await ApiService.removeFavorite(roomId, String(userData.id));
         setFavorites(favorites.filter(id => id !== roomId));
       } else {
-        await ApiService.addFavorite(roomId, userData.id);
+        await ApiService.addFavorite(roomId, String(userData.id));
         setFavorites([...favorites, roomId]);
       }
     } catch (error) {
