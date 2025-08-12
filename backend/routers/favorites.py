@@ -163,40 +163,42 @@ async def get_room_favorites(room_id: str):
 
     try:
         # 방이 존재하는지 확인
-        cursor.execute(
-            "SELECT room_id FROM rooms WHERE room_id = ?", (room_id,)
-        )
+        cursor.execute("SELECT room_id FROM rooms WHERE room_id = ?", (room_id,))
         room_exists = cursor.fetchone()
         if not room_exists:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
             )
 
-        # 찜한 사용자들 조회 (users 테이블과 조인)
+        # 찜한 사용자들 조회 (users 테이블과 user_profiles 테이블 조인)
         cursor.execute(
             """
-            SELECT f.user_id, u.name, f.created_at
+            SELECT f.user_id, u.name, f.created_at, up.age, up.gender
             FROM favorites f
             JOIN users u ON f.user_id = u.id
-            WHERE f.room_id = ?             ORDER BY f.created_at DESC
+            LEFT JOIN user_profiles up ON f.user_id = up.user_id
+            WHERE f.room_id = ?
+            ORDER BY f.created_at DESC
         """,
             (room_id,),
         )
 
         results = cursor.fetchall()
 
-        # FavoriteUser 모델로 변환 (기본값 사용)
+        # FavoriteUser 모델로 변환 (실제 데이터 사용)
         favorite_users = []
         for row in results:
             user = FavoriteUser(
                 user_id=str(row[0]),  # integer를 string으로 변환
                 nickname=row[1] or "Unknown",  # name을 nickname으로 사용
-                age=22,  # 기본값
-                gender="Unknown",  # 기본값
-                occupation="대학생",  # 기본값
+                age=row[3] if row[3] is not None else 22,  # 실제 age 데이터 또는 기본값
+                gender=row[4] if row[4] is not None else "Unknown",  # 실제 gender 데이터 또는 기본값
+                occupation="대학생",  # 기본값 (occupation 컬럼이 없으므로)
                 profile_image=None,  # 기본값
                 matching_score=0,  # 나중에 매칭 알고리즘 구현
-                favorite_date=str(row[2]) if row[2] else "",  # datetime을 string으로 변환
+                favorite_date=(
+                    str(row[2]) if row[2] else ""
+                ),  # datetime을 string으로 변환
             )
             favorite_users.append(user)
 
@@ -292,24 +294,29 @@ async def get_matched_roommates(room_id: str):
         favorite_users = await get_room_favorites(room_id)
 
         # 나 자신은 제외 (문자열과 정수 모두 고려)
-        favorite_users = [user for user in favorite_users if str(user.user_id) != str(user_id)]
+        favorite_users = [
+            user for user in favorite_users if str(user.user_id) != str(user_id)
+        ]
 
         # 6개 요소 매칭 알고리즘 사용
         from database.connection import get_user_profile
         from utils.matching import calculate_compatibility
-        
+
         user_profile = get_user_profile(user_id)
         if user_profile and user_profile.is_complete:
             for user in favorite_users:
                 other_profile = get_user_profile(int(user.user_id))
                 if other_profile and other_profile.is_complete:
                     compatibility = calculate_compatibility(user_profile, other_profile)
-                    user.matching_score = int(compatibility * 100)  # 0-1을 0-100으로 변환
+                    user.matching_score = int(
+                        compatibility * 100
+                    )  # 0-1을 0-100으로 변환
                 else:
                     user.matching_score = 0  # 프로필이 완성되지 않은 경우
         else:
             # 현재 사용자의 프로필이 완성되지 않은 경우 랜덤 점수
             import random
+
             for user in favorite_users:
                 user.matching_score = random.randint(50, 80)
 

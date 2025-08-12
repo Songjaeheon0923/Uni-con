@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from models.user import UserCreate, UserLogin, User
 from database.connection import get_user_by_email, create_user
 from utils.security import verify_password, get_password_hash
+from utils.auth import create_access_token
 import session
 
 router = APIRouter()
@@ -27,7 +28,7 @@ async def signup(user_data: UserCreate):
     return User(id=user["id"], email=user["email"], name=user["name"])
 
 
-@router.post("/login", response_model=User)
+@router.post("/login")
 async def login(user_data: UserLogin):
     user = get_user_by_email(user_data.email)
     if not user or not verify_password(user_data.password, user["hashed_password"]):
@@ -36,14 +37,23 @@ async def login(user_data: UserLogin):
             detail="Incorrect email or password"
         )
     
-    # 간단한 세션에 사용자 정보 저장 (MVP용)
+    # JWT 토큰 생성
+    access_token = create_access_token(user["id"], user["email"])
+    
+    # 세션에도 저장 (하위 호환성)
     session.current_user_session = {
         "id": user["id"],
         "email": user["email"], 
         "name": user["name"]
     }
     
-    return User(id=user["id"], email=user["email"], name=user["name"])
+    return {
+        "user_id": user["id"],
+        "email": user["email"],
+        "name": user["name"],
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 
 @router.post("/logout")
