@@ -49,6 +49,25 @@ def init_db():
         )
     ''')
     
+    # 새로운 user_info 테이블 (한줄 소개 및 내 정보)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_info (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            bio TEXT DEFAULT '',
+            current_location TEXT DEFAULT '',
+            desired_location TEXT DEFAULT '',
+            budget TEXT DEFAULT '',
+            move_in_date TEXT DEFAULT '',
+            lifestyle TEXT DEFAULT '',
+            roommate_preference TEXT DEFAULT '',
+            introduction TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     # rooms 테이블 생성
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rooms (
@@ -253,6 +272,12 @@ def create_user(user_data: UserCreate, hashed_password: str):
         # 빈 프로필 생성
         cursor.execute(
             "INSERT INTO user_profiles (user_id) VALUES (?)",
+            (user_id,)
+        )
+        
+        # 빈 사용자 정보 생성
+        cursor.execute(
+            "INSERT INTO user_info (user_id) VALUES (?)",
             (user_id,)
         )
         conn.commit()
@@ -573,3 +598,69 @@ def create_test_users_and_profiles(cursor, conn):
     
     conn.commit()
     print("Test users, profiles, and favorites created successfully!")
+
+
+def get_user_info(user_id: int):
+    """사용자 정보 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT bio, current_location, desired_location, budget, 
+               move_in_date, lifestyle, roommate_preference, introduction
+        FROM user_info WHERE user_id = ?
+    """, (user_id,))
+    info = cursor.fetchone()
+    conn.close()
+    
+    if info:
+        return {
+            "bio": info[0] or "",
+            "current_location": info[1] or "",
+            "desired_location": info[2] or "",
+            "budget": info[3] or "",
+            "move_in_date": info[4] or "",
+            "lifestyle": info[5] or "",
+            "roommate_preference": info[6] or "",
+            "introduction": info[7] or ""
+        }
+    return None
+
+
+def update_user_info(user_id: int, info_data: dict) -> bool:
+    """사용자 정보 업데이트"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # 기존 정보가 있는지 확인
+        cursor.execute("SELECT id FROM user_info WHERE user_id = ?", (user_id,))
+        existing = cursor.fetchone()
+        
+        if not existing:
+            # 정보가 없으면 새로 생성
+            cursor.execute("INSERT INTO user_info (user_id) VALUES (?)", (user_id,))
+        
+        # 업데이트할 필드들 준비
+        updates = []
+        values = []
+        
+        for field, value in info_data.items():
+            if field in ['bio', 'current_location', 'desired_location', 'budget', 
+                        'move_in_date', 'lifestyle', 'roommate_preference', 'introduction']:
+                updates.append(f"{field} = ?")
+                values.append(value)
+        
+        if updates:
+            values.append(user_id)
+            query = f"UPDATE user_info SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?"
+            cursor.execute(query, values)
+            conn.commit()
+        
+        conn.close()
+        return True
+        
+    except Exception as e:
+        print(f"Error updating user info: {e}")
+        conn.rollback()
+        conn.close()
+        return False

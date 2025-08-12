@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from models.user import User
 from pydantic import BaseModel
 import session
-from database.connection import get_db_connection
+from database.connection import get_db_connection, get_user_info, update_user_info
 
 router = APIRouter()
 
@@ -97,3 +97,80 @@ async def update_profile(profile_data: dict):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
+
+@router.get("/info/me")
+async def get_my_info():
+    """사용자 정보 조회"""
+    if session.current_user_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not logged in"
+        )
+    
+    user_id = session.current_user_session["id"]
+    user_info = get_user_info(user_id)
+    
+    if user_info is None:
+        # 정보가 없으면 빈 정보 반환
+        user_info = {
+            "bio": "",
+            "current_location": "",
+            "desired_location": "",
+            "budget": "",
+            "move_in_date": "",
+            "lifestyle": "",
+            "roommate_preference": "",
+            "introduction": ""
+        }
+    
+    return user_info
+
+
+@router.put("/info/me")
+async def update_my_info(info_data: dict):
+    """사용자 정보 업데이트"""
+    if session.current_user_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not logged in"
+        )
+    
+    user_id = session.current_user_session["id"]
+    print(f"Updating user info for user_id: {user_id}")
+    print(f"Info data received: {info_data}")
+    
+    try:
+        success = update_user_info(user_id, info_data)
+        if success:
+            return {"message": "User info updated successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update user info")
+    except Exception as e:
+        print(f"Error updating user info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/bio/me")
+async def update_my_bio(bio_data: dict):
+    """한줄 소개만 업데이트"""
+    if session.current_user_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not logged in"
+        )
+    
+    user_id = session.current_user_session["id"]
+    bio = bio_data.get("bio", "").strip()
+    print(f"Updating bio for user_id: {user_id}")
+    print(f"Bio data: {bio}")
+    
+    try:
+        success = update_user_info(user_id, {"bio": bio})
+        if success:
+            return {"message": "Bio updated successfully", "bio": bio}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update bio")
+    except Exception as e:
+        print(f"Error updating bio: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

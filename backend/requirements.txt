@@ -1,7 +1,8 @@
 fastapi
 uvicorn[standard]
 pydantic[email]
-passlib[bcrypt]
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 python-multipart
 sqlalchemy
 PyJWT==2.8.0
