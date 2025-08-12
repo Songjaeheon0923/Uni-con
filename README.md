@@ -22,16 +22,11 @@ Uni-con은 대학생들이 생활 패턴과 성향을 기반으로 최적의 룸
 
 - **FastAPI** - 고성능 Python 웹 프레임워크
 - **SQLite** - 경량 데이터베이스
+- **JWT** - JSON Web Token 인증
 - **bcrypt** - 보안 비밀번호 해싱
 - **Pydantic** - 데이터 검증 및 설정 관리
 
 ### Frontend
-
-#### Web (frontend-test)
-- **Vanilla JavaScript** - 순수 자바스크립트 SPA
-- **Bootstrap 5** - 모던 UI 컴포넌트
-- **CSS3** - 커스텀 스타일링
-- **HTML5** - 시맨틱 마크업
 
 #### Mobile (frontend-react-native)
 - **React Native** - 크로스 플랫폼 모바일 개발
@@ -59,18 +54,13 @@ pip install -r requirements.txt
 python main.py
 
 # 새 터미널을 열고:
-# 3-A. 웹 프론트엔드 실행
-cd frontend-test
-python serve.py
-
-# 또는
-# 3-B. 모바일 앱 실행
+# 3. 모바일 앱 실행
 cd frontend-react-native
 npm install
 cp .env.example .env  # 환경변수 설정 후 IP 주소 수정 필요
 npx expo start
 
-# 4. 웹: http://localhost:3000 또는 모바일: Expo Go 앱으로 접속
+# 4. 모바일: Expo Go 앱으로 접속
 ```
 
 ### 단계별 실행 (상세)
@@ -97,21 +87,7 @@ python main.py
 
 ✅ 백엔드 서버가 **http://0.0.0.0:8080** (모든 인터페이스)에서 실행되어 모바일에서도 접근 가능합니다.
 
-### 3. 프론트엔드 서버 실행 (새 터미널)
-
-#### Option A: 웹 버전 실행
-
-```bash
-# 웹 프론트엔드 디렉토리로 이동
-cd frontend-test
-
-# 웹 프론트엔드 서버 실행
-python serve.py
-```
-
-✅ 웹 프론트엔드가 **http://localhost:3000**에서 실행됩니다.
-
-#### Option B: 모바일 앱 실행
+### 3. 모바일 앱 실행 (새 터미널)
 
 ```bash
 # React Native 디렉토리로 이동
@@ -135,7 +111,6 @@ npx expo start
 
 ### 4. 서비스 접속
 
-- **웹**: 브라우저에서 **http://localhost:3000**으로 접속
 - **모바일**: Expo Go 앱으로 QR 코드 스캔하여 접속
 
 ## 🚨 모바일 개발 환경 설정
@@ -162,7 +137,7 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080  # 본인의 IP로 변경
 **"Network request failed" 오류 시 확인사항:**
 
 1. ✅ 백엔드 서버가 `0.0.0.0:8080`에서 실행 중인지 확인
-2. ✅ `.env` 파일의 IP 주소가 올바른지 확인  
+2. ✅ `.env` 파일의 IP 주소가 올바른지 확인
 3. ✅ 모바일과 컴퓨터가 같은 Wi-Fi에 연결되어 있는지 확인
 4. ✅ 방화벽이 8080 포트를 차단하지 않는지 확인
 
@@ -187,7 +162,7 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080  # 본인의 IP로 변경
 ### 3. 룸메이트 매칭 및 채팅
 
 - 완성된 프로필을 바탕으로 호환성 점수 계산
-- 0.0~1.0 범위의 상세한 매칭 점수 표시  
+- 0.0~1.0 범위의 상세한 매칭 점수 표시
 - 찜한 방에서 매칭된 룸메이트 목록 조회
 - 실시간 채팅으로 즉시 소통 가능
 
@@ -202,21 +177,19 @@ Uni-con/
 │   ├── 📂 routers/               # API 라우터들
 │   │   ├── auth.py               # 인증 API
 │   │   ├── users.py              # 사용자 API
-│   │   └── profile.py            # 프로필 API
+│   │   ├── profile.py            # 프로필 API
+│   │   ├── rooms.py              # 방/매물 API
+│   │   └── favorites.py          # 찜하기 API
 │   ├── 📂 models/                # 데이터 모델
 │   ├── 📂 database/              # DB 연결 관리
-│   └── 📂 utils/                 # 유틸리티 함수
-├── 📁 frontend-test/               # 웹 프론트엔드 (테스트)
-│   ├── 🌐 index.html             # 메인 페이지
-│   ├── ⚡ script.js              # JavaScript 로직
-│   ├── 🎨 style.css              # 커스텀 스타일
-│   └── 🐍 serve.py               # 개발 서버
+│   └── 📂 utils/                 # 유틸리티 함수 (JWT, 보안, 매칭)
 ├── 📁 frontend-react-native/       # 모바일 앱 (React Native)
 │   ├── 📱 App.js                 # 메인 앱 컴포넌트
 │   ├── 📄 package.json           # 의존성 관리
 │   ├── 🔧 .env.example          # 환경변수 예시
 │   ├── 📂 src/                   # 소스 코드
 │   │   ├── 📂 components/        # 재사용 가능한 컴포넌트
+│   │   ├── 📂 contexts/          # 전역 상태 관리 (AuthContext)
 │   │   ├── 📂 screens/           # 화면 컴포넌트 (Home, Map, Profile, Login, Signup 등)
 │   │   ├── 📂 services/          # API 서비스
 │   │   └── 📂 data/              # 더미 데이터
@@ -308,6 +281,12 @@ CREATE TABLE user_profiles (
     cleaning_sensitivity TEXT,
     smoking_status TEXT,
     noise_sensitivity TEXT,
+    age INTEGER,
+    gender TEXT,
+    gender_preference TEXT,
+    personality_type TEXT,
+    lifestyle_type TEXT,
+    budget_range TEXT,
     is_complete BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -348,8 +327,10 @@ CREATE TABLE favorites (
 
 ## 🔒 보안 특징
 
+- **JWT 토큰 인증**: 상태 비저장 인증 시스템
 - **bcrypt 해싱**: 안전한 비밀번호 저장
-- **세션 기반 인증**: 간단하고 안전한 로그인 관리
+- **자동 세션 검증**: 앱 시작 시 토큰 유효성 확인
+- **401 에러 처리**: 자동 로그아웃 및 재로그인 유도
 - **입력 검증**: Pydantic을 통한 데이터 유효성 검사
 - **CORS 설정**: 안전한 크로스 오리진 요청 처리
 
@@ -379,7 +360,6 @@ sqlite3 users.db "SELECT * FROM user_profiles;"
 
 ## 🚧 현재 제한사항 (MVP)
 
-- **단일 세션**: 서버 재시작시 로그인 해제
 - **SQLite 사용**: 개발용 데이터베이스
 - **목 상태 채팅**: 실제 메시징 기능 없음
 - **부동산 더미 데이터**: 실제 API 연동 안됨
@@ -388,7 +368,7 @@ sqlite3 users.db "SELECT * FROM user_profiles;"
 
 ### Phase 1: 프로덕션 준비
 
-- [ ] JWT 토큰 인증 시스템
+- [x] JWT 토큰 인증 시스템
 - [ ] PostgreSQL 데이터베이스 마이그레이션
 - [ ] Docker 컨테이너화
 - [ ] 환경 변수 설정
