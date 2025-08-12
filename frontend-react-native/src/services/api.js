@@ -5,17 +5,43 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8
 console.log('🌐 API_BASE_URL:', API_BASE_URL);
 
 class ApiService {
+  constructor() {
+    this.authErrorHandler = null;
+    this.authToken = null;
+  }
+
+  setAuthErrorHandler(handler) {
+    this.authErrorHandler = handler;
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
+  }
+
   async request(endpoint, options = {}) {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+
+      // 토큰이 있으면 Authorization 헤더 추가
+      if (this.authToken) {
+        headers['Authorization'] = `Bearer ${this.authToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       if (!response.ok) {
+        // 401 Unauthorized 에러 처리
+        if (response.status === 401 && this.authErrorHandler) {
+          console.log('401 에러 감지 - 세션 만료');
+          this.authErrorHandler();
+        }
+        
         // 에러 응답의 본문을 읽어서 상세 정보 확인
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {

@@ -12,13 +12,14 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ApiService from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function LoginScreen({ navigation, onLogin }) {
+export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -28,10 +29,12 @@ export default function LoginScreen({ navigation, onLogin }) {
 
     setIsLoading(true);
     try {
-      const user = await ApiService.login({ email, password });
-      Alert.alert('로그인 성공', `${user.name}님 환영합니다!`, [
-        { text: '확인', onPress: () => onLogin(user) }
-      ]);
+      const result = await login({ email, password });
+      if (result.success) {
+        Alert.alert('로그인 성공', `${result.user.name}님 환영합니다!`);
+      } else {
+        Alert.alert('로그인 실패', result.error || '이메일 또는 비밀번호가 올바르지 않습니다.');
+      }
     } catch (error) {
       console.error('로그인 실패:', error);
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import HomeScreen from "./src/screens/HomeScreen";
 import MapScreen from "./src/screens/MapScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
@@ -13,6 +13,7 @@ import MatchResultsScreen from "./src/screens/MatchResultsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
 import ChatScreen from "./src/screens/ChatScreen";
+import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -64,22 +65,21 @@ function HomeStack({ user }) {
   );
 }
 
-function AuthStack({ onLogin }) {
+function AuthStack() {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Stack.Screen name="Login">
-        {(props) => <LoginScreen {...props} onLogin={onLogin} />}
-      </Stack.Screen>
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
     </Stack.Navigator>
   );
 }
 
-function MainApp({ user, onLogout }) {
+function MainApp() {
+  const { user, logout } = useAuth();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -133,50 +133,19 @@ function MainApp({ user, onLogout }) {
           },
         }}
       >
-        {(props) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
+        {(props) => <ProfileScreen {...props} user={user} onLogout={logout} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
 }
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+function AppContent() {
+  const { user, isLoading, isAuthenticated, handleUnauthorized } = useAuth();
 
   useEffect(() => {
-    checkAuthState();
-  }, []);
-
-  const checkAuthState = async () => {
-    try {
-      const savedUser = await AsyncStorage.getItem('user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      }
-    } catch (error) {
-      console.error('인증 상태 확인 실패:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogin = async (userData) => {
-    try {
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      console.error('로그인 정보 저장 실패:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('user');
-      setUser(null);
-    } catch (error) {
-      console.error('로그아웃 실패:', error);
-    }
-  };
+    // API 서비스에 401 에러 핸들러 등록
+    api.setAuthErrorHandler(handleUnauthorized);
+  }, [handleUnauthorized]);
 
   if (isLoading) {
     return null; // 또는 로딩 스피너
@@ -184,11 +153,19 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      {user ? (
-        <MainApp user={user} onLogout={handleLogout} />
+      {isAuthenticated && user ? (
+        <MainApp />
       ) : (
-        <AuthStack onLogin={handleLogin} />
+        <AuthStack />
       )}
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
