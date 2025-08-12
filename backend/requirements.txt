@@ -4,3 +4,4 @@ pydantic[email]
 passlib[bcrypt]
 python-multipart
 sqlalchemy
+PyJWT==2.8.0
