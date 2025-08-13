@@ -15,8 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(process.env.EXPO_PUBLIC_EMAIL || '');
+  const [password, setPassword] = useState(process.env.EXPO_PUBLIC_PASSWORD || '');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();

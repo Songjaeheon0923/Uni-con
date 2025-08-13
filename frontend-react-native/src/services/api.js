@@ -171,6 +171,26 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // 사용자 정보 관련 API
+  async getUserInfo() {
+    return this.request('/users/info/me');
+  }
+
+  async updateUserInfo(infoData) {
+    return this.request('/users/info/me', {
+      method: 'PUT',
+      body: JSON.stringify(infoData),
+    });
+  }
+
+  // 한줄 소개만 업데이트
+  async updateUserBio(bio) {
+    return this.request('/users/bio/me', {
+      method: 'PUT',
+      body: JSON.stringify({ bio: bio }),
+    });
+  }
 }
 
 export default new ApiService();

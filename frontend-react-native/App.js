@@ -125,12 +125,18 @@ function MainApp() {
           headerShown: true,
           headerTitle: '내 정보',
           headerStyle: {
-            backgroundColor: '#FF6600',
+            backgroundColor: '#FFFFFF',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: '#E0E0E0',
           },
-          headerTintColor: '#fff',
+          headerTintColor: '#000',
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontWeight: '600',
+            fontSize: 18,
           },
+          headerTransparent: false,
         }}
       >
         {(props) => <ProfileScreen {...props} user={user} onLogout={logout} />}

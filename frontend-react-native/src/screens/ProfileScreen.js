@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
@@ -7,14 +7,51 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Alert,
-  FlatList 
+  FlatList,
+  TextInput,
+  Image,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import ApiService from "../services/api";
 
+// 인증 체크 컴포넌트
+const VerificationCheck = ({ verified = true }) => (
+  <View style={styles.verificationCheck}>
+    <Ionicons 
+      name={verified ? "checkmark-circle" : "close-circle"} 
+      size={20} 
+      color={verified ? "#4CAF50" : "#F44336"} 
+    />
+  </View>
+);
+
 export default function ProfileScreen({ user, onLogout }) {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [bio, setBio] = useState('');
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  
+  // 내 정보 데이터
+  const [infoData, setInfoData] = useState({
+    currentLocation: '',
+    desiredLocation: '',
+    budget: '',
+    moveInDate: '',
+    lifestyle: '',
+    roommate: ''
+  });
+  
+  // 자기소개 데이터
+  const [introduction, setIntroduction] = useState('');
+  const [isEditingIntroduction, setIsEditingIntroduction] = useState(false);
+  
+  // refs
+  const scrollViewRef = useRef(null);
+  const introductionInputRef = useRef(null);
+  const bioInputRef = useRef(null);
   
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user ? {
@@ -33,7 +70,73 @@ export default function ProfileScreen({ user, onLogout }) {
 
   useEffect(() => {
     loadFavorites();
+    loadUserInfo();
   }, []);
+
+  // 한줄 소개만 저장하는 함수
+  const saveBio = async () => {
+    try {
+      const trimmedBio = bio.trim() || '';
+      await ApiService.updateUserBio(trimmedBio);
+      setBio(trimmedBio);
+      return true;
+    } catch (error) {
+      console.error('한줄 소개 저장 실패:', error);
+      Alert.alert('오류', '한줄 소개 저장에 실패했습니다.');
+      return false;
+    }
+  };
+
+  // 공통 저장 함수
+  const saveUserInfo = async () => {
+    try {
+      const saveData = {
+        bio: bio.trim() || '',
+        current_location: infoData.currentLocation.trim() || '',
+        desired_location: infoData.desiredLocation.trim() || '',
+        budget: infoData.budget.trim() || '',
+        move_in_date: infoData.moveInDate.trim() || '',
+        lifestyle: infoData.lifestyle.trim() || '',
+        roommate_preference: infoData.roommate.trim() || '',
+        introduction: introduction.trim() || ''
+      };
+      await ApiService.updateUserInfo(saveData);
+      // 저장 후 상태를 trim된 값으로 업데이트
+      setBio(saveData.bio);
+      setInfoData({
+        currentLocation: saveData.current_location,
+        desiredLocation: saveData.desired_location,
+        budget: saveData.budget,
+        moveInDate: saveData.move_in_date,
+        lifestyle: saveData.lifestyle,
+        roommate: saveData.roommate_preference
+      });
+      setIntroduction(saveData.introduction);
+      return true;
+    } catch (error) {
+      console.error('사용자 정보 저장 실패:', error);
+      Alert.alert('오류', '정보 저장에 실패했습니다.');
+      return false;
+    }
+  };
+
+  const loadUserInfo = async () => {
+    try {
+      const userInfo = await ApiService.getUserInfo();
+      setInfoData({
+        currentLocation: userInfo.current_location || '',
+        desiredLocation: userInfo.desired_location || '',
+        budget: userInfo.budget || '',
+        moveInDate: userInfo.move_in_date || '',
+        lifestyle: userInfo.lifestyle || '',
+        roommate: userInfo.roommate_preference || ''
+      });
+      setBio(userInfo.bio || '');
+      setIntroduction(userInfo.introduction || '');
+    } catch (error) {
+      console.error('사용자 정보 로드 실패:', error);
+    }
+  };
 
   // 화면이 포커스될 때마다 찜 목록 새로고침
   useFocusEffect(
@@ -140,272 +243,735 @@ export default function ProfileScreen({ user, onLogout }) {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 프로필 헤더 */}
-      <View style={styles.header}>
-        <View style={styles.profileImageContainer}>
-          <Ionicons name="person-circle" size={80} color="#FF6600" />
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* 프로필 영역 */}
+        <View style={styles.profileSection}>
+          {/* 프로필 이미지 */}
+          <View style={styles.profileImageContainer}>
+            <Ionicons name="person-circle" size={150} color="#ddd" />
+          </View>
+          
+          {/* 이름과 인증 */}
+          <View style={styles.nameContainer}>
+            <View style={styles.nameRow}>
+              <Text style={styles.userName}>{userData.name}</Text>
+              <VerificationCheck verified={true} />
+            </View>
+          </View>
+          
+          {/* 태그 컨테이너 */}
+          <View style={styles.tagContainer}>
+            {/* 메인 태그와 버튼 */}
+            <View style={styles.tagHeader}>
+              <Text style={styles.mainTagText}>청결을 중시하는 올빼미</Text>
+              <TouchableOpacity style={styles.retestButton}>
+                <Text style={styles.retestButtonText}>다시 테스트하기</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* 서브 태그들 */}
+            <View style={styles.subTagsContainer}>
+              <View style={styles.subTagRow}>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>정갈함</Text>
+                </View>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>야행성</Text>
+                </View>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>과묵함</Text>
+                </View>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>조용함</Text>
+                </View>
+              </View>
+              <View style={styles.subTagRow}>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>집에서 잘 나가지 않음</Text>
+                </View>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>잠이 없어요</Text>
+                </View>
+                <View style={styles.subTag}>
+                  <Text style={styles.subTagText}>비둘기</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          
+          {/* 기본 정보 */}
+          <View style={styles.basicInfoRow}>
+            <Text style={styles.basicInfoText}>20대 초반, 여성, 고려대학교</Text>
+            <VerificationCheck verified={true} />
+          </View>
+
+          {/* 한줄 소개 */}
+          <View style={styles.bioSection}>
+            <View style={styles.bioHeader}>
+              <Text style={styles.bioLabel}>한줄 소개</Text>
+              <TouchableOpacity 
+                style={[styles.editBioButton, isEditingBio && styles.saveButton]}
+                onPress={async () => {
+                  if (isEditingBio) {
+                    const success = await saveBio();
+                    if (success) {
+                      setIsEditingBio(false);
+                      console.log('한줄 소개 저장 완료');
+                    }
+                  } else {
+                    setIsEditingBio(true);
+                    setTimeout(() => {
+                      bioInputRef.current?.focus();
+                    }, 100);
+                  }
+                }}
+              >
+                <Text style={[styles.editBioButtonText, isEditingBio && styles.saveButtonText]}>
+                  {isEditingBio ? '저장하기' : '수정하기'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {isEditingBio ? (
+              <View>
+                <TextInput
+                  ref={bioInputRef}
+                  style={styles.bioInput}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="한줄 소개를 입력해주세요"
+                  maxLength={40}
+                  multiline={false}
+                  returnKeyType="done"
+                  onSubmitEditing={async () => {
+                    const success = await saveBio();
+                    if (success) {
+                      setIsEditingBio(false);
+                    }
+                  }}
+                />
+                <Text style={styles.characterCount}>({bio.length}/40)</Text>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.bioTextContainer}
+                onPress={() => {
+                  setIsEditingBio(true);
+                  setTimeout(() => {
+                    bioInputRef.current?.focus();
+                  }, 100);
+                }}
+              >
+                <Text style={styles.bioText}>
+                  {bio || '한줄 소개를 입력해주세요'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            
+            {/* 구분선 */}
+            <View style={styles.divider} />
+          </View>
         </View>
-        <Text style={styles.userName}>{userData.name}</Text>
-        <Text style={styles.userEmail}>{userData.email}</Text>
-      </View>
 
-      {/* 기본 정보 */}
-      <ProfileSection title="기본 정보">
-        <ProfileItem 
-          icon="school" 
-          label="대학교" 
-          value={userData.university}
-          onPress={() => Alert.alert('정보', '대학교 정보를 수정할 수 있습니다.')}
-        />
-        <ProfileItem 
-          icon="calendar" 
-          label="나이" 
-          value={`${userData.age}세`}
-          onPress={() => Alert.alert('정보', '나이 정보를 수정할 수 있습니다.')}
-        />
-        <ProfileItem 
-          icon="settings" 
-          label="프로필 설정" 
-          value="완료"
-          onPress={() => Alert.alert('프로필', '라이프스타일 설문을 다시 진행할 수 있습니다.')}
-        />
-      </ProfileSection>
-
-      {/* 찜 목록 */}
-      <ProfileSection title={`내 찜 목록 (${favorites.length}개)`}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>찜 목록을 불러오는 중...</Text>
+        {/* 내 정보 섹션 */}
+        <View style={styles.infoSection}>
+          <View style={styles.infoSectionHeader}>
+            <Text style={styles.infoSectionTitle}>내 정보</Text>
+            <TouchableOpacity 
+              style={[styles.editInfoButton, isEditingInfo && styles.saveButton]}
+              onPress={async () => {
+                if (isEditingInfo) {
+                  const success = await saveUserInfo();
+                  if (success) {
+                    setIsEditingInfo(false);
+                    console.log('사용자 정보 저장 완료');
+                  }
+                } else {
+                  setIsEditingInfo(true);
+                }
+              }}
+            >
+              <Text style={[styles.editInfoButtonText, isEditingInfo && styles.saveButtonText]}>
+                {isEditingInfo ? '저장하기' : '수정하기'}
+              </Text>
+            </TouchableOpacity>
           </View>
-        ) : favorites.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="heart-outline" size={40} color="#ccc" />
-            <Text style={styles.emptyText}>찜한 방이 없습니다</Text>
-            <Text style={styles.emptySubtext}>마음에 드는 방을 찜해보세요!</Text>
+          
+          <View style={styles.infoContainer}>
+            <View style={styles.infoTable}>
+              <View style={styles.tableRow}>
+                <View style={styles.labelCell}>
+                  <Text style={styles.tableLabel}>현재 거주 지역</Text>
+                </View>
+                <View style={styles.contentCell}>
+                  {isEditingInfo ? (
+                    <TextInput
+                      style={styles.tableInput}
+                      value={infoData.currentLocation}
+                      onChangeText={(text) => setInfoData({...infoData, currentLocation: text})}
+                      placeholder="서울 사당동 인근"
+                      placeholderTextColor="#999"
+                    />
+                  ) : (
+                    <Text style={styles.tableValue}>
+                      {infoData.currentLocation || '입력해주세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.tableRow}>
+                <View style={styles.labelCell}>
+                  <Text style={styles.tableLabel}>희망 거주 지역</Text>
+                </View>
+                <View style={styles.contentCell}>
+                  {isEditingInfo ? (
+                    <TextInput
+                      style={styles.tableInput}
+                      value={infoData.desiredLocation}
+                      onChangeText={(text) => setInfoData({...infoData, desiredLocation: text})}
+                      placeholder="성북.종로.동대문구"
+                      placeholderTextColor="#999"
+                    />
+                  ) : (
+                    <Text style={styles.tableValue}>
+                      {infoData.desiredLocation || '입력해주세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.tableRow}>
+                <View style={styles.labelCell}>
+                  <Text style={styles.tableLabel}>예산 범위</Text>
+                </View>
+                <View style={styles.contentCell}>
+                  {isEditingInfo ? (
+                    <TextInput
+                      style={styles.tableInput}
+                      value={infoData.budget}
+                      onChangeText={(text) => setInfoData({...infoData, budget: text})}
+                      placeholder="월 45만~55만 원 (관리비 포함)"
+                      placeholderTextColor="#999"
+                    />
+                  ) : (
+                    <Text style={styles.tableValue}>
+                      {infoData.budget || '입력해주세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.tableRow}>
+                <View style={styles.labelCell}>
+                  <Text style={styles.tableLabel}>입주 가능일 / 기간</Text>
+                </View>
+                <View style={styles.contentCell}>
+                  {isEditingInfo ? (
+                    <TextInput
+                      style={styles.tableInput}
+                      value={infoData.moveInDate}
+                      onChangeText={(text) => setInfoData({...infoData, moveInDate: text})}
+                      placeholder="2025년 9월 초부터 -최소 1년"
+                      placeholderTextColor="#999"
+                      multiline
+                    />
+                  ) : (
+                    <Text style={styles.tableValue}>
+                      {infoData.moveInDate || '입력해주세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.tableRow}>
+                <View style={styles.labelCell}>
+                  <Text style={styles.tableLabel}>라이프스타일</Text>
+                </View>
+                <View style={styles.contentCell}>
+                  {isEditingInfo ? (
+                    <TextInput
+                      style={styles.tableInput}
+                      value={infoData.lifestyle}
+                      onChangeText={(text) => setInfoData({...infoData, lifestyle: text})}
+                      placeholder={`기상 시간 : 오전 10시 전후\n취침 시간 : 새벽 2시 전후\n청결도 : 물건은 제자리에, 주 1-2회 청소\n흡연 여부 : 비흡연\n반려동물 : 없음`}
+                      placeholderTextColor="#999"
+                      multiline
+                    />
+                  ) : (
+                    <Text style={styles.tableValue}>
+                      {infoData.lifestyle || '입력해주세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.tableRow}>
+                <View style={styles.labelCell}>
+                  <Text style={styles.tableLabel}>원하는 룸메이트</Text>
+                </View>
+                <View style={styles.contentCell}>
+                  {isEditingInfo ? (
+                    <TextInput
+                      style={styles.tableInput}
+                      value={infoData.roommate}
+                      onChangeText={(text) => setInfoData({...infoData, roommate: text})}
+                      placeholder="청결을 중요하게 생각하는 분"
+                      placeholderTextColor="#999"
+                      multiline
+                    />
+                  ) : (
+                    <Text style={styles.tableValue}>
+                      {infoData.roommate || '입력해주세요'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
           </View>
-        ) : (
-          <FlatList
-            data={favorites}
-            renderItem={renderFavoriteItem}
-            keyExtractor={(item) => item.room_id}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-        
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={loadFavorites}
-        >
-          <Ionicons name="refresh" size={16} color="#FF6600" />
-          <Text style={styles.refreshButtonText}>새로고침</Text>
-        </TouchableOpacity>
-      </ProfileSection>
+        </View>
 
-      {/* 앱 설정 */}
-      <ProfileSection title="설정">
-        <ProfileItem 
-          icon="notifications" 
-          label="알림 설정" 
-          value="켜짐"
-          onPress={() => Alert.alert('알림', '알림 설정을 관리할 수 있습니다.')}
-        />
-        <ProfileItem 
-          icon="help-circle" 
-          label="도움말" 
-          value=""
-          onPress={() => Alert.alert('도움말', '자주 묻는 질문과 사용법을 확인할 수 있습니다.')}
-        />
-        <ProfileItem 
-          icon="information-circle" 
-          label="앱 정보" 
-          value="v1.0.0"
-          onPress={() => Alert.alert('앱 정보', 'WEROOM v1.0.0\n대학생을 위한 룸메이트 매칭 앱')}
-        />
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={() => {
-            Alert.alert(
-              '로그아웃',
-              '정말 로그아웃 하시겠습니까?',
-              [
-                { text: '취소', style: 'cancel' },
-                { 
-                  text: '로그아웃', 
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      await ApiService.logout();
-                      onLogout();
-                    } catch (error) {
-                      console.error('로그아웃 실패:', error);
-                      onLogout(); // API 실패해도 로컬에서는 로그아웃 진행
+        {/* 자기소개 섹션 */}
+        <View style={styles.introductionSection}>
+          <View style={styles.introductionSectionHeader}>
+            <Text style={styles.introductionSectionTitle}>자기소개</Text>
+            <TouchableOpacity 
+              style={[styles.editIntroButton, isEditingIntroduction && styles.saveButton]}
+              onPress={async () => {
+                if (isEditingIntroduction) {
+                  const success = await saveUserInfo();
+                  if (success) {
+                    setIsEditingIntroduction(false);
+                    console.log('자기소개 저장 완료');
+                  }
+                } else {
+                  setIsEditingIntroduction(true);
+                  // 편집 모드로 전환 후 자동 포커스 및 스크롤
+                  setTimeout(() => {
+                    introductionInputRef.current?.focus();
+                    // 자기소개 섹션으로 스크롤 (간단한 방법)
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 150);
+                }
+              }}
+            >
+              <Text style={[styles.editIntroButtonText, isEditingIntroduction && styles.saveButtonText]}>
+                {isEditingIntroduction ? '저장하기' : '수정하기'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.introductionContainer}>
+            {isEditingIntroduction ? (
+              <TextInput
+                ref={introductionInputRef}
+                style={styles.introductionInput}
+                value={introduction}
+                onChangeText={setIntroduction}
+                placeholder="저는 조용하고 깔끔한 생활을 선호합니다. 혼자만의 시간도 즐기지만, 좋은 룸메이트와 함께하는 시간도 소중하게 생각합니다. 남들의 패턴이 너무 이상한 것이면 조금은 어려우나 서로 간단한 정도의 요구 정도는 괜찮습니다."
+                placeholderTextColor="#999"
+                multiline
+                textAlignVertical="top"
+                scrollEnabled={true}
+                blurOnSubmit={false}
+                returnKeyType="default"
+                autoFocus={false}
+              />
+            ) : (
+              <Text style={styles.introductionText}>
+                {introduction || '입력해주세요'}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* 설정 */}
+        <View style={styles.settingsSection}>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => {
+              Alert.alert(
+                '로그아웃',
+                '정말 로그아웃 하시겠습니까?',
+                [
+                  { text: '취소', style: 'cancel' },
+                  { 
+                    text: '로그아웃', 
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await ApiService.logout();
+                        onLogout();
+                      } catch (error) {
+                        console.error('로그아웃 실패:', error);
+                        onLogout();
+                      }
                     }
                   }
-                }
-              ]
-            );
-          }}
-        >
-          <View style={styles.profileItemLeft}>
+                ]
+              );
+            }}
+          >
             <Ionicons name="log-out-outline" size={20} color="#ff4757" />
-            <Text style={[styles.profileItemLabel, { color: '#ff4757' }]}>로그아웃</Text>
-          </View>
-        </TouchableOpacity>
-      </ProfileSection>
-    </ScrollView>
+            <Text style={styles.logoutText}>로그아웃</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAFAFA',
+    paddingTop: 0,
   },
-  header: {
-    backgroundColor: '#fff',
+  profileSection: {
     alignItems: 'center',
-    padding: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 30,
   },
   profileImageContainer: {
-    marginBottom: 15,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
     marginBottom: 5,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: '#666',
-  },
-  section: {
-    backgroundColor: '#fff',
-    marginTop: 10,
-    marginHorizontal: 0,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    padding: 20,
-    paddingBottom: 10,
-    backgroundColor: '#f9f9f9',
-  },
-  profileItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  profileItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  profileItemLabel: {
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 15,
-  },
-  profileItemRight: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
-  profileItemValue: {
-    fontSize: 16,
-    color: '#666',
-    marginRight: 10,
-  },
-  favoriteCard: {
-    flexDirection: 'row',
+  nameContainer: {
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 8,
   },
-  favoriteInfo: {
-    flex: 1,
-  },
-  favoriteAddress: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 5,
-  },
-  favoriteDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 3,
-  },
-  favoriteType: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#228B22',
-    marginRight: 10,
-  },
-  favoritePrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  favoriteArea: {
-    fontSize: 14,
-    color: '#666',
-  },
-  removeButton: {
-    padding: 5,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 15,
-    marginBottom: 5,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 30,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  refreshButton: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
-  refreshButtonText: {
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  verificationCheck: {
+    marginLeft: 8,
+  },
+  tagContainer: {
+    backgroundColor: '#E8E8E8',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 8,
+    marginBottom: 20,
+    marginTop: 12,
+    width: '95%',
+    alignSelf: 'center',
+  },
+  tagHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  mainTagText: {
     fontSize: 16,
-    color: '#FF6600',
-    marginLeft: 5,
+    color: '#333',
+    fontWeight: '600',
+    flex: 1,
   },
-  logoutButton: {
+  retestButton: {
+    backgroundColor: '#FF6600',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  retestButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  subTagsContainer: {
+    width: '100%',
+  },
+  subTagRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 8,
+  },
+  subTag: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginHorizontal: 3,
+    marginVertical: 3,
+  },
+  subTagText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '400',
+  },
+  basicInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
+  },
+  basicInfoText: {
+    fontSize: 16,
+    color: '#666',
+    marginRight: 8,
+  },
+  bioSection: {
+    width: '100%',
+  },
+  bioHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bioLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  editButton: {
+    padding: 4,
+  },
+  editBioButton: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  editBioButtonText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  bioInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+    minHeight: 40,
+  },
+  characterCount: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  bioTextContainer: {
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  bioText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  divider: {
+    height: 2,
+    backgroundColor: '#D0D0D0',
+    marginHorizontal: 0,
+    marginTop: 20,
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  infoSection: {
+    marginHorizontal: 4,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  infoSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginHorizontal: 12,
+  },
+  infoSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  editInfoButton: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  editInfoButtonText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  saveButton: {
+    backgroundColor: '#FF6600',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+  },
+  infoContainer: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 4,
+    marginHorizontal: 4,
+  },
+  infoTable: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    minHeight: 60,
+    alignItems: 'stretch',
+  },
+  labelCell: {
+    width: 140,
+    backgroundColor: '#F0F0F0',
     paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#E0E0E0',
+  },
+  tableLabel: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  contentCell: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 15,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+  tableValue: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'left',
+    lineHeight: 20,
+  },
+  tableInput: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'left',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    minHeight: 40,
+    textAlignVertical: 'top',
+  },
+  additionalInfo: {
+    marginTop: 8,
+  },
+  additionalInfoText: {
+    fontSize: 14,
+    color: '#999',
+    marginVertical: 2,
+  },
+  settingsSection: {
+    margin: 16,
+    marginTop: 8,
+  },
+  logoutButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#ff4757',
+    marginLeft: 12,
+    fontWeight: '500',
+  },
+  introductionSection: {
+    marginHorizontal: 4,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  introductionSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginHorizontal: 12,
+  },
+  introductionSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  editIntroButton: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  editIntroButtonText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  introductionContainer: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    minHeight: 120,
+  },
+  introductionInput: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'left',
+    minHeight: 100,
+    lineHeight: 20,
+  },
+  introductionText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'left',
+    lineHeight: 20,
+    minHeight: 100,
   },
 });
