@@ -48,9 +48,20 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(false);
           api.setAuthToken(null);
         }
+      } else {
+        // 저장된 토큰이 없으면 로그아웃 상태로 설정
+        setUser(null);
+        setAccessToken(null);
+        setIsAuthenticated(false);
+        api.setAuthToken(null);
       }
     } catch (error) {
       console.error('인증 상태 확인 실패:', error);
+      // 에러 발생 시에도 로그아웃 상태로 설정
+      setUser(null);
+      setAccessToken(null);
+      setIsAuthenticated(false);
+      api.setAuthToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -59,14 +70,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await api.login(credentials);
-      console.log('로그인 응답:', response); // 디버깅용
       
       // 응답 형식 확인
       if (!response.access_token) {
-        console.error('토큰이 없는 로그인 응답:', response);
         return { 
           success: false, 
-          error: '서버에서 토큰을 받지 못했습니다.' 
+          error: '로그인에 실패했습니다.' 
         };
       }
       
@@ -89,10 +98,10 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true, user: userData };
     } catch (error) {
-      console.error('로그인 실패:', error);
+      // 모든 에러를 조용히 처리하고 사용자 친화적 메시지만 반환
       return { 
         success: false, 
-        error: error.message || '로그인에 실패했습니다.' 
+        error: '이메일 또는 비밀번호가 올바르지 않습니다.' 
       };
     }
   };

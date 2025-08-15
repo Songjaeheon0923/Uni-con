@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { SignupProvider } from "./src/contexts/SignupContext";
 import HomeScreen from "./src/screens/HomeScreen";
 import MapScreen from "./src/screens/MapScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
@@ -12,6 +13,11 @@ import PersonalityTestScreen from "./src/screens/PersonalityTestScreen";
 import MatchResultsScreen from "./src/screens/MatchResultsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
+import SignupStep1Screen from "./src/screens/SignupStep1Screen";
+import SignupStep2Screen from "./src/screens/SignupStep2Screen";
+import IDVerificationScreen from "./src/screens/IDVerificationScreen";
+import IDVerificationCompleteScreen from "./src/screens/IDVerificationCompleteScreen";
+import SchoolVerificationScreen from "./src/screens/SchoolVerificationScreen";
 import ChatScreen from "./src/screens/ChatScreen";
 import api from "./src/services/api";
 
@@ -73,7 +79,11 @@ function AuthStack() {
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="Signup" component={SignupStep1Screen} />
+      <Stack.Screen name="SignupStep2" component={SignupStep2Screen} />
+      <Stack.Screen name="IDVerification" component={IDVerificationScreen} />
+      <Stack.Screen name="IDVerificationComplete" component={IDVerificationCompleteScreen} />
+      <Stack.Screen name="SchoolVerification" component={SchoolVerificationScreen} />
     </Stack.Navigator>
   );
 }
@@ -171,7 +181,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SignupProvider>
+        <AppContent />
+      </SignupProvider>
     </AuthProvider>
   );
 }

@@ -82,7 +82,7 @@ class UserProfile(BaseModel):
     # 새로운 필드들
     age: Optional[int] = None
     gender: Optional[Gender] = None
-    gender_preference: Optional[GenderPreference] = None
+    gender_preference: Optional[GenderPreference] = None  # 호환성을 위해 유지하지만 데이터베이스에서는 제거
     personality_type: Optional[PersonalityType] = None
     lifestyle_type: Optional[LifestyleType] = None
     budget_range: Optional[BudgetRange] = None
@@ -100,7 +100,7 @@ class ProfileUpdateRequest(BaseModel):
     # 새로운 필드들
     age: Optional[int] = None
     gender: Optional[Gender] = None
-    gender_preference: Optional[GenderPreference] = None
+    gender_preference: Optional[GenderPreference] = None  # 호환성을 위해 유지하지만 무시됨
     personality_type: Optional[PersonalityType] = None
     lifestyle_type: Optional[LifestyleType] = None
     budget_range: Optional[BudgetRange] = None

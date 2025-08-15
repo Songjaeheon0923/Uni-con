@@ -160,10 +160,30 @@ class ApiService {
   }
 
   async login(credentials) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
+    try {
+      // 로그인 요청 시에는 401 에러 핸들러를 임시로 비활성화
+      const originalHandler = this.authErrorHandler;
+      this.authErrorHandler = null;
+      
+      const result = await this.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      // 핸들러 복원
+      this.authErrorHandler = originalHandler;
+      
+      return result;
+    } catch (error) {
+      // 핸들러 복원
+      const originalHandler = this.authErrorHandler;
+      if (originalHandler) {
+        this.authErrorHandler = originalHandler;
+      }
+      
+      // 로그인 실패 시 콘솔 에러 없이 조용히 처리
+      throw new Error('로그인에 실패했습니다.');
+    }
   }
 
   async logout() {
@@ -189,6 +209,51 @@ class ApiService {
     return this.request('/users/bio/me', {
       method: 'PUT',
       body: JSON.stringify({ bio: bio }),
+    });
+  }
+
+  // 새로운 회원가입 플로우 API들
+  async initialSignup(email, password) {
+    return this.request('/auth/signup/initial', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async phoneVerification(userId, name, phoneNumber, residentNumber) {
+    return this.request('/auth/signup/phone-verification', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        user_id: userId, 
+        name: name, 
+        phone_number: phoneNumber,
+        resident_number: residentNumber
+      }),
+    });
+  }
+
+  async schoolVerification(userId, schoolEmail) {
+    return this.request('/auth/signup/school-verification', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        user_id: userId, 
+        school_email: schoolEmail 
+      }),
+    });
+  }
+
+  async completeSignup(signupData) {
+    return this.request('/auth/signup/complete', {
+      method: 'POST',
+      body: JSON.stringify(signupData),
+    });
+  }
+
+  // 기존 단계별 메서드들 (호환성 유지)
+  async completeSignupLegacy(userId) {
+    return this.request('/auth/signup/complete', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
     });
   }
 }

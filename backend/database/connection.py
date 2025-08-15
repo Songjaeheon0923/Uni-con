@@ -15,18 +15,97 @@ def init_db():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    # 기존 users 테이블
+    # 기존 users 테이블 (학교 인증 정보 통합)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
             hashed_password TEXT NOT NULL,
+            phone_number TEXT,
+            gender TEXT,
+            school_email TEXT,
+            school_verified BOOLEAN DEFAULT FALSE,
+            school_verified_at TIMESTAMP NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
-    # 새로운 user_profiles 테이블 (고도화된 버전)
+    # 기존 테이블에 새 컬럼들 추가
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN phone_number TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN gender TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN school_email TEXT')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN school_verified BOOLEAN DEFAULT FALSE')
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN school_verified_at TIMESTAMP NULL')
+    except sqlite3.OperationalError:
+        pass
+    
+    # user_profiles 테이블에서 gender_preference 컬럼 제거 (SQLite는 DROP COLUMN을 지원하지 않으므로 테이블 재생성)
+    try:
+        # 기존 데이터 백업
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_profiles'")
+        if cursor.fetchone():
+            cursor.execute("""
+                CREATE TABLE user_profiles_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER UNIQUE NOT NULL,
+                    sleep_type TEXT,
+                    home_time TEXT,
+                    cleaning_frequency TEXT,
+                    cleaning_sensitivity TEXT,
+                    smoking_status TEXT,
+                    noise_sensitivity TEXT,
+                    age INTEGER,
+                    gender TEXT,
+                    personality_type TEXT,
+                    lifestyle_type TEXT,
+                    budget_range TEXT,
+                    is_complete BOOLEAN DEFAULT FALSE,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            """)
+            
+            # 기존 데이터 복사 (gender_preference 제외)
+            cursor.execute("""
+                INSERT INTO user_profiles_new (
+                    id, user_id, sleep_type, home_time, cleaning_frequency,
+                    cleaning_sensitivity, smoking_status, noise_sensitivity,
+                    age, gender, personality_type, lifestyle_type, budget_range,
+                    is_complete, updated_at
+                )
+                SELECT id, user_id, sleep_type, home_time, cleaning_frequency,
+                       cleaning_sensitivity, smoking_status, noise_sensitivity,
+                       age, gender, personality_type, lifestyle_type, budget_range,
+                       is_complete, updated_at
+                FROM user_profiles
+            """)
+            
+            # 기존 테이블 삭제 후 새 테이블로 이름 변경
+            cursor.execute("DROP TABLE user_profiles")
+            cursor.execute("ALTER TABLE user_profiles_new RENAME TO user_profiles")
+    except sqlite3.OperationalError as e:
+        # 테이블이 존재하지 않거나 이미 마이그레이션된 경우
+        pass
+    
+    # 새로운 user_profiles 테이블 (gender_preference 제거)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,7 +118,6 @@ def init_db():
             noise_sensitivity TEXT,
             age INTEGER,
             gender TEXT,
-            gender_preference TEXT,
             personality_type TEXT,
             lifestyle_type TEXT,
             budget_range TEXT,
@@ -106,6 +184,8 @@ def init_db():
             UNIQUE(user_id, room_id)
         )
     ''')
+    
+    # school_verifications 테이블은 제거됨 (users 테이블에 통합)
     
     conn.commit()
     
@@ -250,11 +330,25 @@ def create_dummy_data(cursor, conn):
 def get_user_by_email(email: str):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, email, name, hashed_password FROM users WHERE email = ?", (email,))
+    cursor.execute("""
+        SELECT id, email, name, hashed_password, phone_number, gender,
+               school_email, school_verified, school_verified_at
+        FROM users WHERE email = ?
+    """, (email,))
     user = cursor.fetchone()
     conn.close()
     if user:
-        return {"id": user[0], "email": user[1], "name": user[2], "hashed_password": user[3]}
+        return {
+            "id": user[0], 
+            "email": user[1], 
+            "name": user[2], 
+            "hashed_password": user[3], 
+            "phone_number": user[4], 
+            "gender": user[5],
+            "school_email": user[6],
+            "school_verified": bool(user[7]) if user[7] is not None else False,
+            "school_verified_at": user[8]
+        }
     return None
 
 
@@ -282,7 +376,7 @@ def create_user(user_data: UserCreate, hashed_password: str):
         )
         conn.commit()
         conn.close()
-        return {"id": user_id, "email": user_data.email, "name": user_data.name}
+        return {"id": user_id, "email": user_data.email, "name": user_data.name, "phone_number": None}
     except sqlite3.IntegrityError:
         conn.close()
         return None
@@ -294,7 +388,7 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
     cursor.execute("""
         SELECT user_id, sleep_type, home_time, cleaning_frequency, 
                cleaning_sensitivity, smoking_status, noise_sensitivity,
-               age, gender, gender_preference, personality_type, 
+               age, gender, personality_type, 
                lifestyle_type, budget_range, is_complete
         FROM user_profiles WHERE user_id = ?
     """, (user_id,))
@@ -312,11 +406,11 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
             noise_sensitivity=profile[6],
             age=profile[7],
             gender=profile[8],
-            gender_preference=profile[9],
-            personality_type=profile[10],
-            lifestyle_type=profile[11],
-            budget_range=profile[12],
-            is_complete=bool(profile[13])
+            gender_preference=None,  # 제거된 필드
+            personality_type=profile[9],
+            lifestyle_type=profile[10],
+            budget_range=profile[11],
+            is_complete=bool(profile[12])
         )
     return None
 
@@ -330,7 +424,7 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
     values = []
     
     for field, value in profile_data.dict(exclude_unset=True).items():
-        if value is not None:
+        if value is not None and field != 'gender_preference':  # gender_preference 필드 무시
             updates.append(f"{field} = ?")
             values.append(value)
     
@@ -354,10 +448,9 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
             'noise_sensitivity': current[7] or profile_dict.get('noise_sensitivity'),
             'age': current[8] or profile_dict.get('age'),
             'gender': current[9] or profile_dict.get('gender'),
-            'gender_preference': current[10] or profile_dict.get('gender_preference'),
-            'personality_type': current[11] or profile_dict.get('personality_type'),
-            'lifestyle_type': current[12] or profile_dict.get('lifestyle_type'),
-            'budget_range': current[13] or profile_dict.get('budget_range')
+            'personality_type': current[10] or profile_dict.get('personality_type'),
+            'lifestyle_type': current[11] or profile_dict.get('lifestyle_type'),
+            'budget_range': current[12] or profile_dict.get('budget_range')
         }
         
         is_complete = all(value is not None for value in current_data.values())
@@ -380,7 +473,7 @@ def get_completed_profiles() -> List[UserProfile]:
     cursor.execute("""
         SELECT user_id, sleep_type, home_time, cleaning_frequency, 
                cleaning_sensitivity, smoking_status, noise_sensitivity,
-               age, gender, gender_preference, personality_type, 
+               age, gender, personality_type, 
                lifestyle_type, budget_range, is_complete
         FROM user_profiles WHERE is_complete = TRUE
     """)
@@ -398,11 +491,11 @@ def get_completed_profiles() -> List[UserProfile]:
             noise_sensitivity=profile[6],
             age=profile[7],
             gender=profile[8],
-            gender_preference=profile[9],
-            personality_type=profile[10],
-            lifestyle_type=profile[11],
-            budget_range=profile[12],
-            is_complete=bool(profile[13])
+            gender_preference=None,  # 제거된 필드
+            personality_type=profile[9],
+            lifestyle_type=profile[10],
+            budget_range=profile[11],
+            is_complete=bool(profile[12])
         )
         for profile in profiles
     ]
@@ -432,7 +525,6 @@ def create_test_users_and_profiles(cursor, conn):
             'profile': {
                 'age': 23,
                 'gender': 'male',
-                'gender_preference': 'same',
                 'sleep_type': 'morning',
                 'home_time': 'night',
                 'cleaning_frequency': 'daily',
@@ -451,7 +543,6 @@ def create_test_users_and_profiles(cursor, conn):
             'profile': {
                 'age': 25,
                 'gender': 'female',
-                'gender_preference': 'same',
                 'sleep_type': 'evening',
                 'home_time': 'day',
                 'cleaning_frequency': 'weekly',
@@ -470,7 +561,6 @@ def create_test_users_and_profiles(cursor, conn):
             'profile': {
                 'age': 22,
                 'gender': 'male',
-                'gender_preference': 'any',
                 'sleep_type': 'morning',
                 'home_time': 'irregular',
                 'cleaning_frequency': 'daily',
@@ -489,7 +579,6 @@ def create_test_users_and_profiles(cursor, conn):
             'profile': {
                 'age': 27,
                 'gender': 'female',
-                'gender_preference': 'opposite',
                 'sleep_type': 'evening',
                 'home_time': 'night',
                 'cleaning_frequency': 'as_needed',
@@ -508,7 +597,6 @@ def create_test_users_and_profiles(cursor, conn):
             'profile': {
                 'age': 24,
                 'gender': 'male',
-                'gender_preference': 'same',
                 'sleep_type': 'morning',
                 'home_time': 'day',
                 'cleaning_frequency': 'weekly',
@@ -527,7 +615,6 @@ def create_test_users_and_profiles(cursor, conn):
             'profile': {
                 'age': 26,
                 'gender': 'female',
-                'gender_preference': 'any',
                 'sleep_type': 'evening',
                 'home_time': 'irregular',
                 'cleaning_frequency': 'as_needed',
@@ -555,12 +642,12 @@ def create_test_users_and_profiles(cursor, conn):
             profile = user_data['profile']
             cursor.execute("""
                 INSERT INTO user_profiles (
-                    user_id, age, gender, gender_preference, sleep_type, home_time,
+                    user_id, age, gender, sleep_type, home_time,
                     cleaning_frequency, cleaning_sensitivity, smoking_status, noise_sensitivity,
                     personality_type, lifestyle_type, budget_range, is_complete
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                user_id, profile['age'], profile['gender'], profile['gender_preference'],
+                user_id, profile['age'], profile['gender'],
                 profile['sleep_type'], profile['home_time'], profile['cleaning_frequency'],
                 profile['cleaning_sensitivity'], profile['smoking_status'], profile['noise_sensitivity'],
                 profile['personality_type'], profile['lifestyle_type'], profile['budget_range'], True
@@ -662,5 +749,161 @@ def update_user_info(user_id: int, info_data: dict) -> bool:
     except Exception as e:
         print(f"Error updating user info: {e}")
         conn.rollback()
+        conn.close()
+        return False
+
+
+def update_user_phone(user_id: int, phone_number: str) -> bool:
+    """사용자 전화번호 업데이트"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            "UPDATE users SET phone_number = ? WHERE id = ?",
+            (phone_number, user_id)
+        )
+        conn.commit()
+        conn.close()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating phone number: {e}")
+        conn.close()
+        return False
+
+
+def extract_gender_from_resident_number(resident_number: str) -> str:
+    """주민등록번호에서 성별을 추출"""
+    if len(resident_number) < 7 or '-' not in resident_number:
+        return None
+    
+    # 주민등록번호 형식: YYMMDD-GXXXXXX (G는 성별을 나타내는 숫자)
+    try:
+        gender_digit = int(resident_number.split('-')[1][0])
+        if gender_digit in [1, 3]:
+            return 'male'
+        elif gender_digit in [2, 4]:
+            return 'female'
+        else:
+            return None
+    except (ValueError, IndexError):
+        return None
+
+
+def update_user_phone_and_gender(user_id: int, phone_number: str, resident_number: str) -> bool:
+    """사용자 전화번호와 성별을 함께 업데이트"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # 주민등록번호에서 성별 추출
+        gender = extract_gender_from_resident_number(resident_number)
+        
+        cursor.execute(
+            "UPDATE users SET phone_number = ?, gender = ? WHERE id = ?",
+            (phone_number, gender, user_id)
+        )
+        conn.commit()
+        conn.close()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating phone number and gender: {e}")
+        conn.close()
+        return False
+
+
+def update_user_school_verification(user_id: int, school_email: str, is_verified: bool = False) -> bool:
+    """학교 인증 정보를 users 테이블에 업데이트"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        verified_at = 'CURRENT_TIMESTAMP' if is_verified else None
+        cursor.execute("""
+            UPDATE users 
+            SET school_email = ?, school_verified = ?, school_verified_at = ?
+            WHERE id = ?
+        """, (school_email, is_verified, verified_at, user_id))
+        
+        conn.commit()
+        conn.close()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating school verification: {e}")
+        conn.close()
+        return False
+
+
+def get_user_by_id(user_id: int):
+    """사용자 ID로 사용자 정보 조회"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, email, name, phone_number, gender, 
+               school_email, school_verified, school_verified_at 
+        FROM users WHERE id = ?
+    """, (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+        return {
+            "id": user[0], 
+            "email": user[1], 
+            "name": user[2], 
+            "phone_number": user[3], 
+            "gender": user[4],
+            "school_email": user[5],
+            "school_verified": bool(user[6]) if user[6] is not None else False,
+            "school_verified_at": user[7]
+        }
+    return None
+
+
+def create_user_with_email_password(email: str, password: str, hashed_password: str):
+    """이메일과 비밀번호로만 초기 사용자 생성"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO users (email, name, hashed_password) VALUES (?, ?, ?)",
+            (email, "임시사용자", hashed_password)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        
+        # 빈 프로필 생성
+        cursor.execute(
+            "INSERT INTO user_profiles (user_id) VALUES (?)",
+            (user_id,)
+        )
+        
+        # 빈 사용자 정보 생성
+        cursor.execute(
+            "INSERT INTO user_info (user_id) VALUES (?)",
+            (user_id,)
+        )
+        conn.commit()
+        conn.close()
+        return {"id": user_id, "email": email, "name": "임시사용자", "phone_number": None}
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None
+
+
+def update_user_name(user_id: int, name: str) -> bool:
+    """사용자 이름 업데이트"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            "UPDATE users SET name = ? WHERE id = ?",
+            (name, user_id)
+        )
+        conn.commit()
+        conn.close()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating user name: {e}")
         conn.close()
         return False

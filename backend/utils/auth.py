@@ -1,7 +1,7 @@
 import jwt
 import datetime
 from typing import Optional
-from fastapi import HTTPException, status, Request
+from fastapi import HTTPException, status, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 SECRET_KEY = "your-secret-key-here-change-in-production"
@@ -31,7 +31,7 @@ def verify_token(token: str) -> Optional[dict]:
     except jwt.InvalidTokenError:
         return None
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = None):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """현재 사용자 가져오기"""
     if credentials is None:
         raise HTTPException(

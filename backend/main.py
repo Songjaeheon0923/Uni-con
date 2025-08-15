@@ -37,5 +37,14 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+    import logging
 
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    # 401 에러 로그를 숨기기 위해 uvicorn 로그 레벨 조정
+    logging.getLogger("uvicorn.access").setLevel(logging.ERROR)
+
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8080,
+        access_log=False  # 액세스 로그 비활성화
+    )

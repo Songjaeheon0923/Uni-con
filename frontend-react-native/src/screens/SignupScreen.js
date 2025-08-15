@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 
 export default function SignupScreen({ navigation }) {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,11 +23,6 @@ export default function SignupScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
-    if (!name.trim()) {
-      Alert.alert('알림', '이름을 입력해주세요.');
-      return false;
-    }
-
     if (!email.trim()) {
       Alert.alert('알림', '이메일을 입력해주세요.');
       return false;
@@ -62,17 +56,15 @@ export default function SignupScreen({ navigation }) {
 
     setIsLoading(true);
     try {
-      const user = await ApiService.signup({ name, email, password });
-      Alert.alert(
-        '회원가입 성공', 
-        `${user.name}님, 가입을 환영합니다!\n로그인 페이지로 이동합니다.`,
-        [
-          { text: '확인', onPress: () => navigation.navigate('Login') }
-        ]
-      );
+      const response = await ApiService.initialSignup(email, password);
+      // 휴대폰 인증 화면으로 이동하며 user_id와 초기 정보 전달
+      navigation.navigate('SignupStep2', { 
+        userId: response.user_id,
+        email: email,
+        password: password
+      });
     } catch (error) {
-      console.error('회원가입 실패:', error);
-      if (error.message.includes('400')) {
+      if (error.message.includes('400') || error.message.includes('already registered')) {
         Alert.alert('회원가입 실패', '이미 등록된 이메일입니다.');
       } else {
         Alert.alert('회원가입 실패', '회원가입 중 오류가 발생했습니다.');
@@ -110,18 +102,6 @@ export default function SignupScreen({ navigation }) {
           {/* 회원가입 폼 */}
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="이름"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -151,8 +131,8 @@ export default function SignupScreen({ navigation }) {
               >
                 <Ionicons 
                   name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                  size={20} 
-                  color="#666" 
+                  size={22} 
+                  color="#333" 
                 />
               </TouchableOpacity>
             </View>
@@ -174,8 +154,8 @@ export default function SignupScreen({ navigation }) {
               >
                 <Ionicons 
                   name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                  size={20} 
-                  color="#666" 
+                  size={22} 
+                  color="#333" 
                 />
               </TouchableOpacity>
             </View>
@@ -186,7 +166,7 @@ export default function SignupScreen({ navigation }) {
               disabled={isLoading}
             >
               <Text style={styles.signupButtonText}>
-                {isLoading ? '가입 중...' : '회원가입'}
+                {isLoading ? '처리 중...' : '본인 인증하기'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -204,7 +184,6 @@ export default function SignupScreen({ navigation }) {
             <TouchableOpacity 
               style={styles.testButton}
               onPress={() => {
-                setName('김대학생');
                 setEmail('test@example.com');
                 setPassword('password123');
                 setConfirmPassword('password123');
@@ -292,7 +271,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   eyeIcon: {
-    padding: 4,
+    padding: 8,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 40,
+    minHeight: 40,
   },
   signupButton: {
     backgroundColor: '#FF6600',

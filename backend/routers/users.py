@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import HTTPBearer
 from models.user import User
 from pydantic import BaseModel
-import session
+from utils.auth import get_current_user
 from database.connection import get_db_connection, get_user_info, update_user_info
 
 router = APIRouter()
@@ -17,24 +18,29 @@ class ProfileUpdate(BaseModel):
 
 
 @router.get("/me", response_model=User)
-async def get_me():
-    if session.current_user_session is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not logged in"
-        )
-    return User(**session.current_user_session)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    # 데이터베이스에서 사용자 정보 조회
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("SELECT id, email, name FROM users WHERE id = ?", (current_user["id"],))
+        user_data = cursor.fetchone()
+        
+        if not user_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        return User(id=user_data[0], email=user_data[1], name=user_data[2])
+    finally:
+        conn.close()
 
 
 @router.put("/profile/me")
-async def update_profile(profile_data: dict):
-    if session.current_user_session is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not logged in"
-        )
-    
-    user_id = session.current_user_session["id"]
+async def update_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
     print(f"Updating profile for user_id: {user_id}")
     print(f"Profile data received: {profile_data}")
     
@@ -100,15 +106,9 @@ async def update_profile(profile_data: dict):
 
 
 @router.get("/info/me")
-async def get_my_info():
+async def get_my_info(current_user: dict = Depends(get_current_user)):
     """사용자 정보 조회"""
-    if session.current_user_session is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not logged in"
-        )
-    
-    user_id = session.current_user_session["id"]
+    user_id = current_user["id"]
     user_info = get_user_info(user_id)
     
     if user_info is None:
@@ -128,15 +128,9 @@ async def get_my_info():
 
 
 @router.put("/info/me")
-async def update_my_info(info_data: dict):
+async def update_my_info(info_data: dict, current_user: dict = Depends(get_current_user)):
     """사용자 정보 업데이트"""
-    if session.current_user_session is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not logged in"
-        )
-    
-    user_id = session.current_user_session["id"]
+    user_id = current_user["id"]
     print(f"Updating user info for user_id: {user_id}")
     print(f"Info data received: {info_data}")
     
@@ -152,15 +146,9 @@ async def update_my_info(info_data: dict):
 
 
 @router.put("/bio/me")
-async def update_my_bio(bio_data: dict):
+async def update_my_bio(bio_data: dict, current_user: dict = Depends(get_current_user)):
     """한줄 소개만 업데이트"""
-    if session.current_user_session is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not logged in"
-        )
-    
-    user_id = session.current_user_session["id"]
+    user_id = current_user["id"]
     bio = bio_data.get("bio", "").strip()
     print(f"Updating bio for user_id: {user_id}")
     print(f"Bio data: {bio}")

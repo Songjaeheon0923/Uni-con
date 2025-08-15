@@ -33,10 +33,11 @@ export default function LoginScreen({ navigation }) {
       if (result.success) {
         Alert.alert('로그인 성공', `${result.user.name}님 환영합니다!`);
       } else {
-        Alert.alert('로그인 실패', result.error || '이메일 또는 비밀번호가 올바르지 않습니다.');
+        // 모든 로그인 실패는 동일한 메시지로 표시
+        Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
       }
     } catch (error) {
-      console.error('로그인 실패:', error);
+      // 예외 발생 시에도 콘솔 에러 없이 조용히 처리
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
     } finally {
       setIsLoading(false);

@@ -1,10 +1,12 @@
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
+    phoneNumber: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -16,3 +18,4 @@ class User(BaseModel):
     id: int
     email: str
     name: str
+    phoneNumber: Optional[str] = None
