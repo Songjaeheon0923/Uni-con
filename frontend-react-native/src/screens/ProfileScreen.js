@@ -48,10 +48,31 @@ export default function ProfileScreen({ user, onLogout }) {
   const [introduction, setIntroduction] = useState('');
   const [isEditingIntroduction, setIsEditingIntroduction] = useState(false);
   
+  // 사용자 프로필 데이터
+  const [userProfile, setUserProfile] = useState(null);
+  
   // refs
   const scrollViewRef = useRef(null);
   const introductionInputRef = useRef(null);
   const bioInputRef = useRef(null);
+  
+  // 나이대 계산 함수
+  const getAgeGroup = (age) => {
+    if (!age) return '';
+    if (age >= 19 && age <= 23) return '20대 초반';
+    if (age >= 24 && age <= 27) return '20대 중반';
+    if (age >= 28 && age <= 30) return '20대 후반';
+    if (age >= 31 && age <= 35) return '30대 초반';
+    if (age >= 36 && age <= 39) return '30대 후반';
+    return `${Math.floor(age / 10)}0대`;
+  };
+  
+  // 성별 변환 함수
+  const getGenderText = (gender) => {
+    if (gender === 'male') return '남성';
+    if (gender === 'female') return '여성';
+    return '';
+  };
   
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user ? {
@@ -71,7 +92,18 @@ export default function ProfileScreen({ user, onLogout }) {
   useEffect(() => {
     loadFavorites();
     loadUserInfo();
+    loadUserProfile();
   }, []);
+  
+  // 사용자 프로필 로드
+  const loadUserProfile = async () => {
+    try {
+      const profile = await ApiService.getUserProfile();
+      setUserProfile(profile);
+    } catch (error) {
+      console.error('사용자 프로필 로드 실패:', error);
+    }
+  };
 
   // 한줄 소개만 저장하는 함수
   const saveBio = async () => {
@@ -311,8 +343,12 @@ export default function ProfileScreen({ user, onLogout }) {
           
           {/* 기본 정보 */}
           <View style={styles.basicInfoRow}>
-            <Text style={styles.basicInfoText}>20대 초반, 여성, 고려대학교</Text>
-            <VerificationCheck verified={true} />
+            <Text style={styles.basicInfoText}>
+              {userProfile ? 
+                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}, 고려대학교` :
+                '정보 로딩 중...'
+              }
+            </Text>
           </View>
 
           {/* 한줄 소개 */}
@@ -722,14 +758,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   basicInfoRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
   },
   basicInfoText: {
     fontSize: 16,
     color: '#666',
-    marginRight: 8,
+    textAlign: 'center',
   },
   bioSection: {
     width: '100%',

@@ -81,7 +81,7 @@ class UserProfile(BaseModel):
     noise_sensitivity: Optional[NoiseSensitivity] = None
     # 새로운 필드들
     age: Optional[int] = None
-    gender: Optional[Gender] = None
+    gender: Optional[Gender] = None  # users 테이블에서 가져오므로 여기서는 참조만
     gender_preference: Optional[GenderPreference] = None  # 호환성을 위해 유지하지만 데이터베이스에서는 제거
     personality_type: Optional[PersonalityType] = None
     lifestyle_type: Optional[LifestyleType] = None
@@ -99,7 +99,6 @@ class ProfileUpdateRequest(BaseModel):
     noise_sensitivity: Optional[NoiseSensitivity] = None
     # 새로운 필드들
     age: Optional[int] = None
-    gender: Optional[Gender] = None
     gender_preference: Optional[GenderPreference] = None  # 호환성을 위해 유지하지만 무시됨
     personality_type: Optional[PersonalityType] = None
     lifestyle_type: Optional[LifestyleType] = None

@@ -61,7 +61,6 @@ def init_db():
                     smoking_status TEXT,
                     noise_sensitivity TEXT,
                     age INTEGER,
-                    gender TEXT,
                     personality_type TEXT,
                     lifestyle_type TEXT,
                     budget_range TEXT,
@@ -71,17 +70,17 @@ def init_db():
                 )
             """)
             
-            # 기존 데이터 복사 (gender_preference 제외)
+            # 기존 데이터 복사 (gender 제거)
             cursor.execute("""
                 INSERT INTO user_profiles_new (
                     id, user_id, sleep_type, home_time, cleaning_frequency,
                     cleaning_sensitivity, smoking_status, noise_sensitivity,
-                    age, gender, personality_type, lifestyle_type, budget_range,
+                    age, personality_type, lifestyle_type, budget_range,
                     is_complete, updated_at
                 )
                 SELECT id, user_id, sleep_type, home_time, cleaning_frequency,
                        cleaning_sensitivity, smoking_status, noise_sensitivity,
-                       age, gender, personality_type, lifestyle_type, budget_range,
+                       age, personality_type, lifestyle_type, budget_range,
                        is_complete, updated_at
                 FROM user_profiles
             """)
@@ -93,7 +92,7 @@ def init_db():
         # 테이블이 존재하지 않거나 이미 마이그레이션된 경우
         pass
     
-    # 새로운 user_profiles 테이블 (gender_preference 제거)
+    # 새로운 user_profiles 테이블 (gender 제거)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +104,6 @@ def init_db():
             smoking_status TEXT,
             noise_sensitivity TEXT,
             age INTEGER,
-            gender TEXT,
             personality_type TEXT,
             lifestyle_type TEXT,
             budget_range TEXT,
@@ -371,11 +369,13 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT user_id, sleep_type, home_time, cleaning_frequency, 
-               cleaning_sensitivity, smoking_status, noise_sensitivity,
-               age, gender, personality_type, 
-               lifestyle_type, budget_range, is_complete
-        FROM user_profiles WHERE user_id = ?
+        SELECT p.user_id, p.sleep_type, p.home_time, p.cleaning_frequency, 
+               p.cleaning_sensitivity, p.smoking_status, p.noise_sensitivity,
+               p.age, p.personality_type, p.lifestyle_type, p.budget_range, 
+               p.is_complete, u.gender
+        FROM user_profiles p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = ?
     """, (user_id,))
     profile = cursor.fetchone()
     conn.close()
@@ -390,12 +390,12 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
             smoking_status=profile[5],
             noise_sensitivity=profile[6],
             age=profile[7],
-            gender=profile[8],
+            gender=profile[12],  # users 테이블에서 가져온 gender
             gender_preference=None,  # 제거된 필드
-            personality_type=profile[9],
-            lifestyle_type=profile[10],
-            budget_range=profile[11],
-            is_complete=bool(profile[12])
+            personality_type=profile[8],
+            lifestyle_type=profile[9],
+            budget_range=profile[10],
+            is_complete=bool(profile[11])
         )
     return None
 
@@ -409,7 +409,7 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
     values = []
     
     for field, value in profile_data.dict(exclude_unset=True).items():
-        if value is not None and field != 'gender_preference':  # gender_preference 필드 무시
+        if value is not None and field not in ['gender_preference', 'gender']:  # gender_preference, gender 필드 무시
             updates.append(f"{field} = ?")
             values.append(value)
     
@@ -422,7 +422,7 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
     current = cursor.fetchone()
     
     if current:
-        # 모든 필드가 채워졌는지 확인 (고도화된 버전)
+        # 모든 필드가 채워졌는지 확인 (gender 제거된 버전)
         profile_dict = profile_data.dict(exclude_unset=True)
         current_data = {
             'sleep_type': current[2] or profile_dict.get('sleep_type'),
@@ -432,10 +432,9 @@ def update_user_profile(user_id: int, profile_data: ProfileUpdateRequest) -> boo
             'smoking_status': current[6] or profile_dict.get('smoking_status'),
             'noise_sensitivity': current[7] or profile_dict.get('noise_sensitivity'),
             'age': current[8] or profile_dict.get('age'),
-            'gender': current[9] or profile_dict.get('gender'),
-            'personality_type': current[10] or profile_dict.get('personality_type'),
-            'lifestyle_type': current[11] or profile_dict.get('lifestyle_type'),
-            'budget_range': current[12] or profile_dict.get('budget_range')
+            'personality_type': current[9] or profile_dict.get('personality_type'),
+            'lifestyle_type': current[10] or profile_dict.get('lifestyle_type'),
+            'budget_range': current[11] or profile_dict.get('budget_range')
         }
         
         is_complete = all(value is not None for value in current_data.values())
@@ -456,11 +455,13 @@ def get_completed_profiles() -> List[UserProfile]:
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT user_id, sleep_type, home_time, cleaning_frequency, 
-               cleaning_sensitivity, smoking_status, noise_sensitivity,
-               age, gender, personality_type, 
-               lifestyle_type, budget_range, is_complete
-        FROM user_profiles WHERE is_complete = TRUE
+        SELECT p.user_id, p.sleep_type, p.home_time, p.cleaning_frequency, 
+               p.cleaning_sensitivity, p.smoking_status, p.noise_sensitivity,
+               p.age, p.personality_type, p.lifestyle_type, p.budget_range, 
+               p.is_complete, u.gender
+        FROM user_profiles p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.is_complete = TRUE
     """)
     profiles = cursor.fetchall()
     conn.close()
@@ -475,12 +476,12 @@ def get_completed_profiles() -> List[UserProfile]:
             smoking_status=profile[5],
             noise_sensitivity=profile[6],
             age=profile[7],
-            gender=profile[8],
+            gender=profile[12],  # users 테이블에서 가져온 gender
             gender_preference=None,  # 제거된 필드
-            personality_type=profile[9],
-            lifestyle_type=profile[10],
-            budget_range=profile[11],
-            is_complete=bool(profile[12])
+            personality_type=profile[8],
+            lifestyle_type=profile[9],
+            budget_range=profile[10],
+            is_complete=bool(profile[11])
         )
         for profile in profiles
     ]
@@ -634,12 +635,12 @@ def create_test_users_and_profiles(cursor, conn):
             profile = user_data['profile']
             cursor.execute("""
                 INSERT INTO user_profiles (
-                    user_id, age, gender, sleep_type, home_time,
+                    user_id, age, sleep_type, home_time,
                     cleaning_frequency, cleaning_sensitivity, smoking_status, noise_sensitivity,
                     personality_type, lifestyle_type, budget_range, is_complete
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                user_id, profile['age'], profile['gender'],
+                user_id, profile['age'],
                 profile['sleep_type'], profile['home_time'], profile['cleaning_frequency'],
                 profile['cleaning_sensitivity'], profile['smoking_status'], profile['noise_sensitivity'],
                 profile['personality_type'], profile['lifestyle_type'], profile['budget_range'], True
@@ -778,6 +779,40 @@ def extract_gender_from_resident_number(resident_number: str) -> str:
             return 'female'
         else:
             return None
+    except (ValueError, IndexError):
+        return None
+
+
+def calculate_age_from_resident_number(resident_number: str) -> int:
+    """주민등록번호에서 나이를 계산"""
+    if len(resident_number) < 7 or '-' not in resident_number:
+        return None
+    
+    # 주민등록번호 형식: YYMMDD-GXXXXXX
+    try:
+        from datetime import datetime
+        
+        year_str = resident_number[:2]
+        year_num = int(year_str)
+        
+        # 성별 숫자로 세기 판단
+        gender_digit = int(resident_number.split('-')[1][0])
+        
+        # 1900년대생 (성별 숫자 1, 2) vs 2000년대생 (성별 숫자 3, 4)
+        if gender_digit in [1, 2]:
+            # 1900년대생
+            birth_year = 1900 + year_num
+        elif gender_digit in [3, 4]:
+            # 2000년대생  
+            birth_year = 2000 + year_num
+        else:
+            return None
+        
+        current_year = datetime.now().year
+        age = current_year - birth_year
+        
+        return age
+        
     except (ValueError, IndexError):
         return None
 

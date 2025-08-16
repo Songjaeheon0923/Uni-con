@@ -144,6 +144,35 @@ export default function HomeScreen({ navigation, user }) {
     navigation.navigate('RoommateSearch');
   };
 
+  const checkProfileCompletion = async () => {
+    try {
+      const profile = await ApiService.getUserProfile();
+      return profile && profile.is_complete;
+    } catch (error) {
+      console.error('프로필 확인 실패:', error);
+      return false;
+    }
+  };
+
+  const handleSkipTest = async () => {
+    const isProfileComplete = await checkProfileCompletion();
+    
+    if (isProfileComplete) {
+      // 프로필이 완성되어 있으면 바로 매칭 화면으로 이동
+      navigation.navigate('MatchResults');
+    } else {
+      // 프로필이 완성되지 않았으면 검사를 하라는 alert
+      Alert.alert(
+        '성격 유형 검사 필요',
+        '룸메이트 매칭을 위해서는 성격 유형 검사를 완료해야 합니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '검사하기', onPress: () => navigation.navigate('RoommateSearch') }
+        ]
+      );
+    }
+  };
+
   const handleContractVerification = () => {
     Alert.alert('계약서 검증', '계약서 안전성 검증 기능이 곧 출시됩니다!');
   };
@@ -258,17 +287,22 @@ export default function HomeScreen({ navigation, user }) {
       </View>
 
       {/* 나만의 룸메이트 찾기 박스 */}
-      <TouchableOpacity style={styles.roommateBox} onPress={handleRoommateSearch}>
+      <View style={styles.roommateBox}>
         <View style={styles.roommateBoxContent}>
           <View style={styles.roommateTextContainer}>
             <Text style={styles.roommateBoxTitle}>나만의 룸메이트 찾기</Text>
             <Text style={styles.roommateBoxSubtitle}>내 성향 파악하고 딱 맞는 룸메이트를 찾아보세요!</Text>
           </View>
-          <View style={styles.chevronContainer}>
-            <Ionicons name="chevron-forward" size={20} color="#666" />
-          </View>
         </View>
-      </TouchableOpacity>
+        <View style={styles.roommateButtonContainer}>
+          <TouchableOpacity style={styles.roommateButton} onPress={handleRoommateSearch}>
+            <Text style={styles.roommateButtonText}>성격 유형 파악하기</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.skipTestButton} onPress={handleSkipTest}>
+            <Text style={styles.skipTestButtonText}>검사 스킵하기</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* 계약서 안전성 검증 박스 */}
       <TouchableOpacity style={styles.contractBox} onPress={handleContractVerification}>
@@ -364,17 +398,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     marginHorizontal: 20,
     marginTop: 15,
-    paddingVertical: 45,
+    paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 12,
   },
   roommateBoxContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    marginBottom: 16,
   },
   roommateTextContainer: {
-    flex: 1,
     alignItems: 'flex-start',
   },
   roommateBoxTitle: {
@@ -389,8 +420,38 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 20,
   },
-  chevronContainer: {
-    marginTop: 8,
+  roommateButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  roommateButton: {
+    flex: 1,
+    backgroundColor: '#FF6600',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  roommateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  skipTestButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FF6600',
+  },
+  skipTestButtonText: {
+    color: '#FF6600',
+    fontSize: 14,
+    fontWeight: '600',
   },
   contractBox: {
     backgroundColor: '#f0f0f0',

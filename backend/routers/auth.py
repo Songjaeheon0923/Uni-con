@@ -223,8 +223,12 @@ async def complete_signup(request: CompleteSignupRequest):
         
         user_id = cursor.lastrowid
         
-        # 빈 프로필 생성
-        cursor.execute("INSERT INTO user_profiles (user_id) VALUES (?)", (user_id,))
+        # 주민등록번호에서 나이 계산
+        from database.connection import calculate_age_from_resident_number
+        age = calculate_age_from_resident_number(request.resident_number)
+        
+        # 나이 정보를 포함한 프로필 생성
+        cursor.execute("INSERT INTO user_profiles (user_id, age) VALUES (?, ?)", (user_id, age))
         
         # 빈 사용자 정보 생성
         cursor.execute("INSERT INTO user_info (user_id) VALUES (?)", (user_id,))

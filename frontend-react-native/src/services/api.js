@@ -212,6 +212,13 @@ class ApiService {
     });
   }
 
+  // 사용자 프로필 정보 조회
+  async getUserProfile() {
+    return this.request('/profile/me', {
+      method: 'GET',
+    });
+  }
+
   // 새로운 회원가입 플로우 API들
   async initialSignup(email, password) {
     return this.request('/auth/signup/initial', {
