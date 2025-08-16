@@ -174,7 +174,7 @@ export default function HomeScreen({ navigation, user }) {
   };
 
   const handleContractVerification = () => {
-    Alert.alert('계약서 검증', '계약서 안전성 검증 기능이 곧 출시됩니다!');
+    navigation.navigate('ContractVerification');
   };
 
   const handleNewsDetail = () => {

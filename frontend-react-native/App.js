@@ -19,6 +19,9 @@ import IDVerificationScreen from "./src/screens/IDVerificationScreen";
 import IDVerificationCompleteScreen from "./src/screens/IDVerificationCompleteScreen";
 import SchoolVerificationScreen from "./src/screens/SchoolVerificationScreen";
 import ChatScreen from "./src/screens/ChatScreen";
+import ContractVerificationScreen from "./src/screens/ContractVerificationScreen";
+import ContractCameraScreen from "./src/screens/ContractCameraScreen";
+import ContractResultScreen from "./src/screens/ContractResultScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -63,6 +66,27 @@ function HomeStack({ user }) {
       <Stack.Screen 
         name="Chat" 
         component={ChatScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ContractVerification" 
+        component={ContractVerificationScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ContractCamera" 
+        component={ContractCameraScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ContractResult" 
+        component={ContractResultScreen}
         options={{
           headerShown: false,
         }}
