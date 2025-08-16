@@ -15,7 +15,7 @@ def init_db():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
-    # 기존 users 테이블 (학교 인증 정보 통합)
+    # 기존 users 테이블 (school_verified, school_verified_at 제거)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,8 +25,6 @@ def init_db():
             phone_number TEXT,
             gender TEXT,
             school_email TEXT,
-            school_verified BOOLEAN DEFAULT FALSE,
-            school_verified_at TIMESTAMP NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -44,16 +42,6 @@ def init_db():
     
     try:
         cursor.execute('ALTER TABLE users ADD COLUMN school_email TEXT')
-    except sqlite3.OperationalError:
-        pass
-        
-    try:
-        cursor.execute('ALTER TABLE users ADD COLUMN school_verified BOOLEAN DEFAULT FALSE')
-    except sqlite3.OperationalError:
-        pass
-        
-    try:
-        cursor.execute('ALTER TABLE users ADD COLUMN school_verified_at TIMESTAMP NULL')
     except sqlite3.OperationalError:
         pass
     
@@ -331,8 +319,7 @@ def get_user_by_email(email: str):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, email, name, hashed_password, phone_number, gender,
-               school_email, school_verified, school_verified_at
+        SELECT id, email, name, hashed_password, phone_number, gender, school_email
         FROM users WHERE email = ?
     """, (email,))
     user = cursor.fetchone()
@@ -345,9 +332,7 @@ def get_user_by_email(email: str):
             "hashed_password": user[3], 
             "phone_number": user[4], 
             "gender": user[5],
-            "school_email": user[6],
-            "school_verified": bool(user[7]) if user[7] is not None else False,
-            "school_verified_at": user[8]
+            "school_email": user[6]
         }
     return None
 
@@ -631,11 +616,18 @@ def create_test_users_and_profiles(cursor, conn):
     # 사용자와 프로필 생성
     for user_data in test_users:
         try:
-            # 사용자 생성
-            cursor.execute(
-                "INSERT INTO users (email, name, hashed_password) VALUES (?, ?, ?)",
-                (user_data['email'], user_data['name'], hash_password(user_data['password']))
-            )
+            # 사용자 생성 (현재 스키마에 맞게 모든 컬럼 포함)
+            cursor.execute("""
+                INSERT INTO users (email, name, hashed_password, phone_number, gender, school_email) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                user_data['email'], 
+                user_data['name'], 
+                hash_password(user_data['password']),
+                f"010-{1000 + len(user_data['email'])}-{5678}",  # 더미 전화번호
+                user_data['profile']['gender'],
+                f"{user_data['email'].split('@')[0]}@university.ac.kr"  # 더미 학교 이메일
+            ))
             user_id = cursor.lastrowid
             
             # 프로필 생성
@@ -813,17 +805,16 @@ def update_user_phone_and_gender(user_id: int, phone_number: str, resident_numbe
 
 
 def update_user_school_verification(user_id: int, school_email: str, is_verified: bool = False) -> bool:
-    """학교 인증 정보를 users 테이블에 업데이트"""
+    """학교 인증 정보를 users 테이블에 업데이트 (school_email만)"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
     try:
-        verified_at = 'CURRENT_TIMESTAMP' if is_verified else None
         cursor.execute("""
             UPDATE users 
-            SET school_email = ?, school_verified = ?, school_verified_at = ?
+            SET school_email = ?
             WHERE id = ?
-        """, (school_email, is_verified, verified_at, user_id))
+        """, (school_email, user_id))
         
         conn.commit()
         conn.close()
@@ -839,8 +830,7 @@ def get_user_by_id(user_id: int):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, email, name, phone_number, gender, 
-               school_email, school_verified, school_verified_at 
+        SELECT id, email, name, phone_number, gender, school_email
         FROM users WHERE id = ?
     """, (user_id,))
     user = cursor.fetchone()
@@ -852,9 +842,7 @@ def get_user_by_id(user_id: int):
             "name": user[2], 
             "phone_number": user[3], 
             "gender": user[4],
-            "school_email": user[5],
-            "school_verified": bool(user[6]) if user[6] is not None else False,
-            "school_verified_at": user[7]
+            "school_email": user[5]
         }
     return None
 

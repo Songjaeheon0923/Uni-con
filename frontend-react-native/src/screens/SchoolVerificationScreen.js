@@ -62,8 +62,6 @@ export default function SchoolVerificationScreen({ navigation }) {
       // 학교 인증 정보 저장
       updateSchoolVerificationData({
         schoolEmail,
-        schoolVerified: true,
-        schoolSkipped: false,
       });
       
       Alert.alert('인증 완료', '학교 인증이 완료되었습니다!');
@@ -85,8 +83,6 @@ export default function SchoolVerificationScreen({ navigation }) {
         phone_number: signupData.phoneNumber,
         carrier: signupData.carrier,
         school_email: isVerified ? schoolEmail : null,
-        school_verified: isVerified,
-        school_skipped: !isVerified,
       };
 
       console.log('최종 회원가입 데이터:', completeSignupData);
@@ -124,8 +120,6 @@ export default function SchoolVerificationScreen({ navigation }) {
             // 학교 인증 건너뛰기 처리
             updateSchoolVerificationData({
               schoolEmail: '',
-              schoolVerified: false,
-              schoolSkipped: true,
             });
             handleSignupComplete();
           }
@@ -238,13 +232,6 @@ export default function SchoolVerificationScreen({ navigation }) {
                 </Text>
               </TouchableOpacity>
 
-              {/* 개발용 건너뛰기 버튼 */}
-              <TouchableOpacity 
-                style={styles.devSkipButton}
-                onPress={handleSignupComplete}
-              >
-                <Text style={styles.devSkipButtonText}>🚀 개발용: 바로 가입완료</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -366,18 +353,6 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  devSkipButton: {
-    backgroundColor: '#FF9500',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  devSkipButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
     color: '#FFFFFF',
   },
   verifyButton: {

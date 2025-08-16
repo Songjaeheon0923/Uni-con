@@ -105,13 +105,6 @@ export default function IDVerificationCompleteScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        {/* 개발용 건너뛰기 버튼 */}
-        <TouchableOpacity 
-          style={styles.devSkipButton}
-          onPress={() => navigation.navigate('SchoolVerification', { email, password })}
-        >
-          <Text style={styles.devSkipButtonText}>🚀 개발용: 학교 인증으로 건너뛰기</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -278,18 +271,6 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  devSkipButton: {
-    backgroundColor: '#FF9500',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  devSkipButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
     color: '#FFFFFF',
   },
 });

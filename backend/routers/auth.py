@@ -187,8 +187,6 @@ class CompleteSignupRequest(BaseModel):
     phone_number: str
     carrier: str
     school_email: str = None
-    school_verified: bool = False
-    school_skipped: bool = False
 
 @router.post("/signup/complete")
 async def complete_signup(request: CompleteSignupRequest):
@@ -215,17 +213,13 @@ async def complete_signup(request: CompleteSignupRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # 학교 인증 정보를 포함한 사용자 생성
-        school_email = request.school_email if request.school_email and not request.school_skipped else None
-        school_verified = request.school_verified if school_email else False
-        school_verified_at = 'CURRENT_TIMESTAMP' if school_verified else None
+        # 학교 인증 정보를 포함한 사용자 생성  
+        school_email = request.school_email if request.school_email else None
         
         cursor.execute("""
-            INSERT INTO users (email, name, hashed_password, phone_number, gender, 
-                             school_email, school_verified, school_verified_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (request.email, request.name, hashed_password, request.phone_number, gender,
-              school_email, school_verified, school_verified_at))
+            INSERT INTO users (email, name, hashed_password, phone_number, gender, school_email) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (request.email, request.name, hashed_password, request.phone_number, gender, school_email))
         
         user_id = cursor.lastrowid
         

@@ -31,8 +31,6 @@ export const SignupProvider = ({ children }) => {
     
     // 학교 인증
     schoolEmail: '',
-    schoolVerified: false,
-    schoolSkipped: false,
   });
 
   // AsyncStorage에서 데이터 로드
@@ -53,7 +51,7 @@ export const SignupProvider = ({ children }) => {
       const updatedData = { ...signupData, ...newData };
       setSignupData(updatedData);
       await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
-      console.log('회원가입 데이터 저장:', updatedData);
+      console.log('회원가입 데이터 저장 (변경사항):', newData);
     } catch (error) {
       console.error('회원가입 데이터 저장 실패:', error);
     }
@@ -74,8 +72,6 @@ export const SignupProvider = ({ children }) => {
         phoneVerified: false,
         idVerified: false,
         schoolEmail: '',
-        schoolVerified: false,
-        schoolSkipped: false,
       });
       await AsyncStorage.removeItem('@signup_data');
       console.log('회원가입 데이터 초기화 완료');
@@ -113,8 +109,6 @@ export const SignupProvider = ({ children }) => {
   const updateSchoolVerificationData = (data) => {
     saveSignupData({
       schoolEmail: data.schoolEmail,
-      schoolVerified: data.schoolVerified,
-      schoolSkipped: data.schoolSkipped,
     });
   };
 
@@ -150,8 +144,7 @@ export const SignupProvider = ({ children }) => {
       signupData.residentNumber2 &&
       signupData.phoneNumber &&
       signupData.phoneVerified &&
-      signupData.idVerified &&
-      (signupData.schoolVerified || signupData.schoolSkipped)
+      signupData.idVerified
     );
   };
 

@@ -163,19 +163,6 @@ export default function SignupStep1Screen({ navigation }) {
                 <Text style={styles.nextButtonText}>본인 인증하기</Text>
               </TouchableOpacity>
 
-              {/* 개발용 건너뛰기 버튼 */}
-              <TouchableOpacity 
-                style={styles.devSkipButton}
-                onPress={() => {
-                  updateStep1Data({ 
-                    email: 'dev@test.com', 
-                    password: 'devpassword123' 
-                  });
-                  navigation.navigate('SignupStep2');
-                }}
-              >
-                <Text style={styles.devSkipButtonText}>🚀 개발용: 2단계로 건너뛰기</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -276,20 +263,6 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  devSkipButton: {
-    backgroundColor: '#FF9500',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#FF9500',
-  },
-  devSkipButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
     color: '#FFFFFF',
   },
 });

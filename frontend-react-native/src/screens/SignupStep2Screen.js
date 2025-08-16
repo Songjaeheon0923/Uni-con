@@ -331,13 +331,6 @@ export default function SignupStep2Screen({ navigation }) {
                 <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
               </TouchableOpacity>
 
-              {/* 개발용 건너뛰기 버튼 */}
-              <TouchableOpacity 
-                style={styles.devSkipButton}
-                onPress={() => navigation.navigate('IDVerification', { userId, email, password })}
-              >
-                <Text style={styles.devSkipButtonText}>🚀 개발용: 신분증 인증으로 건너뛰기</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -638,20 +631,6 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  devSkipButton: {
-    backgroundColor: '#FF9500',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#FF9500',
-  },
-  devSkipButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
     color: '#FFFFFF',
   },
   verifyButton: {

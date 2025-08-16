@@ -115,16 +115,6 @@ export default function IDVerificationScreen({ navigation }) {
           <Text style={styles.bottomText}>빛이 반사되지 않도록 주의하세요.</Text>
         </View>
 
-        {/* 개발용 건너뛰기 버튼 */}
-        <TouchableOpacity 
-          style={styles.devSkipButton}
-          onPress={() => {
-            updateIDVerificationData({ idVerified: true });
-            navigation.navigate('IDVerificationComplete');
-          }}
-        >
-          <Text style={styles.devSkipButtonText}>🚀 개발용: 신분증 인증 건너뛰기</Text>
-        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -174,18 +164,6 @@ export default function IDVerificationScreen({ navigation }) {
         </View>
       </CameraView>
 
-      {/* 개발용 건너뛰기 버튼 */}
-      <View style={styles.devSkipContainer}>
-        <TouchableOpacity 
-          style={styles.devSkipButton}
-          onPress={() => {
-            updateIDVerificationData({ idVerified: true });
-            navigation.navigate('IDVerificationComplete');
-          }}
-        >
-          <Text style={styles.devSkipButtonText}>🚀 개발용: 신분증 인증 건너뛰기</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -403,25 +381,5 @@ const styles = StyleSheet.create({
   },
   captureButtonDisabled: {
     opacity: 0.5,
-  },
-  devSkipContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  devSkipButton: {
-    backgroundColor: '#FF9500',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  devSkipButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
   },
 });
