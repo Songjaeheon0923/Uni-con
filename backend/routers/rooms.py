@@ -7,6 +7,64 @@ import uuid
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
+@router.get("/search/text", response_model=List[RoomPin])
+async def search_rooms_by_text(
+    query: str = Query(..., description="검색어 (주소, 지역명 등)"),
+    limit: int = Query(100, description="결과 개수 제한"),
+):
+    """텍스트 기반 방 검색"""
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 주소, 설명, 거래유형에서 검색어를 포함하는 방 검색
+        search_query = f"%{query}%"
+        
+        sql = """
+            SELECT room_id, address, latitude, longitude, price_deposit, price_monthly,
+                   transaction_type, area, rooms, risk_score, favorite_count
+            FROM rooms
+            WHERE is_active = 1
+            AND (
+                address LIKE ? OR 
+                description LIKE ? OR
+                transaction_type LIKE ?
+            )
+            ORDER BY view_count DESC, favorite_count DESC
+            LIMIT ?
+        """
+        
+        cursor.execute(sql, (search_query, search_query, search_query, limit))
+        results = cursor.fetchall()
+        
+        # 결과를 RoomPin 모델로 변환
+        rooms = []
+        for row in results:
+            room = RoomPin(
+                room_id=row[0],
+                address=row[1],
+                latitude=row[2],
+                longitude=row[3],
+                price_deposit=row[4],
+                price_monthly=row[5],
+                transaction_type=row[6],
+                area=row[7],
+                rooms=row[8] or 1,
+                risk_score=row[9],
+                favorite_count=row[10],
+            )
+            rooms.append(room)
+        
+        return rooms
+        
+    except Exception as e:
+        print(f"Error searching rooms by text: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
 @router.get("/search", response_model=List[RoomPin])
 async def search_rooms_on_map(
     lat_min: float = Query(..., description="최소 위도"),

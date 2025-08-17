@@ -173,6 +173,41 @@ def init_db():
     
     # school_verifications 테이블은 제거됨 (users 테이블에 통합)
     
+    # policies 테이블 생성
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS policies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            content TEXT NOT NULL,
+            url TEXT UNIQUE NOT NULL,
+            category TEXT NOT NULL,
+            target_age_min INTEGER,
+            target_age_max INTEGER,
+            target_gender TEXT,
+            target_location TEXT,
+            tags TEXT,
+            is_active BOOLEAN DEFAULT TRUE,
+            view_count INTEGER DEFAULT 0,
+            relevance_score REAL DEFAULT 0.0,
+            crawled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # policy_views 테이블 생성 (사용자 조회 기록)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS policy_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            policy_id INTEGER NOT NULL,
+            viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (policy_id) REFERENCES policies (id),
+            UNIQUE(user_id, policy_id)
+        )
+    ''')
+    
     conn.commit()
     
     # 더미 데이터 생성
@@ -390,7 +425,7 @@ def get_user_profile(user_id: int) -> Optional[UserProfile]:
             smoking_status=profile[5],
             noise_sensitivity=profile[6],
             age=profile[7],
-            gender=profile[12],  # users 테이블에서 가져온 gender
+            gender=profile[12],  # users 테이블에서 가져온 gender (12번째 인덱스)
             gender_preference=None,  # 제거된 필드
             personality_type=profile[8],
             lifestyle_type=profile[9],

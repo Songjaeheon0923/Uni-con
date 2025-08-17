@@ -6,3 +6,7 @@ bcrypt==4.0.1
 python-multipart
 sqlalchemy
 PyJWT==2.8.0
+playwright
+beautifulsoup4
+requests
+schedule

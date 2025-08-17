@@ -173,7 +173,7 @@ async def get_room_favorites(room_id: str):
         # 찜한 사용자들 조회 (users 테이블과 user_profiles 테이블 조인)
         cursor.execute(
             """
-            SELECT f.user_id, u.name, f.created_at, up.age, up.gender
+            SELECT f.user_id, u.name, f.created_at, up.age, u.gender
             FROM favorites f
             JOIN users u ON f.user_id = u.id
             LEFT JOIN user_profiles up ON f.user_id = up.user_id

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import init_db
-from routers import auth, users, profile, rooms, favorites
+from routers import auth, users, profile, rooms, favorites, policies, admin
 
 
 @asynccontextmanager
@@ -28,6 +28,8 @@ app.include_router(users.router, prefix="/users")
 app.include_router(profile.router)
 app.include_router(rooms.router)
 app.include_router(favorites.router)
+app.include_router(policies.router)
+app.include_router(admin.router)
 
 
 @app.get("/")

@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import HTTPException, status, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = "your-secret-key-here-change-in-production"
+SECRET_KEY = "your-secret-key-change-this-in-production"
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HOURS = 24
 

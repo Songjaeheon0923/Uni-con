@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer
 from models.user import User
 from pydantic import BaseModel
-from utils.auth import get_current_user
+from auth.jwt_handler import get_current_user
 from database.connection import get_db_connection, get_user_info, update_user_info
 
 router = APIRouter()
@@ -18,13 +18,13 @@ class ProfileUpdate(BaseModel):
 
 
 @router.get("/me", response_model=User)
-async def get_me(current_user: dict = Depends(get_current_user)):
+async def get_me(current_user = Depends(get_current_user)):
     # 데이터베이스에서 사용자 정보 조회
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
-        cursor.execute("SELECT id, email, name FROM users WHERE id = ?", (current_user["id"],))
+        cursor.execute("SELECT id, email, name FROM users WHERE id = ?", (current_user.id,))
         user_data = cursor.fetchone()
         
         if not user_data:

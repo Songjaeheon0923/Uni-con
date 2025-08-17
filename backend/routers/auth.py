@@ -7,7 +7,7 @@ from database.connection import (
     update_user_school_verification, get_user_by_id, get_db_connection
 )
 from utils.security import verify_password, get_password_hash
-from utils.auth import create_access_token
+from auth.jwt_handler import create_access_token
 import session
 
 router = APIRouter()
@@ -43,7 +43,10 @@ async def login(user_data: UserLogin):
         )
     
     # JWT 토큰 생성
-    access_token = create_access_token(user["id"], user["email"])
+    access_token = create_access_token({
+        "sub": user["email"],
+        "user_id": user["id"]
+    })
     
     # 세션에도 저장 (하위 호환성)
     session.current_user_session = {
