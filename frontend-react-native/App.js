@@ -22,6 +22,10 @@ import ChatScreen from "./src/screens/ChatScreen";
 import ContractVerificationScreen from "./src/screens/ContractVerificationScreen";
 import ContractCameraScreen from "./src/screens/ContractCameraScreen";
 import ContractResultScreen from "./src/screens/ContractResultScreen";
+import RoomDetailScreen from "./src/screens/RoomDetailScreen";
+import LandlordInfoScreen from "./src/screens/LandlordInfoScreen";
+import ContractViewScreen from "./src/screens/ContractViewScreen";
+import FavoritedUsersScreen from "./src/screens/FavoritedUsersScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -91,6 +95,27 @@ function HomeStack({ user }) {
           headerShown: false,
         }}
       />
+      <Stack.Screen 
+        name="RoomDetail" 
+        component={RoomDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="LandlordInfo" 
+        component={LandlordInfoScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ContractView" 
+        component={ContractViewScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -108,6 +133,22 @@ function AuthStack() {
       <Stack.Screen name="IDVerification" component={IDVerificationScreen} />
       <Stack.Screen name="IDVerificationComplete" component={IDVerificationCompleteScreen} />
       <Stack.Screen name="SchoolVerification" component={SchoolVerificationScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function MapStack({ user }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="MapMain" component={MapScreen} />
+      <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
+      <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
+      <Stack.Screen name="ContractView" component={ContractViewScreen} />
+      <Stack.Screen name="FavoritedUsers" component={FavoritedUsersScreen} />
     </Stack.Navigator>
   );
 }
@@ -138,21 +179,9 @@ function MainApp() {
       <Tab.Screen name="홈">
         {(props) => <HomeStack {...props} user={user} />}
       </Tab.Screen>
-      <Tab.Screen 
-        name="지도" 
-        component={MapScreen} 
-        options={{
-          headerShown: true,
-          headerTitle: '방 찾기',
-          headerStyle: {
-            backgroundColor: '#FF6600',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      />
+      <Tab.Screen name="지도">
+        {(props) => <MapStack {...props} user={user} />}
+      </Tab.Screen>
       <Tab.Screen 
         name="내 정보"
         options={{

@@ -27,6 +27,8 @@ export default function HomeScreen({ navigation, user }) {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [currentLocation, setCurrentLocation] = useState('성북구');
+  const [policyNews, setPolicyNews] = useState([]);
+  const [loadingPolicies, setLoadingPolicies] = useState(false);
 
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user || {
@@ -40,6 +42,7 @@ export default function HomeScreen({ navigation, user }) {
   useEffect(() => {
     loadData();
     getCurrentLocation();
+    loadPolicyNews();
   }, []);
 
   const getCurrentLocation = async () => {
@@ -110,9 +113,29 @@ export default function HomeScreen({ navigation, user }) {
     }
   };
 
+  const loadPolicyNews = async () => {
+    setLoadingPolicies(true);
+    try {
+      const policies = await ApiService.getPolicyRecommendations(3);
+      setPolicyNews(policies || []);
+    } catch (error) {
+      console.error('정책 뉴스 로드 실패:', error);
+      // 로그인하지 않은 경우 인기 정책으로 대체
+      try {
+        const popularPolicies = await ApiService.getPopularPolicies(3);
+        setPolicyNews(popularPolicies || []);
+      } catch (fallbackError) {
+        console.error('인기 정책 로드도 실패:', fallbackError);
+        setPolicyNews([]);
+      }
+    } finally {
+      setLoadingPolicies(false);
+    }
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
-    loadData();
+    Promise.all([loadData(), loadPolicyNews()]);
   };
 
   const toggleFavorite = async (roomId, event) => {
@@ -177,8 +200,33 @@ export default function HomeScreen({ navigation, user }) {
     navigation.navigate('ContractVerification');
   };
 
-  const handleNewsDetail = () => {
-    Alert.alert('정책 뉴스', '청년 전세자금 대출에 대한 자세한 내용을 확인하세요.');
+  const handleNewsDetail = async (policy) => {
+    try {
+      // 정책 조회 기록
+      if (policy && policy.policy && policy.policy.id) {
+        await ApiService.recordPolicyView(policy.policy.id);
+      }
+      
+      Alert.alert(
+        '정책 뉴스', 
+        policy?.policy?.description || '정책 상세 내용을 확인하세요.',
+        [
+          { text: '닫기', style: 'cancel' },
+          { 
+            text: '자세히 보기', 
+            onPress: () => {
+              if (policy?.policy?.url) {
+                // 실제로는 웹뷰나 브라우저로 열기
+                console.log('정책 URL:', policy.policy.url);
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('정책 조회 기록 실패:', error);
+      Alert.alert('정책 뉴스', policy?.policy?.description || '정책 상세 내용을 확인하세요.');
+    }
   };
 
   const getFilteredRooms = () => {
@@ -347,15 +395,38 @@ export default function HomeScreen({ navigation, user }) {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>주요 정책 NEWS</Text>
 
-        <View style={styles.newsBox}>
-          <View style={styles.newsContent}>
-            <Text style={styles.newsTag}>#청년 정책</Text>
-            <Text style={styles.newsTitle}>청년 전세자금 대출, 최대 1억까지 가능!</Text>
+        {loadingPolicies ? (
+          <View style={styles.newsBox}>
+            <Text style={styles.loadingText}>정책 정보를 불러오는 중...</Text>
           </View>
-          <TouchableOpacity style={styles.newsButton} onPress={handleNewsDetail}>
-            <Text style={styles.newsButtonText}>자세히 보기</Text>
-          </TouchableOpacity>
-        </View>
+        ) : policyNews.length > 0 ? (
+          policyNews.map((policy, index) => (
+            <View key={index} style={[styles.newsBox, index > 0 && { marginTop: 10 }]}>
+              <View style={styles.newsContent}>
+                <Text style={styles.newsTag}>#{policy.policy.category}</Text>
+                <Text style={styles.newsTitle} numberOfLines={2}>
+                  {policy.policy.title}
+                </Text>
+                {policy.reason && (
+                  <Text style={styles.newsReason}>{policy.reason}</Text>
+                )}
+              </View>
+              <TouchableOpacity 
+                style={styles.newsButton} 
+                onPress={() => handleNewsDetail(policy)}
+              >
+                <Text style={styles.newsButtonText}>자세히 보기</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <View style={styles.newsBox}>
+            <View style={styles.newsContent}>
+              <Text style={styles.newsTag}>#청년 정책</Text>
+              <Text style={styles.newsTitle}>정책 정보를 준비 중입니다</Text>
+            </View>
+          </View>
+        )}
       </View>
     </ScrollView>
 
@@ -599,5 +670,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  newsReason: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 2,
   },
 });
