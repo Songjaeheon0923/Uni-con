@@ -75,6 +75,15 @@ class ApiService {
     return this.request(`/rooms/search?${params}`);
   }
 
+  async searchRoomsByText(query, limit = 100) {
+    const params = new URLSearchParams({
+      query: query,
+      limit: limit,
+    });
+    
+    return this.request(`/rooms/search/text?${params}`);
+  }
+
   async getRoomDetail(roomId) {
     return this.request(`/rooms/${roomId}`);
   }
@@ -262,6 +271,33 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
     });
+  }
+
+  // 정책 관련 API
+  async getPolicyRecommendations(limit = 10) {
+    return this.request(`/policies/recommendations?limit=${limit}`);
+  }
+
+  async getPopularPolicies(limit = 10) {
+    return this.request(`/policies/popular?limit=${limit}`);
+  }
+
+  async recordPolicyView(policyId) {
+    return this.request(`/policies/view/${policyId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getPolicyCategories() {
+    return this.request('/policies/categories');
+  }
+
+  async getPoliciesByCategory(category, limit = 20) {
+    return this.request(`/policies/category/${encodeURIComponent(category)}?limit=${limit}`);
+  }
+
+  async searchPolicies(query, limit = 20) {
+    return this.request(`/policies/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   }
 }
 
