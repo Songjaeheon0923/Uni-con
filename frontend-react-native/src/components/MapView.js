@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef } from "react";
 import { View, StyleSheet, Text, Dimensions } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 
 const { width, height } = Dimensions.get("window");
@@ -88,45 +89,27 @@ const PropertyMapView = forwardRef(({
     }
   };
 
-  const getMarkerColor = (property) => {
-    if (!property.price) return "#FF6B35";
-
-    if (property.price.includes("전세")) return "#4A90E2";
-    if (property.price.includes("월세")) return "#4ECDC4";
-    if (property.price.includes("매매")) return "#FF6B6B";
-    return "#FF6B35";
-  };
 
   const PropertyMarker = ({ property }) => {
     const isSelected = selectedPropertyId === property.id;
-    const markerColor = getMarkerColor(property);
-
-    // 가격에서 숫자만 추출해서 간단하게 표시
-    const displayPrice = property.price
-      ? property.price.replace(/[^0-9]/g, "").slice(0, 4) +
-        (property.price.includes("만") ? "만" : "")
-      : "문의";
 
     return (
       <Marker
+        key={property.id}
         coordinate={{
           latitude: property.latitude,
           longitude: property.longitude,
         }}
         onPress={() => onMarkerPress && onMarkerPress(property)}
-        tracksViewChanges={false} // 성능 최적화
+        tracksViewChanges={false}
+        anchor={{ x: 0.5, y: 0.5 }}
       >
-        <View
-          style={[
-            styles.markerContainer,
-            { backgroundColor: markerColor },
-            isSelected && styles.selectedMarker,
-          ]}
-        >
-          <Text style={styles.markerText} numberOfLines={1}>
-            {displayPrice}
-          </Text>
-          <View style={[styles.markerTail, { borderTopColor: markerColor }]} />
+        <View style={isSelected ? styles.selectedHouseMarker : styles.houseMarkerContainer}>
+          <Ionicons 
+            name="home" 
+            size={isSelected ? 28 : 24} 
+            color="#ffffff"
+          />
         </View>
       </Marker>
     );
@@ -223,51 +206,25 @@ const styles = StyleSheet.create({
     width: width,
     height: height,
   },
-  markerContainer: {
-    backgroundColor: "#FF6B35",
-    borderRadius: 15,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 2,
-    borderColor: "white",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  houseMarkerContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#333333",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 40,
-    maxWidth: 80,
+    borderWidth: 2,
+    borderColor: "#ffffff",
   },
-  selectedMarker: {
-    transform: [{ scale: 1.3 }],
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  markerText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  markerTail: {
-    position: "absolute",
-    top: "100%",
-    left: "50%",
-    marginLeft: -3,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 3,
-    borderRightWidth: 3,
-    borderTopWidth: 5,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderTopColor: "#FF6B35",
+  selectedHouseMarker: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FF6600",
+    borderWidth: 3,
+    borderColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
   },
   currentLocationMarker: {
     width: 20,
