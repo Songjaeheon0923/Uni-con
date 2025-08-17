@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,7 +21,15 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState(process.env.EXPO_PUBLIC_PASSWORD || '');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showTestAccountModal, setShowTestAccountModal] = useState(false);
   const { login } = useAuth();
+
+  // 테스트 계정 목록
+  const testAccounts = [
+    { id: 1, email: 'test1@example.com', name: '김민수', password: 'password123' },
+    { id: 2, email: 'test2@example.com', name: '박지영', password: 'password123' },
+    { id: 3, email: 'test3@example.com', name: '이동욱', password: 'password123' },
+  ];
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -46,6 +56,12 @@ export default function LoginScreen({ navigation }) {
 
   const handleSignupNavigation = () => {
     navigation.navigate('Signup');
+  };
+
+  const handleTestAccountSelect = (account) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setShowTestAccountModal(false);
   };
 
   return (
@@ -129,14 +145,50 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.testContainer}>
             <TouchableOpacity 
               style={styles.testButton}
-              onPress={() => {
-                setEmail('test@example.com');
-                setPassword('password123');
-              }}
+              onPress={() => setShowTestAccountModal(true)}
             >
               <Text style={styles.testButtonText}>테스트 계정으로 채우기</Text>
             </TouchableOpacity>
           </View>
+
+          {/* 테스트 계정 선택 모달 */}
+          <Modal
+            visible={showTestAccountModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowTestAccountModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>테스트 계정 선택</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowTestAccountModal(false)}
+                    style={styles.closeButton}
+                  >
+                    <Ionicons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+                
+                <FlatList
+                  data={testAccounts}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity 
+                      style={styles.accountItem}
+                      onPress={() => handleTestAccountSelect(item)}
+                    >
+                      <View style={styles.accountInfo}>
+                        <Text style={styles.accountName}>{item.name}</Text>
+                        <Text style={styles.accountEmail}>{item.email}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </View>
+          </Modal>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -269,5 +321,56 @@ const styles = StyleSheet.create({
   testButtonText: {
     fontSize: 12,
     color: '#999',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 30,
+    maxHeight: 400,
+    width: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  accountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+  },
+  accountEmail: {
+    fontSize: 14,
+    color: '#666',
   },
 });
