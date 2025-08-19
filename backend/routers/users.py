@@ -39,10 +39,9 @@ async def get_me(current_user = Depends(get_current_user)):
 
 
 @router.put("/profile/me")
-async def update_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
-    user_id = current_user["id"]
-    print(f"Updating profile for user_id: {user_id}")
-    print(f"Profile data received: {profile_data}")
+async def update_profile(profile_data: dict, current_user: User = Depends(get_current_user)):
+    user_id = current_user.id
+    print(f"[프로필 업데이트] 사용자 ID: {user_id}")
     
     # 프로필 데이터 업데이트 - user_profiles 테이블 사용
     conn = get_db_connection()
@@ -52,13 +51,12 @@ async def update_profile(profile_data: dict, current_user: dict = Depends(get_cu
         # 기존 프로필이 있는지 확인
         cursor.execute("SELECT * FROM user_profiles WHERE user_id = ?", (user_id,))
         existing_profile = cursor.fetchone()
-        print(f"Existing profile: {existing_profile}")
         
         if not existing_profile:
             # 프로필이 없으면 새로 생성
             cursor.execute("INSERT INTO user_profiles (user_id) VALUES (?)", (user_id,))
             conn.commit()
-            print("Created new profile")
+            print("[프로필 업데이트] 새 프로필 생성 완료")
         
         # 프로필 필드들 업데이트 - 직접 필드명 사용
         update_fields = []
@@ -67,48 +65,51 @@ async def update_profile(profile_data: dict, current_user: dict = Depends(get_cu
         # 유효한 데이터베이스 필드들
         valid_fields = ['sleep_type', 'home_time', 'cleaning_frequency', 'cleaning_sensitivity', 'smoking_status', 'noise_sensitivity']
         
-        print(f"Valid fields: {valid_fields}")
-        
         for field in valid_fields:
             if field in profile_data and profile_data[field] is not None:
                 update_fields.append(f"{field} = ?")
                 update_values.append(profile_data[field])
-                print(f"Adding field {field}: {profile_data[field]}")
         
         # 완성도 체크 - 모든 필드가 채워졌는지 확인
-        if len(update_fields) >= 6:  # 모든 필드가 업데이트 되었다면
+        is_complete = len(update_fields) >= 6
+        if is_complete:
             update_fields.append("is_complete = ?")
             update_values.append(True)
-            print("Profile is complete")
         
         if update_fields:
             update_values.append(user_id)
             update_query = f"UPDATE user_profiles SET {', '.join(update_fields)}, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?"
-            print(f"Update query: {update_query}")
-            print(f"Update values: {update_values}")
             cursor.execute(update_query, update_values)
             conn.commit()
-            print("Profile updated successfully")
+            
+            completion_status = "완료" if is_complete else "진행중"
+            print(f"[프로필 업데이트] {len(update_fields)}개 항목 업데이트 - 상태: {completion_status}")
+            
+            # 업데이트된 항목들을 간단히 출력
+            updated_items = []
+            for field in valid_fields:
+                if field in profile_data and profile_data[field] is not None:
+                    updated_items.append(f"{field}: {profile_data[field]}")
+            print(f"[업데이트 항목] {', '.join(updated_items)}")
         
         # 업데이트된 프로필 정보 가져오기
         cursor.execute("SELECT * FROM user_profiles WHERE user_id = ?", (user_id,))
         updated_profile = cursor.fetchone()
-        print(f"Updated profile: {updated_profile}")
         
         return {"message": "Profile updated successfully", "profile": dict(zip([col[0] for col in cursor.description], updated_profile))}
         
     except Exception as e:
         conn.rollback()
-        print(f"Error updating profile: {e}")
+        print(f"[프로필 업데이트 오류] 사용자 ID {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
 
 
 @router.get("/info/me")
-async def get_my_info(current_user: dict = Depends(get_current_user)):
+async def get_my_info(current_user: User = Depends(get_current_user)):
     """사용자 정보 조회"""
-    user_id = current_user["id"]
+    user_id = current_user.id
     user_info = get_user_info(user_id)
     
     if user_info is None:
@@ -128,9 +129,9 @@ async def get_my_info(current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/info/me")
-async def update_my_info(info_data: dict, current_user: dict = Depends(get_current_user)):
+async def update_my_info(info_data: dict, current_user: User = Depends(get_current_user)):
     """사용자 정보 업데이트"""
-    user_id = current_user["id"]
+    user_id = current_user.id
     print(f"Updating user info for user_id: {user_id}")
     print(f"Info data received: {info_data}")
     
@@ -146,9 +147,9 @@ async def update_my_info(info_data: dict, current_user: dict = Depends(get_curre
 
 
 @router.put("/bio/me")
-async def update_my_bio(bio_data: dict, current_user: dict = Depends(get_current_user)):
+async def update_my_bio(bio_data: dict, current_user: User = Depends(get_current_user)):
     """한줄 소개만 업데이트"""
-    user_id = current_user["id"]
+    user_id = current_user.id
     bio = bio_data.get("bio", "").strip()
     print(f"Updating bio for user_id: {user_id}")
     print(f"Bio data: {bio}")

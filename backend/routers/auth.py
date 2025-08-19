@@ -240,7 +240,10 @@ async def complete_signup(request: CompleteSignupRequest):
         conn.close()
         
         # JWT 토큰 생성
-        access_token = create_access_token(user_id, request.email)
+        access_token = create_access_token({
+            "sub": request.email,
+            "user_id": user_id
+        })
         
         print(f"[DEBUG] User created successfully: ID {user_id}")
         
