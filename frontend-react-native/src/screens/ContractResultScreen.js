@@ -29,6 +29,7 @@ export default function ContractResultScreen({ navigation, route }) {
   const [currentStage, setCurrentStage] = useState("분석 시작");
   const [progress, setProgress] = useState(0);
   const [stages, setStages] = useState([]);
+  const [isTransitioning, setIsTransitioning] = useState(false); // 화면 전환 상태
 
   // 실시간 분석 상태 폴링
   useEffect(() => {
@@ -36,10 +37,15 @@ export default function ContractResultScreen({ navigation, route }) {
 
     let intervalId;
     let timeoutId;
+    let errorCount = 0;
+    const maxErrors = 5; // 최대 5번 연속 오류까지 허용
 
     const pollAnalysisStatus = async () => {
       try {
         const statusResponse = await api.getAnalysisStatus(taskId);
+        
+        // 성공적으로 응답을 받으면 에러 카운트 리셋
+        errorCount = 0;
         
         console.log('분석 상태 업데이트:', {
           status: statusResponse.status,
@@ -55,39 +61,85 @@ export default function ContractResultScreen({ navigation, route }) {
         setStages(statusResponse.stages || []);
         
         if (statusResponse.status === 'completed') {
-          // 분석 완료
-          setIsAnalyzing(false);
-          setAnalysisResult(statusResponse.result.analysis);
+          // 분석 완료 - 부드러운 전환 효과
+          console.log('분석 완료! 결과 화면으로 전환:', statusResponse.result);
+          setCurrentStage("분석 완료");
+          setProgress(100);
+          setIsTransitioning(true);
+          
+          // 0.5초 후 결과 화면으로 전환 (사용자가 완료를 인지할 시간 제공)
+          setTimeout(() => {
+            setIsAnalyzing(false);
+            setAnalysisResult(statusResponse.result.analysis);
+            setAnalysisError(null);
+            setIsTransitioning(false);
+          }, 500);
+          
           clearInterval(intervalId);
           clearTimeout(timeoutId);
         } else if (statusResponse.status === 'failed') {
           // 분석 실패
-          setIsAnalyzing(false);
-          setAnalysisError(statusResponse.error || '분석에 실패했습니다.');
+          console.log('분석 실패:', statusResponse.error);
+          setCurrentStage("분석 실패");
+          setIsTransitioning(true);
+          
+          // 0.5초 후 에러 상태로 전환
+          setTimeout(() => {
+            setIsAnalyzing(false);
+            setAnalysisError(statusResponse.error || '분석에 실패했습니다.');
+            setAnalysisResult(null);
+            setIsTransitioning(false);
+          }, 500);
+          
           clearInterval(intervalId);
           clearTimeout(timeoutId);
         }
       } catch (error) {
-        console.error('상태 조회 오류:', error);
-        // 계속 폴링하되, 너무 많은 오류가 발생하면 중지
+        errorCount++;
+        console.error(`상태 조회 오류 (${errorCount}/${maxErrors}):`, error);
+        
+        // 너무 많은 오류가 연속으로 발생하면 폴링 중지
+        if (errorCount >= maxErrors) {
+          console.error('연속된 오류로 인해 폴링을 중지합니다.');
+          setCurrentStage("연결 오류");
+          setIsTransitioning(true);
+          
+          setTimeout(() => {
+            setIsAnalyzing(false);
+            setAnalysisError('네트워크 연결이 불안정합니다. 네트워크 상태를 확인하고 다시 시도해주세요.');
+            setIsTransitioning(false);
+          }, 500);
+          
+          clearInterval(intervalId);
+          clearTimeout(timeoutId);
+        }
       }
     };
 
     // 즉시 첫 번째 상태 확인
     pollAnalysisStatus();
 
-    // 0.5초마다 상태 폴링 (더 빠른 동기화)
-    intervalId = setInterval(pollAnalysisStatus, 500);
+    // 1초마다 상태 폴링 (서버 부하 고려)
+    intervalId = setInterval(pollAnalysisStatus, 1000);
 
-    // 30초 후 타임아웃 (백업)
+    // 90초 후 타임아웃 (더 여유있는 시간)
     timeoutId = setTimeout(() => {
       if (isAnalyzing) {
-        setIsAnalyzing(false);
-        setAnalysisResult(getHardcodedResult());
-        setAnalysisError("분석이 지연되어 임시 결과를 표시합니다.");
+        console.log('분석 타임아웃 - 하드코딩된 결과 표시');
+        setCurrentStage("시간 초과");
+        setProgress(100);
+        setIsTransitioning(true);
+        
+        setTimeout(() => {
+          setIsAnalyzing(false);
+          setAnalysisResult(getHardcodedResult());
+          setAnalysisError("분석에 예상보다 시간이 오래 걸려 샘플 결과를 표시합니다. 실제 분석 결과와 다를 수 있습니다.");
+          setIsTransitioning(false);
+        }, 500);
+        
         clearInterval(intervalId);
       }
-    }, 30000);
+    }, 90000);
 
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -151,6 +203,17 @@ export default function ContractResultScreen({ navigation, route }) {
 
   const handleRetake = () => {
     navigation.goBack();
+  };
+
+  const handleRetry = () => {
+    // 분석 재시도
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    setAnalysisResult(null);
+    setCurrentStage("분석 재시작");
+    setProgress(0);
+    setStages([]);
+    setIsTransitioning(false);
   };
 
   const handleComplete = () => {
@@ -235,6 +298,42 @@ export default function ContractResultScreen({ navigation, route }) {
     }
   };
 
+  // 에러 상태 화면
+  if (analysisError && !isAnalyzing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>분석 오류</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <View style={styles.errorContainer}>
+          <View style={styles.errorIconContainer}>
+            <Ionicons name="alert-circle" size={80} color="#F44336" />
+          </View>
+          
+          <Text style={styles.errorTitle}>분석 중 문제가 발생했습니다</Text>
+          <Text style={styles.errorMessage}>{analysisError}</Text>
+          
+          <View style={styles.errorButtonContainer}>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <Ionicons name="refresh" size={20} color="#FFFFFF" />
+              <Text style={styles.retryButtonText}>다시 시도</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.retakeButton} onPress={handleRetake}>
+              <Ionicons name="camera" size={20} color="#666" />
+              <Text style={styles.retakeButtonText}>다시 촬영</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (isAnalyzing) {
     return (
       <SafeAreaView style={styles.container}>
@@ -246,13 +345,14 @@ export default function ContractResultScreen({ navigation, route }) {
           <View style={styles.placeholder} />
         </View>
 
-        <View style={styles.analyzingContainer}>
+        <ScrollView 
+          style={styles.analyzingScrollContainer}
+          contentContainerStyle={styles.analyzingScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* 계약서 이미지 미리보기 */}
           <View style={styles.analysisImageContainer}>
             <Image source={{ uri: photoUri }} style={styles.analysisImage} />
-            <View style={styles.analysisOverlay}>
-              <View style={styles.scanLine} />
-            </View>
           </View>
 
           {/* 분석 상태 */}
@@ -261,8 +361,15 @@ export default function ContractResultScreen({ navigation, route }) {
             
             {/* 현재 단계 표시 */}
             <View style={styles.currentStageContainer}>
-              <View style={styles.currentStageIndicator}>
-                <ActivityIndicator size="small" color="#FFFFFF" />
+              <View style={[
+                styles.currentStageIndicator,
+                isTransitioning && progress === 100 && { backgroundColor: '#4CAF50' }
+              ]}>
+                {isTransitioning && progress === 100 ? (
+                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                ) : (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                )}
               </View>
               <Text style={styles.currentStageText}>{currentStage}</Text>
             </View>
@@ -276,7 +383,7 @@ export default function ContractResultScreen({ navigation, route }) {
                       <Ionicons name="checkmark" size={16} color="#FFFFFF" />
                     </View>
                     <Text style={styles.completedStageText}>
-                      {stage.stage} ({new Date(stage.timestamp).toLocaleTimeString()})
+                      {stage.stage}
                     </Text>
                   </View>
                 ))}
@@ -302,7 +409,7 @@ export default function ContractResultScreen({ navigation, route }) {
               AI가 계약서의 위험 요소와 중요 조항들을 검토 중입니다
             </Text>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -473,10 +580,13 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 32,
   },
-  analyzingContainer: {
+  analyzingScrollContainer: {
     flex: 1,
+  },
+  analyzingScrollContent: {
     paddingHorizontal: 20,
     paddingVertical: 40,
+    minHeight: '100%',
   },
   analysisImageContainer: {
     alignItems: 'center',
@@ -493,26 +603,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  analysisOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-  },
-  scanLine: {
-    width: '80%',
-    height: 3,
-    backgroundColor: '#FF6600',
-    opacity: 0.8,
-    borderRadius: 2,
-  },
   analysisStatusContainer: {
-    flex: 1,
     alignItems: 'center',
+    paddingBottom: 40,
   },
   analysisTitle: {
     fontSize: 22,
@@ -790,5 +883,64 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.9,
     height: screenHeight * 0.7,
     resizeMode: 'contain',
+  },
+  // 에러 화면 스타일
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    backgroundColor: '#F8F8F8',
+  },
+  errorIconContainer: {
+    marginBottom: 30,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 40,
+  },
+  errorButtonContainer: {
+    width: '100%',
+    gap: 15,
+  },
+  retryButton: {
+    backgroundColor: '#FF6600',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  retakeButton: {
+    backgroundColor: '#F0F0F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  retakeButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
