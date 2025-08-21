@@ -256,6 +256,29 @@ class ApiService {
     });
   }
 
+  // 계약서 분석 관련 API
+  async analyzeContract(imageFile) {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageFile.uri,
+      type: imageFile.type || 'image/jpeg',
+      name: imageFile.name || 'contract.jpg',
+    });
+
+    return this.request('/contract/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(this.authToken && { 'Authorization': `Bearer ${this.authToken}` }),
+      },
+      body: formData,
+    });
+  }
+
+  async testContractAnalysis() {
+    return this.request('/contract/test');
+  }
+
   // 사용자 프로필 정보 조회
   async getUserProfile() {
     return this.request('/profile/me', {
