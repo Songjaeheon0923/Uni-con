@@ -275,8 +275,48 @@ class ApiService {
     });
   }
 
+  // 비동기 계약서 분석 시작
+  async startAnalysisAsync(imageFile) {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageFile.uri,
+      type: imageFile.type || 'image/jpeg',
+      name: imageFile.name || 'contract.jpg',
+    });
+
+    return this.request('/contract/analyze-async', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(this.authToken && { 'Authorization': `Bearer ${this.authToken}` }),
+      },
+      body: formData,
+    });
+  }
+
+  // 분석 상태 조회
+  async getAnalysisStatus(taskId) {
+    return this.request(`/contract/status/${taskId}`, {
+      method: 'GET',
+    });
+  }
+
   async testContractAnalysis() {
     return this.request('/contract/test');
+  }
+
+  // API URL 테스트 함수 (디버깅용)
+  async testApiConnection() {
+    console.log('Current API URL:', API_BASE_URL);
+    
+    try {
+      const response = await fetch(API_BASE_URL, { method: 'GET' });
+      console.log('API connection test result:', response.status);
+      return { success: true, status: response.status, url: API_BASE_URL };
+    } catch (error) {
+      console.error('API connection test failed:', error);
+      return { success: false, error: error.message, url: API_BASE_URL };
+    }
   }
 
   // 사용자 프로필 정보 조회

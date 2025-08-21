@@ -12,42 +12,88 @@ import {
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import api from '../services/api';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ContractResultScreen({ navigation, route }) {
-  const { photoUri, analysisData } = route.params;
+  const { photoUri, analysisData, taskId } = route.params;
   const [isAnalyzing, setIsAnalyzing] = useState(!analysisData);
   const [analysisResult, setAnalysisResult] = useState(analysisData || null);
   const [analysisError, setAnalysisError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [imageScale, setImageScale] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  
+  // 실시간 분석 상태
+  const [currentStage, setCurrentStage] = useState("분석 시작");
+  const [progress, setProgress] = useState(0);
+  const [stages, setStages] = useState([]);
 
-  // 실시간으로 route params 변경 감지
-  React.useEffect(() => {
-    const { analysisData: newAnalysisData, error } = route.params;
-    if (newAnalysisData && newAnalysisData !== analysisData) {
-      setAnalysisResult(newAnalysisData);
-      setIsAnalyzing(false);
-      setAnalysisError(null);
-    } else if (error) {
-      setIsAnalyzing(false);
-      setAnalysisError(error);
-    }
-  }, [route.params]);
-
+  // 실시간 분석 상태 폴링
   useEffect(() => {
-    // 실제 분석 데이터가 없는 경우에만 하드코딩된 결과 사용
-    if (!analysisData) {
-      const timer = setTimeout(() => {
+    if (!taskId || !isAnalyzing) return;
+
+    let intervalId;
+    let timeoutId;
+
+    const pollAnalysisStatus = async () => {
+      try {
+        const statusResponse = await api.getAnalysisStatus(taskId);
+        
+        console.log('분석 상태 업데이트:', {
+          status: statusResponse.status,
+          current_stage: statusResponse.current_stage,
+          progress: statusResponse.progress,
+          stages_count: statusResponse.stages?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        // 상태 업데이트
+        setCurrentStage(statusResponse.current_stage);
+        setProgress(statusResponse.progress);
+        setStages(statusResponse.stages || []);
+        
+        if (statusResponse.status === 'completed') {
+          // 분석 완료
+          setIsAnalyzing(false);
+          setAnalysisResult(statusResponse.result.analysis);
+          clearInterval(intervalId);
+          clearTimeout(timeoutId);
+        } else if (statusResponse.status === 'failed') {
+          // 분석 실패
+          setIsAnalyzing(false);
+          setAnalysisError(statusResponse.error || '분석에 실패했습니다.');
+          clearInterval(intervalId);
+          clearTimeout(timeoutId);
+        }
+      } catch (error) {
+        console.error('상태 조회 오류:', error);
+        // 계속 폴링하되, 너무 많은 오류가 발생하면 중지
+      }
+    };
+
+    // 즉시 첫 번째 상태 확인
+    pollAnalysisStatus();
+
+    // 0.5초마다 상태 폴링 (더 빠른 동기화)
+    intervalId = setInterval(pollAnalysisStatus, 500);
+
+    // 30초 후 타임아웃 (백업)
+    timeoutId = setTimeout(() => {
+      if (isAnalyzing) {
         setIsAnalyzing(false);
         setAnalysisResult(getHardcodedResult());
-      }, 3000);
+        setAnalysisError("분석이 지연되어 임시 결과를 표시합니다.");
+        clearInterval(intervalId);
+      }
+    }, 30000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [analysisData]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [taskId, isAnalyzing]);
 
   const getHardcodedResult = () => ({
     subtitle: "대체로 안전하지만 일부 조항 추가 확인 필요",
@@ -201,12 +247,60 @@ export default function ContractResultScreen({ navigation, route }) {
         </View>
 
         <View style={styles.analyzingContainer}>
-          <ActivityIndicator size="large" color="#FF6600" />
-          <Text style={styles.analyzingText}>AI가 계약서를 분석하고 있습니다...</Text>
-          <Text style={styles.analyzingSubtext}>잠시만 기다려주세요</Text>
-          
-          <View style={styles.photoPreview}>
-            <Image source={{ uri: photoUri }} style={styles.previewImage} />
+          {/* 계약서 이미지 미리보기 */}
+          <View style={styles.analysisImageContainer}>
+            <Image source={{ uri: photoUri }} style={styles.analysisImage} />
+            <View style={styles.analysisOverlay}>
+              <View style={styles.scanLine} />
+            </View>
+          </View>
+
+          {/* 분석 상태 */}
+          <View style={styles.analysisStatusContainer}>
+            <Text style={styles.analysisTitle}>계약서를 꼼꼼히 분석하고 있어요</Text>
+            
+            {/* 현재 단계 표시 */}
+            <View style={styles.currentStageContainer}>
+              <View style={styles.currentStageIndicator}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+              <Text style={styles.currentStageText}>{currentStage}</Text>
+            </View>
+
+            {/* 완료된 단계들 표시 */}
+            {stages.length > 1 && (
+              <View style={styles.stagesContainer}>
+                {stages.slice(0, -1).map((stage, index) => (
+                  <View key={index} style={styles.completedStageItem}>
+                    <View style={styles.completedStageIndicator}>
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    </View>
+                    <Text style={styles.completedStageText}>
+                      {stage.stage} ({new Date(stage.timestamp).toLocaleTimeString()})
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* 진행률 바 */}
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill,
+                    { width: `${progress}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {progress}%
+              </Text>
+            </View>
+
+            <Text style={styles.analysisSubText}>
+              AI가 계약서의 위험 요소와 중요 조항들을 검토 중입니다
+            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -381,42 +475,130 @@ const styles = StyleSheet.create({
   },
   analyzingContainer: {
     flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  analysisImageContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+    position: 'relative',
+  },
+  analysisImage: {
+    width: 250,
+    height: 250 * (297 / 210), // A4 비율
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  analysisOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    borderRadius: 12,
   },
-  analyzingText: {
-    fontSize: 18,
+  scanLine: {
+    width: '80%',
+    height: 3,
+    backgroundColor: '#FF6600',
+    opacity: 0.8,
+    borderRadius: 2,
+  },
+  analysisStatusContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  analysisTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  currentStageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    width: '100%',
+  },
+  currentStageIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FF6600',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  currentStageText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginTop: 20,
-    textAlign: 'center',
+    flex: 1,
   },
-  analyzingSubtext: {
+  stagesContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  completedStageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  completedStageIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  completedStageText: {
     fontSize: 14,
     color: '#666',
-    marginTop: 8,
-    textAlign: 'center',
+    flex: 1,
   },
-  photoPreview: {
-    width: 200,
-    height: 200 * (297 / 210), // A4 비율 (세로 297mm : 가로 210mm)
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 40,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  previewImage: {
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     width: '100%',
+    marginBottom: 20,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  progressFill: {
     height: '100%',
-    resizeMode: 'cover',
+    backgroundColor: '#FF6600',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF6600',
+    minWidth: 40,
+  },
+  analysisSubText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   content: {
     flex: 1,
