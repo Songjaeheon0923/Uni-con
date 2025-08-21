@@ -11,12 +11,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
 
-export default function PersonalityTestScreen({ navigation }) {
+export default function PersonalityTestScreen({ navigation, route }) {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 출발점 파라미터 받기 (기본값: 'home')
+  const fromScreen = route?.params?.from || 'home';
 
   useEffect(() => {
     loadQuestions();
@@ -65,13 +68,26 @@ export default function PersonalityTestScreen({ navigation }) {
     setIsSubmitting(true);
     try {
       await ApiService.updateUserProfile(answers);
-      Alert.alert(
-        '완료!', 
-        '성격 유형 분석이 완료되었습니다!\n이제 매칭된 룸메이트를 확인해보세요.',
-        [
-          { text: '확인', onPress: () => navigation.navigate('MatchResults') }
-        ]
-      );
+      
+      if (fromScreen === 'profile') {
+        // 내 정보에서 온 경우 - 내 정보 화면으로 돌아가기
+        Alert.alert(
+          '완료!', 
+          '성격 유형 분석이 완료되었습니다!\n업데이트된 개성 유형을 확인해보세요.',
+          [
+            { text: '확인', onPress: () => navigation.goBack() }
+          ]
+        );
+      } else {
+        // 홈에서 온 경우 - 매칭 결과로 이동
+        Alert.alert(
+          '완료!', 
+          '성격 유형 분석이 완료되었습니다!\n이제 매칭된 룸메이트를 확인해보세요.',
+          [
+            { text: '확인', onPress: () => navigation.navigate('MatchResults') }
+          ]
+        );
+      }
     } catch (error) {
       console.error('프로필 저장 실패:', error);
       Alert.alert('오류', '프로필 저장에 실패했습니다.');
