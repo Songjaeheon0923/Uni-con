@@ -21,7 +21,18 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuthState();
-  }, []);
+    // API 서비스에 인증 에러 핸들러 설정
+    api.setAuthErrorHandler(handleUnauthorized);
+    
+    // 주기적으로 토큰 유효성 검사 (5분마다)
+    const interval = setInterval(() => {
+      if (isAuthenticated && accessToken) {
+        validateToken();
+      }
+    }, 5 * 60 * 1000); // 5분
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated, accessToken]);
 
   const checkAuthState = async () => {
     try {
@@ -47,6 +58,13 @@ export const AuthProvider = ({ children }) => {
           setAccessToken(null);
           setIsAuthenticated(false);
           api.setAuthToken(null);
+          
+          // 앱 진입 시 세션 만료 알림
+          Alert.alert(
+            '세션 만료',
+            '로그인 세션이 만료되었습니다. 다시 로그인해주세요.',
+            [{ text: '확인' }]
+          );
         }
       } else {
         // 저장된 토큰이 없으면 로그아웃 상태로 설정
@@ -64,6 +82,15 @@ export const AuthProvider = ({ children }) => {
       api.setAuthToken(null);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const validateToken = async () => {
+    try {
+      await api.getMe();
+    } catch (error) {
+      // 토큰 유효성 검사 실패 시 자동으로 handleUnauthorized가 호출됨
+      console.log('토큰 유효성 검사 실패 - 자동 로그아웃 처리');
     }
   };
 
@@ -144,6 +171,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     checkAuthState,
+    validateToken,
     handleUnauthorized,
   };
 
