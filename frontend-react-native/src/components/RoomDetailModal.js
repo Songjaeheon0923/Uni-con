@@ -12,6 +12,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import HomeIcon from './HomeIcon';
 import ApiService from '../services/api';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -143,7 +144,7 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
               {/* 매물 기본 정보 */}
               <View style={styles.roomInfo}>
                 <View style={styles.roomImagePlaceholder}>
-                  <Ionicons name="home" size={50} color="#ccc" />
+                  <HomeIcon size={50} color="#ccc" />
                 </View>
                 
                 <View style={styles.roomDetails}>

@@ -12,6 +12,7 @@ import {
   SafeAreaView
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import HomeIcon from "../components/HomeIcon";
 import * as Location from 'expo-location';
 import ApiService from "../services/api";
 import RoomDetailModal from "../components/RoomDetailModal";
@@ -250,8 +251,8 @@ export default function HomeScreen({ navigation, user }) {
 
   const handleRoomPress = (room) => {
     console.log('🏠 HomeScreen selected room:', room); // 디버그용
-    setSelectedRoom(room);
-    setShowModal(true);
+    // RoomDetailScreen으로 이동
+    navigation.navigate('RoomDetail', { room });
   };
 
   const handleModalClose = () => {
@@ -271,7 +272,7 @@ export default function HomeScreen({ navigation, user }) {
     <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
       <View style={styles.roomImageContainer}>
         <View style={styles.placeholderImage}>
-          <Ionicons name="home" size={30} color="#ccc" />
+          <HomeIcon size={30} color="#ccc" />
         </View>
         <TouchableOpacity
           style={styles.heartButton}

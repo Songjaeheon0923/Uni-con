@@ -109,7 +109,7 @@ export default function ContractResultScreen({ navigation, route }) {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return '#4CAF50';
+    if (score >= 80) return '#FF6600';
     if (score >= 60) return '#FF9800';
     return '#F44336';
   };
@@ -149,10 +149,10 @@ export default function ContractResultScreen({ navigation, route }) {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'good': return '#4CAF50';
+      case 'good': return '#FF6600';
       case 'warning': return '#FF9800';
       case 'error': return '#F44336';
-      default: return '#4CAF50';
+      default: return '#FF6600';
     }
   };
 
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: '#FF6600',
   },
   recommendationText: {
     fontSize: 13,

@@ -5,6 +5,9 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 import { SignupProvider } from "./src/contexts/SignupContext";
+import HomeIcon from "./src/components/HomeIcon";
+import MapIcon from "./src/components/MapIcon";
+import HeartIcon from "./src/components/HeartIcon";
 import HomeScreen from "./src/screens/HomeScreen";
 import MapScreen from "./src/screens/MapScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
@@ -26,6 +29,8 @@ import RoomDetailScreen from "./src/screens/RoomDetailScreen";
 import LandlordInfoScreen from "./src/screens/LandlordInfoScreen";
 import ContractViewScreen from "./src/screens/ContractViewScreen";
 import FavoritedUsersScreen from "./src/screens/FavoritedUsersScreen";
+import FavoriteRoomsScreen from "./src/screens/FavoriteRoomsScreen";
+import UserProfileScreen from "./src/screens/UserProfileScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -116,6 +121,20 @@ function HomeStack({ user }) {
           headerShown: false,
         }}
       />
+      <Stack.Screen 
+        name="FavoritedUsers" 
+        component={FavoritedUsersScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="UserProfile" 
+        component={UserProfileScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -149,6 +168,7 @@ function MapStack({ user }) {
       <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
       <Stack.Screen name="ContractView" component={ContractViewScreen} />
       <Stack.Screen name="FavoritedUsers" component={FavoritedUsersScreen} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     </Stack.Navigator>
   );
 }
@@ -158,21 +178,34 @@ function MainApp() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
+        tabBarIcon: ({ focused, color }) => {
           if (route.name === '홈') {
-            iconName = focused ? 'home' : 'home-outline';
+            return <HomeIcon size={28} color={color} focused={focused} />;
           } else if (route.name === '지도') {
-            iconName = focused ? 'map' : 'map-outline';
+            return <MapIcon size={28} color={color} focused={focused} />;
+          } else if (route.name === '관심목록') {
+            return <HeartIcon size={28} color={color} focused={focused} />;
           } else if (route.name === '내 정보') {
-            iconName = focused ? 'person' : 'person-outline';
+            const iconName = focused ? 'person' : 'person-outline';
+            return <Ionicons name={iconName} size={28} color={color} />;
           }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#FF6600',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: '#C0C0C0',
+        tabBarStyle: {
+          height: 100,
+          paddingBottom: 30,
+          paddingTop: 15,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+          marginTop: 4,
+        },
         headerShown: false,
       })}
     >
@@ -182,6 +215,7 @@ function MainApp() {
       <Tab.Screen name="지도">
         {(props) => <MapStack {...props} user={user} />}
       </Tab.Screen>
+      <Tab.Screen name="관심목록" component={FavoriteRoomsScreen} />
       <Tab.Screen 
         name="내 정보"
         options={{

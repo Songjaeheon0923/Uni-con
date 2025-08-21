@@ -41,7 +41,7 @@ export default function MatchResultsScreen({ navigation }) {
   };
 
   const getCompatibilityColor = (score) => {
-    if (score >= 0.8) return '#4CAF50'; // 녹색
+    if (score >= 0.8) return '#FF6600'; // 녹색
     if (score >= 0.6) return '#FF9800'; // 주황색
     return '#F44336'; // 빨간색
   };
@@ -120,18 +120,18 @@ export default function MatchResultsScreen({ navigation }) {
       <Ionicons 
         name={icon} 
         size={16} 
-        color={isMatch ? '#4CAF50' : '#F44336'} 
+        color={isMatch ? '#FF6600' : '#F44336'} 
       />
       <Text style={[
         styles.detailItemText,
-        { color: isMatch ? '#4CAF50' : '#F44336' }
+        { color: isMatch ? '#FF6600' : '#F44336' }
       ]}>
         {title}
       </Text>
       <Ionicons 
         name={isMatch ? "checkmark-circle" : "close-circle"} 
         size={14} 
-        color={isMatch ? '#4CAF50' : '#F44336'} 
+        color={isMatch ? '#FF6600' : '#F44336'} 
       />
     </View>
   );

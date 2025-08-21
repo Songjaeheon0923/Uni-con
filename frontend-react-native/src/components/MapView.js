@@ -1,10 +1,49 @@
 import React, { useState, useEffect, useRef, forwardRef } from "react";
-import { View, StyleSheet, Text, Dimensions } from "react-native";
+import { View, StyleSheet, Text, Dimensions, Animated } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
+import HomeIcon from "./HomeIcon";
 import * as Location from "expo-location";
 
 const { width, height } = Dimensions.get("window");
+
+// PropertyMarker 컴포넌트를 MapView 밖으로 이동
+const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
+  const isSelected = selectedPropertyId === property.id;
+
+  const handlePress = () => {
+    if (onMarkerPress) {
+      onMarkerPress(property);
+    }
+  };
+
+  return (
+    <Marker
+      coordinate={{
+        latitude: property.latitude,
+        longitude: property.longitude,
+      }}
+      onPress={handlePress}
+      tracksViewChanges={false}
+      anchor={{ x: 0.5, y: 0.5 }}
+    >
+      <View style={[
+        styles.houseMarkerContainer,
+        isSelected ? {
+          backgroundColor: "#333333",
+          borderColor: "#ffffff",
+          borderWidth: 2,
+          transform: [{ scale: 1.2 }]
+        } : {}
+      ]}>
+        <HomeIcon 
+          size={20} 
+          color={isSelected ? "#ffffff" : "#333333"}
+        />
+      </View>
+    </Marker>
+  );
+};
 
 const PropertyMapView = forwardRef(({
   properties = [],
@@ -89,32 +128,6 @@ const PropertyMapView = forwardRef(({
     }
   };
 
-
-  const PropertyMarker = ({ property }) => {
-    const isSelected = selectedPropertyId === property.id;
-
-    return (
-      <Marker
-        key={property.id}
-        coordinate={{
-          latitude: property.latitude,
-          longitude: property.longitude,
-        }}
-        onPress={() => onMarkerPress && onMarkerPress(property)}
-        tracksViewChanges={false}
-        anchor={{ x: 0.5, y: 0.5 }}
-      >
-        <View style={isSelected ? styles.selectedHouseMarker : styles.houseMarkerContainer}>
-          <Ionicons 
-            name="home" 
-            size={isSelected ? 24 : 20} 
-            color={isSelected ? "#ffffff" : "#333333"}
-          />
-        </View>
-      </Marker>
-    );
-  };
-
   const CurrentLocationMarker = () => {
     if (!userLocation) return null;
 
@@ -134,15 +147,22 @@ const PropertyMapView = forwardRef(({
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={region}
-        showsUserLocation={false} // 커스텀 마커 사용
-        showsMyLocationButton={true}
+        showsUserLocation={false}
+        showsMyLocationButton={false}
         showsCompass={false}
         showsScale={false}
-        showsBuildings={true}
+        showsBuildings={false}
         showsTraffic={false}
+        showsIndoors={false}
         loadingEnabled={true}
         mapType="standard"
-        customMapStyle={zigbangMapStyle} // 직방 스타일
+        rotateEnabled={false}
+        pitchEnabled={false}
+        scrollEnabled={true}
+        zoomEnabled={true}
+        maxZoomLevel={18}
+        minZoomLevel={10}
+        customMapStyle={zigbangMapStyle}
         onMapReady={() => {
           console.log("지도 로드 완료");
           if (properties.length > 0) {
@@ -152,11 +172,16 @@ const PropertyMapView = forwardRef(({
       >
         <CurrentLocationMarker />
 
-        {properties.map((property) =>
-          property.latitude && property.longitude ? (
-            <PropertyMarker key={property.id} property={property} />
-          ) : null
-        )}
+        {properties
+          .filter((property) => property.latitude && property.longitude)
+          .map((property) => (
+            <PropertyMarker 
+              key={`marker-${property.id}-${selectedPropertyId === property.id ? 'selected' : 'unselected'}`} 
+              property={property}
+              selectedPropertyId={selectedPropertyId}
+              onMarkerPress={onMarkerPress}
+            />
+          ))}
       </MapView>
     </View>
   );
@@ -216,15 +241,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0e0e0",
   },
-  selectedHouseMarker: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  selectedMarkerStyle: {
     backgroundColor: "#333333",
-    borderWidth: 2,
     borderColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
+    borderWidth: 2,
   },
   currentLocationMarker: {
     width: 20,

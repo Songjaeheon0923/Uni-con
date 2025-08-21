@@ -14,6 +14,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import HomeIcon from '../components/HomeIcon';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen({ navigation }) {
@@ -80,7 +81,7 @@ export default function LoginScreen({ navigation }) {
           {/* 로고/일러스트레이션 영역 */}
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Ionicons name="home-outline" size={60} color="#FF6600" />
+              <HomeIcon size={60} color="#FF6600" />
             </View>
           </View>
 

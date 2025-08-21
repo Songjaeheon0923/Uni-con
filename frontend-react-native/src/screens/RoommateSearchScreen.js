@@ -61,15 +61,15 @@ export default function RoommateSearchScreen({ navigation }) {
         {/* 기능 설명 */}
         <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <Ionicons name="checkmark-circle" size={20} color="#FF6600" />
             <Text style={styles.featureText}>생활 패턴 분석</Text>
           </View>
           <View style={styles.featureItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <Ionicons name="checkmark-circle" size={20} color="#FF6600" />
             <Text style={styles.featureText}>성격 유형 매칭</Text>
           </View>
           <View style={styles.featureItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <Ionicons name="checkmark-circle" size={20} color="#FF6600" />
             <Text style={styles.featureText}>호환성 점수 제공</Text>
           </View>
         </View>

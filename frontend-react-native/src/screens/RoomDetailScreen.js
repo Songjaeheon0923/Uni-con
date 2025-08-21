@@ -18,9 +18,9 @@ import { formatRentPrice } from '../utils/priceFormatter';
 const { width } = Dimensions.get('window');
 
 export default function RoomDetailScreen({ route, navigation }) {
-  const { roomId } = route.params;
-  const [room, setRoom] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { roomId, room: roomFromParams } = route.params || {};
+  const [room, setRoom] = useState(roomFromParams || null);
+  const [loading, setLoading] = useState(!roomFromParams);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [images] = useState([
@@ -31,8 +31,11 @@ export default function RoomDetailScreen({ route, navigation }) {
   ]);
 
   useEffect(() => {
-    loadRoomDetail();
-  }, [roomId]);
+    // room 데이터가 파라미터로 전달되지 않은 경우에만 API 호출
+    if (!roomFromParams && roomId) {
+      loadRoomDetail();
+    }
+  }, [roomId, roomFromParams]);
 
   const loadRoomDetail = async () => {
     try {
@@ -41,8 +44,7 @@ export default function RoomDetailScreen({ route, navigation }) {
       setRoom(roomData);
     } catch (error) {
       console.error('방 정보 로드 실패:', error);
-      Alert.alert('오류', '방 정보를 불러올 수 없습니다.');
-      navigation.goBack();
+      // API 실패 시 에러 알림 없이 진행 (이미 room 데이터가 있을 수 있음)
     } finally {
       setLoading(false);
     }
@@ -55,20 +57,27 @@ export default function RoomDetailScreen({ route, navigation }) {
 
   const toggleFavorite = async () => {
     try {
+      const id = roomId || room?.room_id;
+      if (!id) {
+        setIsFavorited(!isFavorited);
+        return;
+      }
+      
       if (isFavorited) {
-        await ApiService.removeFavorite(roomId);
+        await ApiService.removeFavorite(id);
       } else {
-        await ApiService.addFavorite(roomId, 'user123'); // TODO: 실제 user ID 사용
+        await ApiService.addFavorite(id, 'user123'); // TODO: 실제 user ID 사용
       }
       setIsFavorited(!isFavorited);
     } catch (error) {
       console.error('찜 상태 변경 실패:', error);
-      Alert.alert('오류', '찜 상태를 변경할 수 없습니다.');
+      // API 실패해도 로컬 상태는 변경
+      setIsFavorited(!isFavorited);
     }
   };
 
   const handleContactOwner = () => {
-    navigation.navigate('LandlordInfo', { roomId });
+    navigation.navigate('FavoritedUsers', { roomId });
   };
 
   const handleViewFavoritedUsers = () => {
@@ -76,7 +85,8 @@ export default function RoomDetailScreen({ route, navigation }) {
   };
 
   const handleViewContract = () => {
-    navigation.navigate('ContractView', { roomId });
+    // 임시로 비활성화 - 클릭해도 아무것도 실행되지 않음
+    console.log('계약서 검증하기 버튼 클릭됨');
   };
 
   if (loading) {
@@ -146,7 +156,7 @@ export default function RoomDetailScreen({ route, navigation }) {
           <View style={styles.propertyHeader}>
             <Text style={styles.propertyId}>매물번호 {room?.room_id?.substring(room?.room_id?.lastIndexOf('_') + 1, room?.room_id?.lastIndexOf('_') + 9) || '123123123'}</Text>
             <View style={styles.verificationBadge}>
-              <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
+              <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
               <Text style={styles.verificationText}>집주인 인증</Text>
             </View>
           </View>
@@ -407,15 +417,18 @@ const styles = StyleSheet.create({
   verificationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: '#FFF5F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FFE5D9',
     gap: 4,
   },
   verificationText: {
-    fontSize: 12,
-    color: '#4CAF50',
+    fontSize: 11,
+    color: '#FF6600',
+    fontWeight: '600',
     fontWeight: '600',
   },
   price: {

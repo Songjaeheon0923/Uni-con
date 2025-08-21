@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   userStatus: {
     fontSize: 12,
-    color: '#4CAF50',
+    color: '#FF6600',
   },
   menuButton: {
     padding: 4,

@@ -84,7 +84,10 @@ export default function ContractViewScreen({ route, navigation }) {
         {/* 집주인 정보 */}
         <View style={styles.landlordContainer}>
           <Text style={styles.sectionTitle}>집주인 정보</Text>
-          <Text style={styles.verificationBadge}>✓ 확인된 집주인</Text>
+          <View style={styles.verificationBadge}>
+            <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
+            <Text style={styles.verificationText}>확인된 집주인</Text>
+          </View>
           
           <View style={styles.landlordInfo}>
             <View style={styles.avatarContainer}>
@@ -191,9 +194,22 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   verificationBadge: {
-    fontSize: 12,
-    color: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FFE5D9',
+    alignSelf: 'flex-start',
+    gap: 4,
     marginBottom: 16,
+  },
+  verificationText: {
+    fontSize: 11,
+    color: '#FF6600',
+    fontWeight: '600',
   },
   landlordInfo: {
     flexDirection: 'row',

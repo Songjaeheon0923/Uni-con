@@ -22,7 +22,7 @@ const VerificationCheck = ({ verified = true }) => (
     <Ionicons 
       name={verified ? "checkmark-circle" : "close-circle"} 
       size={20} 
-      color={verified ? "#4CAF50" : "#F44336"} 
+      color={verified ? "#FF6600" : "#F44336"} 
     />
   </View>
 );
