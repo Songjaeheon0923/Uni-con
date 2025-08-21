@@ -1,0 +1,7 @@
+# OCR 및 이미지 처리
+requests
+pillow
+opencv-python
+
+# 텍스트 분석 및 처리
+python-dotenv

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,21 @@ import {
   ScrollView,
   SafeAreaView,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ContractResultScreen({ navigation, route }) {
   const { photoUri } = route.params;
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [imageScale, setImageScale] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     // 분석 시뮬레이션 (3초 후 결과 표시)
@@ -69,6 +76,36 @@ export default function ContractResultScreen({ navigation, route }) {
 
   const handleComplete = () => {
     navigation.navigate('HomeMain');
+  };
+
+  const openImageModal = () => {
+    setModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    setModalVisible(false);
+    // 모달 닫을 때 이미지 위치와 크기 초기화
+    setImageScale(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  const handleDoubleTap = () => {
+    if (imageScale > 1) {
+      setImageScale(1);
+      setImagePosition({ x: 0, y: 0 });
+    } else {
+      setImageScale(2);
+    }
+  };
+
+  let lastTap = null;
+  const handleImagePress = () => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+    if (lastTap && (now - lastTap) < DOUBLE_PRESS_DELAY) {
+      handleDoubleTap();
+    }
+    lastTap = now;
   };
 
   const getScoreColor = (score) => {
@@ -156,21 +193,23 @@ export default function ContractResultScreen({ navigation, route }) {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* 상단 제목과 계약서 이미지 */}
         <View style={styles.topSection}>
-          <Text style={styles.resultTitle}>
-            대체로 안전하지만 일부 조항 추가 확인 필요{'\n'}
-            유빈님의 계약서, {analysisResult.safetyScore}점
+          <Text style={styles.resultTopText}>
+            대제로 안전하지만 일부 조항 추가 확인 필요
+          </Text>
+          <Text style={styles.resultMainText}>
+            유빈님의 계약서, <Text style={styles.scoreText}>{analysisResult.safetyScore}점</Text>
           </Text>
           
-          {/* 계약서 이미지와 경고 오버레이 */}
+          {/* 계약서 이미지 */}
           <View style={styles.contractImageContainer}>
-            <Image source={{ uri: photoUri }} style={styles.contractImage} />
-            {/* 경고 아이콘들 오버레이 */}
-            <Text style={[styles.warningIcon, { top: 40, left: 0 }]}>⚠️</Text>
-            <Text style={[styles.warningIcon, { top: 250, left: 0 }]}>⚠️</Text>
-            <Text style={[styles.warningIcon, { top: 280, left: 0 }]}>⚠️</Text>
-            <Text style={[styles.warningIcon, { top: 190, right: 18 }]}>⚠️</Text>
+            <TouchableOpacity onPress={openImageModal} activeOpacity={1}>
+              <Image source={{ uri: photoUri }} style={styles.contractImage} />
+            </TouchableOpacity>
           </View>
         </View>
+        
+        {/* 구분선 */}
+        <View style={styles.divider} />
 
         {/* 분석 결과 */}
         <View style={styles.analysisSection}>
@@ -193,63 +232,72 @@ export default function ContractResultScreen({ navigation, route }) {
             </View>
             <Text style={styles.resultText}>서명란 이상 없습니다.</Text>
           </View>
-          <View style={[styles.resultItem, styles.warningItem]}>
-            <View style={styles.warningCircle}>
-              <Ionicons name="close" size={12} color="#313131" />
+          <View style={styles.resultItem}>
+            <View style={styles.checkCircle}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
             </View>
             <Text style={styles.resultText}>특약 일부 표현이 모호합니다.</Text>
           </View>
         </View>
 
+        {/* 구분선 */}
+        <View style={styles.divider} />
+
         {/* 의심 조항 */}
         <View style={styles.analysisSection}>
           <Text style={styles.sectionTitle}>의심 조항</Text>
-          <View style={[styles.resultItem, styles.suspiciousItem]}>
+          <View style={styles.resultItem}>
             <Text style={styles.warningEmoji}>⚠️</Text>
             <Text style={styles.resultText}>관리비 범위 불명확 ("기타 비용 포함")</Text>
           </View>
-          <View style={[styles.resultItem, styles.suspiciousItem]}>
+          <View style={styles.resultItem}>
             <Text style={styles.warningEmoji}>⚠️</Text>
             <Text style={styles.resultText}>중도 해지 위약금 기준 미기재</Text>
           </View>
-          <View style={[styles.resultItem, styles.suspiciousItem]}>
+          <View style={styles.resultItem}>
             <Text style={styles.warningEmoji}>⚠️</Text>
             <Text style={styles.resultText}>보증금 반환 시점 구체적 기한 없음</Text>
           </View>
-          <View style={[styles.resultItem, styles.ambiguousItem]}>
+          <View style={styles.resultItem}>
             <Text style={styles.warningEmoji}>⚠️</Text>
             <Text style={styles.resultText}>특약 일부 표현이 모호합니다.</Text>
           </View>
         </View>
+
+        {/* 구분선 */}
+        <View style={styles.divider} />
 
         {/* 집주인에게 물어볼 것 */}
         <View style={styles.analysisSection}>
           <Text style={styles.sectionTitle}>집주인에게 물어볼 것</Text>
           <View style={styles.resultItem}>
             <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#313131" />
+              <Ionicons name="help" size={12} color="#FFFFFF" />
             </View>
             <Text style={styles.resultText}>'기타 비용'에 포함되는 항목은 무엇인가요?</Text>
           </View>
           <View style={styles.resultItem}>
             <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#313131" />
+              <Ionicons name="help" size={12} color="#FFFFFF" />
             </View>
             <Text style={styles.resultText}>중도 해지 위약금 계산 방식은 어떻게 되나요?</Text>
           </View>
           <View style={styles.resultItem}>
             <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#313131" />
+              <Ionicons name="help" size={12} color="#FFFFFF" />
             </View>
             <Text style={styles.resultText}>보증금은 퇴거 후 며칠 이내 반환되나요?</Text>
           </View>
           <View style={styles.resultItem}>
             <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#313131" />
+              <Ionicons name="help" size={12} color="#FFFFFF" />
             </View>
             <Text style={styles.resultText}>시설 보수·수리 비용은 누가 부담하나요?</Text>
           </View>
         </View>
+
+        {/* 구분선 */}
+        <View style={styles.divider} />
 
         {/* 면책조항 */}
         <View style={styles.disclaimerContainer}>
@@ -268,6 +316,49 @@ export default function ContractResultScreen({ navigation, route }) {
           <Text style={styles.completeButtonText}>완료</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 전체화면 이미지 모달 */}
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeImageModal}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.modalBackground} onPress={closeImageModal} activeOpacity={1}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity style={styles.closeButton} onPress={closeImageModal}>
+                <Ionicons name="close" size={30} color="#FFFFFF" />
+              </TouchableOpacity>
+              <ScrollView
+                style={styles.scrollContainer}
+                contentContainerStyle={styles.scrollContent}
+                maximumZoomScale={5}
+                minimumZoomScale={1}
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+                centerContent={true}
+              >
+                <TouchableOpacity onPress={handleImagePress} activeOpacity={1}>
+                  <Image 
+                    source={{ uri: photoUri }} 
+                    style={[
+                      styles.fullscreenImage,
+                      {
+                        transform: [
+                          { scale: imageScale },
+                          { translateX: imagePosition.x },
+                          { translateY: imagePosition.y },
+                        ],
+                      },
+                    ]} 
+                  />
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -318,7 +409,7 @@ const styles = StyleSheet.create({
   },
   photoPreview: {
     width: 200,
-    height: 150,
+    height: 200 * (297 / 210), // A4 비율 (세로 297mm : 가로 210mm)
     borderRadius: 12,
     overflow: 'hidden',
     marginTop: 40,
@@ -346,31 +437,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
   },
-  resultTitle: {
-    fontSize: 24,
-    fontWeight: '300',
+  resultTopText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  resultMainText: {
+    fontSize: 28,
+    fontWeight: '700',
     color: '#1C1C1C',
     textAlign: 'center',
-    lineHeight: 34,
     marginBottom: 22,
   },
+  scoreText: {
+    fontWeight: '700',
+  },
   contractImageContainer: {
-    width: 286,
-    height: 347,
-    position: 'relative',
+    alignItems: 'center',
   },
   contractImage: {
-    width: 236,
-    height: 347,
-    marginLeft: 25,
-    resizeMode: 'cover',
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  warningIcon: {
-    position: 'absolute',
-    fontSize: 18,
-    color: 'rgba(0, 0, 0, 0.8)',
+    width: 340,
+    height: 420,
+    resizeMode: 'contain',
   },
   analysisSection: {
     backgroundColor: '#FFFFFF',
@@ -405,9 +495,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  warningItem: {
-    backgroundColor: '#FFDFDF',
-  },
   warningCircle: {
     width: 18,
     height: 18,
@@ -416,21 +503,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  suspiciousItem: {
-    backgroundColor: '#FFE8E8',
-  },
-  ambiguousItem: {
-    backgroundColor: '#FFEDE8',
-  },
   warningEmoji: {
     fontSize: 18,
     color: 'rgba(0, 0, 0, 0.8)',
+  },
+  divider: {
+    height: 8,
+    backgroundColor: '#F5F5F5',
+    marginVertical: 0,
   },
   questionCircle: {
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#313131',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -490,5 +576,46 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackground: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    position: 'relative',
+    width: screenWidth * 0.95,
+    height: screenHeight * 0.8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 8,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: screenWidth * 0.9,
+    height: screenHeight * 0.7,
+    resizeMode: 'contain',
   },
 });

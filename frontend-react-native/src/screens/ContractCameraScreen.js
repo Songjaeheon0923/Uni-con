@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Dimensions
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -55,24 +56,28 @@ export default function ContractCameraScreen({ navigation }) {
           base64: false,
         });
         
-        // 사각 틀 크기와 위치 계산
-        const frameWidth = width * 0.8;
-        const frameHeight = frameWidth * (297 / 210); // A4 비율
-        const actualFrameHeight = Math.min(frameHeight, height * 0.45);
-        
-        // 화면 중앙에서 프레임 위치 계산
-        const frameX = (width - frameWidth) / 2;
-        const frameY = (height - actualFrameHeight) / 2;
-        
-        // 카메라 이미지 크기에 대한 비율로 크롭 영역 계산
+        // 카메라 이미지 크기
         const { width: imageWidth, height: imageHeight } = photo;
-        const scaleX = imageWidth / width;
-        const scaleY = imageHeight / height;
         
-        const cropX = frameX * scaleX;
-        const cropY = frameY * scaleY;
-        const cropWidth = frameWidth * scaleX;
-        const cropHeight = actualFrameHeight * scaleY;
+        // A4 비율 (세로:가로 = 297:210 = 1.414)
+        const aspectRatio = 297 / 210;
+        
+        // 이미지의 중앙을 기준으로 A4 비율 크롭 영역 계산
+        let cropWidth, cropHeight;
+        
+        if (imageHeight / imageWidth > aspectRatio) {
+          // 이미지가 A4보다 세로로 긴 경우 - 가로를 기준으로 맞춤
+          cropWidth = imageWidth * 0.8; // 전체 가로의 80%
+          cropHeight = cropWidth * aspectRatio;
+        } else {
+          // 이미지가 A4보다 가로로 긴 경우 - 세로를 기준으로 맞춤
+          cropHeight = imageHeight * 0.8; // 전체 세로의 80%
+          cropWidth = cropHeight / aspectRatio;
+        }
+        
+        // 중앙 위치 계산
+        const cropX = (imageWidth - cropWidth) / 2;
+        const cropY = (imageHeight - cropHeight) / 2;
         
         // 이미지 크롭
         const croppedImage = await ImageManipulator.manipulateAsync(
@@ -90,8 +95,8 @@ export default function ContractCameraScreen({ navigation }) {
           { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
         );
         
-        console.log('원본 사진:', photo.uri, `${imageWidth}x${imageHeight}`);
-        console.log('크롭 영역:', { cropX, cropY, cropWidth, cropHeight });
+        console.log('원본 사진:', `${imageWidth}x${imageHeight}`);
+        console.log('크롭 영역 (중앙 A4):', { cropX, cropY, cropWidth, cropHeight });
         console.log('크롭된 사진:', croppedImage.uri);
         
         // 크롭된 사진을 검증 결과 화면으로 전달
@@ -109,6 +114,41 @@ export default function ContractCameraScreen({ navigation }) {
   const handleGoBack = () => {
     navigation.goBack();
   };
+
+  const selectFromGallery = async () => {
+    try {
+      // 갤러리 권한 요청
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+        return;
+      }
+
+      // 이미지 선택
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const selectedImage = result.assets[0];
+        
+        console.log('갤러리에서 선택된 사진:', `${selectedImage.width}x${selectedImage.height}`);
+        
+        // 갤러리 선택 이미지는 크롭 없이 그대로 사용
+        navigation.navigate('ContractResult', { 
+          photoUri: selectedImage.uri,
+          originalUri: selectedImage.uri
+        });
+      }
+    } catch (error) {
+      console.error('갤러리 선택 실패:', error);
+      Alert.alert('오류', '갤러리에서 사진을 선택하는데 실패했습니다.');
+    }
+  };
+
 
   if (!permission) {
     return (
@@ -171,7 +211,12 @@ export default function ContractCameraScreen({ navigation }) {
         {/* 하단 컨트롤 */}
         <View style={styles.bottomControls}>
           <View style={styles.controlsContainer}>
-            <View style={styles.placeholder} />
+            <TouchableOpacity
+              style={styles.galleryButton}
+              onPress={selectFromGallery}
+            >
+              <Ionicons name="images-outline" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.captureButton}
@@ -357,5 +402,15 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     backgroundColor: '#FF6600',
+  },
+  galleryButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
 });

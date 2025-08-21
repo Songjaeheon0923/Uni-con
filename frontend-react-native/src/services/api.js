@@ -66,13 +66,14 @@ class ApiService {
       });
 
       if (!response.ok) {
-        // 401 Unauthorized 에러 처리
+        // 401 Unauthorized 에러 처리 (조용히 처리)
         if (response.status === 401 && this.authErrorHandler) {
-          console.log('401 에러 감지 - 세션 만료');
           this.authErrorHandler();
+          // 401 에러는 조용히 처리하고 에러를 던지지 않음
+          return null;
         }
         
-        // 에러 응답의 본문을 읽어서 상세 정보 확인
+        // 다른 에러들만 로그 출력
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errorData = await response.json();
@@ -88,6 +89,10 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
+      // 401 에러는 이미 위에서 처리되었으므로 조용히 넘어감
+      if (error.message && error.message.includes('401')) {
+        return null;
+      }
       console.error('API request failed:', error);
       throw error;
     }

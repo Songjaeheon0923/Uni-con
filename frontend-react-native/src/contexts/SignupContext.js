@@ -45,13 +45,12 @@ export const SignupProvider = ({ children }) => {
     }
   };
 
-  // AsyncStorage에 데이터 저장
+  // AsyncStorage에 데이터 저장 (내부용 - 로그 없음)
   const saveSignupData = async (newData) => {
     try {
       const updatedData = { ...signupData, ...newData };
       setSignupData(updatedData);
       await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
-      console.log('회원가입 데이터 저장 (변경사항):', newData);
     } catch (error) {
       console.error('회원가입 데이터 저장 실패:', error);
     }
@@ -81,15 +80,26 @@ export const SignupProvider = ({ children }) => {
   };
 
   // 특정 단계 데이터 업데이트
-  const updateStep1Data = (data) => {
-    saveSignupData({
+  const updateStep1Data = async (data) => {
+    const step1Data = {
       email: data.email,
       password: data.password,
-    });
+    };
+    
+    const updatedData = { ...signupData, ...step1Data };
+    setSignupData(updatedData);
+    
+    // AsyncStorage에 저장
+    try {
+      await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
+      console.log('[1단계] 이메일/비밀번호 저장:', { email: data.email, password: data.password });
+    } catch (error) {
+      console.error('1단계 데이터 저장 실패:', error);
+    }
   };
 
-  const updateStep2Data = (data) => {
-    saveSignupData({
+  const updateStep2Data = async (data) => {
+    const step2Data = {
       name: data.name,
       nationality: data.nationality,
       residentNumber1: data.residentNumber1,
@@ -97,19 +107,59 @@ export const SignupProvider = ({ children }) => {
       phoneNumber: data.phoneNumber,
       carrier: data.carrier,
       phoneVerified: data.phoneVerified,
-    });
+    };
+    
+    const updatedData = { ...signupData, ...step2Data };
+    setSignupData(updatedData);
+    
+    // AsyncStorage에 저장
+    try {
+      await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
+      console.log('[2단계] 개인정보/휴대폰 인증:', {
+        name: data.name,
+        nationality: data.nationality,
+        residentNumber: `${data.residentNumber1}-${data.residentNumber2}***`,
+        phoneNumber: data.phoneNumber,
+        carrier: data.carrier,
+        phoneVerified: data.phoneVerified,
+      });
+    } catch (error) {
+      console.error('2단계 데이터 저장 실패:', error);
+    }
   };
 
-  const updateIDVerificationData = (data) => {
-    saveSignupData({
+  const updateIDVerificationData = async (data) => {
+    const idData = {
       idVerified: data.idVerified,
-    });
+    };
+    
+    const updatedData = { ...signupData, ...idData };
+    setSignupData(updatedData);
+    
+    // AsyncStorage에 저장
+    try {
+      await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
+      console.log('[신분증 인증] ID 인증 상태:', { idVerified: data.idVerified });
+    } catch (error) {
+      console.error('신분증 인증 데이터 저장 실패:', error);
+    }
   };
 
-  const updateSchoolVerificationData = (data) => {
-    saveSignupData({
+  const updateSchoolVerificationData = async (data) => {
+    const schoolData = {
       schoolEmail: data.schoolEmail,
-    });
+    };
+    
+    const updatedData = { ...signupData, ...schoolData };
+    setSignupData(updatedData);
+    
+    // AsyncStorage에 저장
+    try {
+      await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
+      console.log('[학교 인증] 학교 이메일:', { schoolEmail: data.schoolEmail });
+    } catch (error) {
+      console.error('학교 인증 데이터 저장 실패:', error);
+    }
   };
 
   // 완전한 주민등록번호 반환

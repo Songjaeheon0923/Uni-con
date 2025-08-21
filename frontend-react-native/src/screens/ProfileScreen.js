@@ -101,7 +101,10 @@ export default function ProfileScreen({ user, onLogout }) {
       const profile = await ApiService.getUserProfile();
       setUserProfile(profile);
     } catch (error) {
-      console.error('사용자 프로필 로드 실패:', error);
+      // 401 에러는 AuthContext에서 처리하므로 조용히 넘어감
+      if (!error.message || !error.message.includes('401')) {
+        console.error('사용자 프로필 로드 실패:', error);
+      }
     }
   };
 
