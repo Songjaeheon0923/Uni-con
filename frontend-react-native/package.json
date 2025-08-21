@@ -18,6 +18,7 @@
     "expo-camera": "^16.1.11",
     "expo-image-manipulator": "~13.1.7",
     "expo-location": "~18.1.6",
+    "expo-network": "^7.1.5",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",

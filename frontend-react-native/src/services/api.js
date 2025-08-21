@@ -1,13 +1,43 @@
-// 환경변수에서 API URL을 가져오되, 없으면 기본값 사용
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+import { getLocalApiUrl } from '../utils/networkUtils';
 
-// 디버그: 실제 사용되는 API URL 확인
-console.log('🌐 API_BASE_URL:', API_BASE_URL);
+// 동적으로 API URL을 설정하는 함수
+let API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
+// 앱 시작 시 자동으로 로컬 API URL 감지
+const initializeApiUrl = async () => {
+  try {
+    // 환경변수가 설정되어 있지 않으면 자동 감지 시도
+    if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
+      const detectedUrl = await getLocalApiUrl();
+      API_BASE_URL = detectedUrl;
+      console.log('Auto-detected API URL:', API_BASE_URL);
+    } else {
+      console.log('Using configured API URL:', API_BASE_URL);
+    }
+  } catch (error) {
+    console.error('Failed to initialize API URL:', error);
+    console.log('Falling back to default URL:', API_BASE_URL);
+  }
+};
+
+// API URL 초기화 실행
+initializeApiUrl();
 
 class ApiService {
   constructor() {
     this.authErrorHandler = null;
     this.authToken = null;
+  }
+
+  // API URL을 수동으로 업데이트하는 메서드 (개발 중 필요시 사용)
+  updateApiUrl(newUrl) {
+    API_BASE_URL = newUrl;
+    console.log('API URL updated to:', API_BASE_URL);
+  }
+
+  // 현재 API URL을 반환하는 메서드
+  getCurrentApiUrl() {
+    return API_BASE_URL;
   }
 
   setAuthErrorHandler(handler) {
