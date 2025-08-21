@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Text, TextInput, SafeAreaView, Image, Animated } from "react-native";
+import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Text, TextInput, SafeAreaView, Animated, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from 'expo-location';
 import PropertyMapView from "../components/MapView";
 import ApiService from "../services/api";
 import { mockRooms } from "../data/mockRooms";
-import { formatRentPrice } from "../utils/priceFormatter";
 
 export default function MapScreen({ navigation }) {
   const [rooms, setRooms] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
-  const [selectedFilter, setSelectedFilter] = useState('전체');
+  const [selectedFilters, setSelectedFilters] = useState([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('성북구 안암동 2가');
   const [selectedProperty, setSelectedProperty] = useState(null);
-  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
+  const [recentSearches, setRecentSearches] = useState(['안암동 2가', '안암동 1가', '보문역', '성신여대입구역']);
+  const [showRecentSearches, setShowRecentSearches] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const locationButtonAnim = useRef(new Animated.Value(0)).current;
   const mapViewRef = useRef(null);
   
   // Mock user data
@@ -25,7 +25,38 @@ export default function MapScreen({ navigation }) {
     name: "김대학생",
   };
 
-  const filterOptions = ['전체', '원룸', '투룸', '전세', '월세', '매매'];
+  const filterOptions = [
+    { 
+      id: 'type', 
+      label: '매물 종류', 
+      icon: 'chevron-down',
+      options: ['원룸', '투룸', '오피스텔', '아파트']
+    },
+    { 
+      id: 'transaction', 
+      label: '거래 유형', 
+      icon: 'chevron-down',
+      options: ['월세', '전세', '매매']
+    },
+    { 
+      id: 'price', 
+      label: '가격', 
+      icon: 'chevron-down',
+      options: ['1억 이하', '1-3억', '3-5억', '5억 이상']
+    },
+    { 
+      id: 'size', 
+      label: '평수', 
+      icon: 'chevron-down',
+      options: ['10평 이하', '10-20평', '20-30평', '30평 이상']
+    },
+    { 
+      id: 'more', 
+      label: '상세', 
+      icon: 'options-outline',
+      options: ['엘리베이터', '주차가능', '반려동물', '단기임대']
+    },
+  ];
 
   useEffect(() => {
     loadRooms();
@@ -74,39 +105,46 @@ export default function MapScreen({ navigation }) {
 
   useEffect(() => {
     applyFilter();
-  }, [selectedFilter, allRooms]);
+  }, [selectedFilterValues, allRooms]);
 
   const applyFilter = () => {
     let filteredRooms = [...allRooms];
     
-    switch(selectedFilter) {
-      case '원룸':
-        filteredRooms = allRooms.filter(room => 
-          room.address.includes('원룸') || room.description.includes('원룸')
-        );
-        break;
-      case '투룸':
-        filteredRooms = allRooms.filter(room => 
-          room.address.includes('투룸') || room.description.includes('투룸')
-        );
-        break;
-      case '전세':
-        filteredRooms = allRooms.filter(room => 
-          room.transaction_type === '전세'
-        );
-        break;
-      case '월세':
-        filteredRooms = allRooms.filter(room => 
-          room.transaction_type === '월세'
-        );
-        break;
-      case '매매':
-        filteredRooms = allRooms.filter(room => 
-          room.transaction_type === '매매'
-        );
-        break;
-      default:
-        filteredRooms = allRooms;
+    // 거래 유형 필터
+    if (selectedFilterValues.transaction) {
+      filteredRooms = filteredRooms.filter(room => 
+        room.transaction_type === selectedFilterValues.transaction
+      );
+    }
+    
+    // 매물 종류 필터
+    if (selectedFilterValues.type) {
+      const typeKeywords = {
+        '원룸': ['원룸'],
+        '투룸': ['투룸', '2룸'],
+        '오피스텔': ['오피스텔'],
+        '아파트': ['아파트']
+      };
+      const keywords = typeKeywords[selectedFilterValues.type] || [];
+      filteredRooms = filteredRooms.filter(room => 
+        keywords.some(keyword => 
+          room.address.includes(keyword) || room.description.includes(keyword)
+        )
+      );
+    }
+    
+    // 가격 필터
+    if (selectedFilterValues.price) {
+      const priceRanges = {
+        '1억 이하': [0, 10000],
+        '1-3억': [10000, 30000],
+        '3-5억': [30000, 50000],
+        '5억 이상': [50000, 999999]
+      };
+      const [min, max] = priceRanges[selectedFilterValues.price] || [0, 999999];
+      filteredRooms = filteredRooms.filter(room => 
+        room.price_deposit >= min && room.price_deposit <= max
+      );
     }
     
     setRooms(filteredRooms);
@@ -142,13 +180,20 @@ export default function MapScreen({ navigation }) {
     setSelectedPropertyId(room.id);
     setSelectedProperty(room);
     
-    // 카드 애니메이션
-    Animated.spring(slideAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 100,
-      friction: 8,
-    }).start();
+    // 카드와 위치 버튼 애니메이션
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8,
+      }),
+      Animated.timing(locationButtonAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      })
+    ]).start();
   };
 
   const handleCardPress = () => {
@@ -164,16 +209,6 @@ export default function MapScreen({ navigation }) {
     }
   };
 
-  const handleCloseCard = () => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setSelectedProperty(null);
-      setSelectedPropertyId(null);
-    });
-  };
 
   const handleFavoriteToggle = async (property) => {
     try {
@@ -207,25 +242,45 @@ export default function MapScreen({ navigation }) {
   };
 
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const saveRecentSearch = (query) => {
+    const newRecentSearches = [query, ...recentSearches.filter(item => item !== query)].slice(0, 4);
+    setRecentSearches(newRecentSearches);
+  };
+
+  const handleRecentSearchSelect = (query) => {
+    setSearchQuery(query);
+    setShowRecentSearches(false);
+    handleSearch(query);
+  };
+
+  const removeRecentSearch = (query) => {
+    setRecentSearches(recentSearches.filter(item => item !== query));
+  };
+
+  const handleSearch = async (customQuery = null) => {
+    const query = customQuery || searchQuery;
+    if (!query.trim()) return;
     
     try {
-      console.log(`🔍 검색 실행: ${searchQuery}`);
+      console.log(`🔍 검색 실행: ${query}`);
+      
+      // 최근 검색어에 추가
+      saveRecentSearch(query);
+      setShowRecentSearches(false);
       
       // 거래유형 검색어 감지 및 자동 필터링
       const transactionTypes = ['월세', '전세', '매매'];
       const foundTransactionType = transactionTypes.find(type => 
-        searchQuery.includes(type)
+        query.includes(type)
       );
       
-      if (foundTransactionType && foundTransactionType !== selectedFilter) {
-        setSelectedFilter(foundTransactionType);
+      if (foundTransactionType && !selectedFilters.includes(foundTransactionType)) {
+        setSelectedFilters([foundTransactionType]);
       }
       
       let searchResults = [];
       try {
-        searchResults = await ApiService.searchRoomsByText(searchQuery);
+        searchResults = await ApiService.searchRoomsByText(query);
       } catch (error) {
         console.log('API 검색 실패, Mock 데이터만 사용:', error.message);
         // API 실패시 빈 배열로 처리
@@ -252,9 +307,9 @@ export default function MapScreen({ navigation }) {
       
       // Mock 데이터도 검색에 포함
       const mockSearchResults = mockRooms.filter(room => 
-        room.address.includes(searchQuery) || 
-        room.description.includes(searchQuery) ||
-        room.transaction_type.includes(searchQuery)
+        room.address.includes(query) || 
+        room.description.includes(query) ||
+        room.transaction_type.includes(query)
       );
       
       const combinedResults = [...formattedResults, ...mockSearchResults];
@@ -262,7 +317,7 @@ export default function MapScreen({ navigation }) {
       setAllRooms(combinedResults);
       
       // 지역/주소 검색 시 해당 위치로 포커싱
-      await focusOnSearchLocation(searchQuery, combinedResults);
+      await focusOnSearchLocation(query, combinedResults);
       
       console.log(`✅ 검색 완료: ${combinedResults.length}개 결과`);
     } catch (error) {
@@ -323,22 +378,58 @@ export default function MapScreen({ navigation }) {
     }
   };
 
-  const FilterButton = ({ title, isSelected, onPress }) => (
-    <TouchableOpacity 
-      style={[styles.filterButton, isSelected && styles.filterButtonSelected]}
-      onPress={onPress}
-    >
-      <Text style={[styles.filterButtonText, isSelected && styles.filterButtonTextSelected]}>
-        {title}
-      </Text>
-    </TouchableOpacity>
-  );
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [selectedFilterValues, setSelectedFilterValues] = useState({});
+
+  const FilterButton = ({ option }) => {
+    const hasSelection = selectedFilterValues[option.id];
+    
+    return (
+      <TouchableOpacity 
+        style={[styles.filterButton, hasSelection && styles.filterButtonActive]}
+        onPress={() => setActiveFilter(option)}
+      >
+        <Text style={[styles.filterButtonText, hasSelection && styles.filterButtonTextActive]}>
+          {option.label}
+        </Text>
+        <Ionicons 
+          name={option.icon} 
+          size={12} 
+          color={hasSelection ? "#FF6600" : "#666"} 
+          style={{ marginLeft: 4 }} 
+        />
+      </TouchableOpacity>
+    );
+  };
 
   const PropertyCard = () => {
     if (!selectedProperty) return null;
 
     const formatPrice = (property) => {
-      return formatRentPrice(property.price_deposit, property.price_monthly);
+      if (property.transaction_type === '월세') {
+        return `월세 ${property.price_deposit}/${property.price_monthly}만원`;
+      } else if (property.transaction_type === '전세') {
+        return `전세 ${property.price_deposit}만원`;
+      }
+      return `${property.price_deposit}만원`;
+    };
+
+    const handleCloseCard = () => {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(locationButtonAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setSelectedProperty(null);
+        setSelectedPropertyId(null);
+      });
     };
 
     return (
@@ -360,43 +451,46 @@ export default function MapScreen({ navigation }) {
         <TouchableOpacity 
           style={styles.cardContent}
           onPress={handleCardPress}
-          activeOpacity={0.8}
+          activeOpacity={0.9}
         >
           <View style={styles.cardImageContainer}>
-            <Image 
-              source={{ uri: 'https://via.placeholder.com/100x80/f0f0f0/666?text=사진' }}
-              style={styles.cardImage}
-              resizeMode="cover"
-            />
+            <View style={styles.cardImagePlaceholder}>
+              <Ionicons name="image-outline" size={24} color="#ccc" />
+            </View>
           </View>
           
           <View style={styles.cardInfo}>
             <Text style={styles.cardPrice}>
               {formatPrice(selectedProperty)}
             </Text>
+            <Text style={styles.cardSubInfo} numberOfLines={1}>
+              원룸 | 6평 | 4층
+            </Text>
             <Text style={styles.cardAddress} numberOfLines={1}>
-              {selectedProperty.address}
+              {selectedProperty.address.split(' ').slice(-3).join(' ')}
             </Text>
-            <Text style={styles.cardDetails}>
-              {selectedProperty.description} • 관리비 7만원
-            </Text>
-            <View style={styles.cardIcons}>
-              <TouchableOpacity onPress={() => handleFavoriteToggle(selectedProperty)}>
-                <Ionicons 
-                  name={selectedProperty.isFavorited ? "heart" : "heart-outline"} 
-                  size={16} 
-                  color={selectedProperty.isFavorited ? "#FF6600" : "#666"} 
-                />
-              </TouchableOpacity>
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={12} color="#4CAF50" />
+              <Text style={styles.verifiedText}>집주인 인증</Text>
             </View>
           </View>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.closeButton}
-          onPress={handleCloseCard}
-        >
-          <Ionicons name="close" size={20} color="#666" />
+          
+          <View style={styles.cardRightSection}>
+            <TouchableOpacity 
+              style={styles.favoriteButton}
+              onPress={() => handleFavoriteToggle(selectedProperty)}
+            >
+              <Ionicons 
+                name={selectedProperty.isFavorited ? "heart" : "heart-outline"} 
+                size={20} 
+                color={selectedProperty.isFavorited ? "#FF6600" : "#999"} 
+              />
+            </TouchableOpacity>
+            
+            <View style={styles.cardLikeCount}>
+              <Text style={styles.likeCountText}>{selectedProperty.favorite_count || 13}</Text>
+            </View>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -406,6 +500,14 @@ export default function MapScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* 헤더 - 검색바 */}
       <View style={styles.header}>
+        <Text style={styles.headerTitle}>매물 둘러보기</Text>
+        <TouchableOpacity style={styles.filterIcon}>
+          <Ionicons name="options-outline" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+      
+      {/* 검색바 */}
+      <View style={styles.searchWrapper}>
         <View style={styles.searchContainer}>
           <Ionicons name="location-outline" size={20} color="#666" />
           <TextInput
@@ -413,42 +515,63 @@ export default function MapScreen({ navigation }) {
             placeholder="성북구 안암동 2가"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
+            onSubmitEditing={() => handleSearch()}
+            onFocus={() => setShowRecentSearches(true)}
+            onBlur={() => setTimeout(() => setShowRecentSearches(false), 150)}
             returnKeyType="search"
             placeholderTextColor="#999"
           />
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+          <TouchableOpacity style={styles.searchButton} onPress={() => handleSearch()}>
             <Ionicons name="search" size={20} color="#666" />
           </TouchableOpacity>
         </View>
+        
+        {/* 최근 검색어 드롭다운 */}
+        {showRecentSearches && (
+          <View style={styles.recentSearchDropdown}>
+            <Text style={styles.recentSearchTitle}>최근 검색어</Text>
+            {recentSearches.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.recentSearchItem}
+                onPress={() => handleRecentSearchSelect(item)}
+              >
+                <Ionicons name="time-outline" size={16} color="#999" />
+                <Text style={styles.recentSearchText}>{item}</Text>
+                <TouchableOpacity
+                  style={styles.removeRecentButton}
+                  onPress={() => removeRecentSearch(item)}
+                >
+                  <Ionicons name="close" size={14} color="#ccc" />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* 필터 바 */}
-      <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScrollContent}
-        >
-          {filterOptions.map((option) => (
-            <FilterButton
-              key={option}
-              title={option}
-              isSelected={selectedFilter === option}
-              onPress={() => setSelectedFilter(option)}
-            />
-          ))}
-        </ScrollView>
-        
-        {/* 매물 개수 표시 - 블러 처리 추가 */}
-        <View style={styles.propertyCountWrapper}>
-          <View style={styles.propertyCountBlur} />
-          <View style={styles.propertyCountContainer}>
-            <Ionicons name="home" size={16} color="#FF6600" />
-            <Text style={styles.propertyCountText}>{rooms.length}개 매물</Text>
-          </View>
+      {!showRecentSearches && (
+        <View style={styles.filterContainer}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScrollContent}
+          >
+            {filterOptions.map((option) => (
+              <FilterButton
+                key={option.id}
+                option={option}
+              />
+            ))}
+          </ScrollView>
+          
+          {/* 상세 필터 버튼 */}
+          <TouchableOpacity style={styles.moreFilterButton}>
+            <Ionicons name="options-outline" size={16} color="#666" />
+          </TouchableOpacity>
         </View>
-      </View>
+      )}
 
       {/* 지도 */}
       <View style={styles.mapContainer}>
@@ -460,16 +583,78 @@ export default function MapScreen({ navigation }) {
         />
         
         {/* 현재 위치 버튼 */}
-        <TouchableOpacity 
-          style={styles.currentLocationButton}
-          onPress={goToCurrentLocation}
+        <Animated.View
+          style={[
+            styles.currentLocationButton,
+            {
+              transform: [{
+                translateY: locationButtonAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -90],
+                })
+              }]
+            }
+          ]}
         >
-          <Ionicons name="locate" size={24} color="#FF6600" />
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.locationButtonInner}
+            onPress={goToCurrentLocation}
+          >
+            <Ionicons name="locate" size={24} color="#FF6600" />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {/* Property Card */}
       <PropertyCard />
+      
+      {/* 필터 모달 */}
+      <Modal
+        visible={activeFilter !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setActiveFilter(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setActiveFilter(null)}
+        >
+          <View style={styles.filterModal}>
+            <Text style={styles.filterModalTitle}>
+              {activeFilter?.label}
+            </Text>
+            <ScrollView style={styles.filterOptionsList}>
+              {activeFilter?.options?.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.filterOptionItem,
+                    selectedFilterValues[activeFilter.id] === option && styles.filterOptionSelected
+                  ]}
+                  onPress={() => {
+                    setSelectedFilterValues({
+                      ...selectedFilterValues,
+                      [activeFilter.id]: selectedFilterValues[activeFilter.id] === option ? null : option
+                    });
+                    setActiveFilter(null);
+                  }}
+                >
+                  <Text style={[
+                    styles.filterOptionText,
+                    selectedFilterValues[activeFilter.id] === option && styles.filterOptionTextSelected
+                  ]}>
+                    {option}
+                  </Text>
+                  {selectedFilterValues[activeFilter.id] === option && (
+                    <Ionicons name="checkmark" size={16} color="#FF6600" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -480,26 +665,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  filterIcon: {
+    padding: 4,
+  },
+  searchWrapper: {
+    paddingHorizontal: 16,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#ffffff',
+    position: 'relative',
+    zIndex: 10,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: '#333',
     marginLeft: 8,
     marginRight: 8,
@@ -509,71 +708,47 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     backgroundColor: '#ffffff',
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   filterScrollContent: {
-    paddingRight: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingRight: 40,
   },
   filterButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  filterButtonSelected: {
-    backgroundColor: '#FF6600',
-    borderColor: '#FF6600',
-  },
-  filterButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-  },
-  filterButtonTextSelected: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  propertyCountWrapper: {
-    position: 'relative',
-    borderRadius: 16,
-  },
-  propertyCountBlur: {
-    position: 'absolute',
-    left: -20,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 16,
-  },
-  propertyCountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff5f0',
     paddingHorizontal: 12,
     paddingVertical: 6,
+    backgroundColor: '#ffffff',
     borderRadius: 16,
+    marginRight: 8,
     borderWidth: 1,
-    borderColor: '#ffe0cc',
-    position: 'relative',
-    zIndex: 1,
+    borderColor: '#e0e0e0',
   },
-  propertyCountText: {
-    fontSize: 12,
+  filterButtonText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterButtonActive: {
+    backgroundColor: '#fff5f0',
+    borderColor: '#FF6600',
+  },
+  filterButtonTextActive: {
     color: '#FF6600',
-    marginLeft: 4,
     fontWeight: '600',
+  },
+  moreFilterButton: {
+    padding: 8,
+    position: 'absolute',
+    right: 16,
+    backgroundColor: '#ffffff',
   },
   mapContainer: {
     flex: 1,
@@ -581,86 +756,191 @@ const styles = StyleSheet.create({
   },
   currentLocationButton: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 100,
     right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  },
+  locationButtonInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
   propertyCard: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 20,
+    left: 16,
+    right: 16,
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 32,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 5,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    padding: 12,
+  },
+  cardRightSection: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginLeft: 8,
   },
   cardImageContainer: {
     marginRight: 12,
   },
-  cardImage: {
-    width: 100,
-    height: 80,
+  cardImagePlaceholder: {
+    width: 80,
+    height: 60,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardInfo: {
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   cardPrice: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 4,
+    color: '#000',
+  },
+  cardSubInfo: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
   },
   cardAddress: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: '#999',
     marginBottom: 4,
   },
-  cardDetails: {
-    fontSize: 12,
-    color: '#888',
-    lineHeight: 16,
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  verifiedText: {
+    fontSize: 11,
+    color: '#4CAF50',
+    marginLeft: 4,
+  },
+  favoriteButton: {
+    padding: 4,
     marginBottom: 8,
+  },
+  cardLikeCount: {
+    alignItems: 'center',
+  },
+  likeCountText: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
   },
   cardIcons: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  closeButton: {
+  recentSearchDropdown: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f8f9fa',
+    top: 60,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    marginHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  recentSearchTitle: {
+    fontSize: 13,
+    color: '#999',
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  recentSearchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  recentSearchText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 12,
+  },
+  removeRecentButton: {
+    padding: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  filterModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    margin: 20,
+    minWidth: 200,
+    maxHeight: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  filterModalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  filterOptionsList: {
+    maxHeight: 300,
+  },
+  filterOptionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f8f8f8',
+  },
+  filterOptionSelected: {
+    backgroundColor: '#fff5f0',
+  },
+  filterOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  filterOptionTextSelected: {
+    color: '#FF6600',
+    fontWeight: '600',
   },
 });

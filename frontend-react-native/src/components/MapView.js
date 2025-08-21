@@ -107,8 +107,8 @@ const PropertyMapView = forwardRef(({
         <View style={isSelected ? styles.selectedHouseMarker : styles.houseMarkerContainer}>
           <Ionicons 
             name="home" 
-            size={isSelected ? 28 : 24} 
-            color="#ffffff"
+            size={isSelected ? 24 : 20} 
+            color={isSelected ? "#ffffff" : "#333333"}
           />
         </View>
       </Marker>
@@ -207,21 +207,21 @@ const styles = StyleSheet.create({
     height: height,
   },
   houseMarkerContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#333333",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   selectedHouseMarker: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#FF6600",
-    borderWidth: 3,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#333333",
+    borderWidth: 2,
     borderColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
