@@ -13,12 +13,15 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as ImageManipulator from 'expo-image-manipulator';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function ContractCameraScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
+  const { isAuthenticated } = useAuth();
 
   React.useEffect(() => {
     if (!permission) {
@@ -47,6 +50,40 @@ export default function ContractCameraScreen({ navigation }) {
       };
     }, [navigation])
   );
+
+  // 계약서 분석 함수
+  const analyzeContract = async (imageUri) => {
+    if (!isAuthenticated) {
+      Alert.alert('로그인 필요', '계약서 분석을 위해 로그인이 필요합니다.');
+      return null;
+    }
+
+    try {
+      // 이미지 파일 객체 생성
+      const imageFile = {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'contract.jpg'
+      };
+
+      console.log('계약서 분석 시작:', imageUri);
+      
+      // API 호출
+      const result = await api.analyzeContract(imageFile);
+      
+      console.log('계약서 분석 결과:', result);
+      
+      if (result && result.success) {
+        return result.analysis;
+      } else {
+        throw new Error(result?.message || '분석에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('계약서 분석 오류:', error);
+      Alert.alert('분석 실패', `계약서 분석 중 오류가 발생했습니다: ${error.message}`);
+      return null;
+    }
+  };
 
   const takePicture = async () => {
     if (cameraRef.current) {
@@ -99,11 +136,32 @@ export default function ContractCameraScreen({ navigation }) {
         console.log('크롭 영역 (중앙 A4):', { cropX, cropY, cropWidth, cropHeight });
         console.log('크롭된 사진:', croppedImage.uri);
         
-        // 크롭된 사진을 검증 결과 화면으로 전달
+        // 분석 중 상태로 이동
         navigation.navigate('ContractResult', { 
           photoUri: croppedImage.uri,
-          originalUri: photo.uri
+          originalUri: photo.uri,
+          analysisData: null  // 분석 중 상태
         });
+        
+        // 백그라운드에서 분석 수행
+        const analysisResult = await analyzeContract(croppedImage.uri);
+        
+        if (analysisResult) {
+          // 분석 완료 시 결과 업데이트
+          navigation.replace('ContractResult', { 
+            photoUri: croppedImage.uri,
+            originalUri: photo.uri,
+            analysisData: analysisResult
+          });
+        } else {
+          // 분석 실패 시 오류 상태로 업데이트
+          navigation.replace('ContractResult', { 
+            photoUri: croppedImage.uri,
+            originalUri: photo.uri,
+            analysisData: null,
+            error: '계약서 분석에 실패했습니다. 다시 시도해주세요.'
+          });
+        }
       } catch (error) {
         console.error('사진 촬영 실패:', error);
         Alert.alert('오류', '사진 촬영에 실패했습니다.');
@@ -137,11 +195,32 @@ export default function ContractCameraScreen({ navigation }) {
         
         console.log('갤러리에서 선택된 사진:', `${selectedImage.width}x${selectedImage.height}`);
         
-        // 갤러리 선택 이미지는 크롭 없이 그대로 사용
+        // 분석 중 상태로 이동
         navigation.navigate('ContractResult', { 
           photoUri: selectedImage.uri,
-          originalUri: selectedImage.uri
+          originalUri: selectedImage.uri,
+          analysisData: null  // 분석 중 상태
         });
+        
+        // 백그라운드에서 분석 수행
+        const analysisResult = await analyzeContract(selectedImage.uri);
+        
+        if (analysisResult) {
+          // 분석 완료 시 결과 업데이트
+          navigation.replace('ContractResult', { 
+            photoUri: selectedImage.uri,
+            originalUri: selectedImage.uri,
+            analysisData: analysisResult
+          });
+        } else {
+          // 분석 실패 시 오류 상태로 업데이트
+          navigation.replace('ContractResult', { 
+            photoUri: selectedImage.uri,
+            originalUri: selectedImage.uri,
+            analysisData: null,
+            error: '계약서 분석에 실패했습니다. 다시 시도해주세요.'
+          });
+        }
       }
     } catch (error) {
       console.error('갤러리 선택 실패:', error);

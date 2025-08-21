@@ -16,53 +16,86 @@ import { Ionicons } from '@expo/vector-icons';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ContractResultScreen({ navigation, route }) {
-  const { photoUri } = route.params;
-  const [isAnalyzing, setIsAnalyzing] = useState(true);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const { photoUri, analysisData } = route.params;
+  const [isAnalyzing, setIsAnalyzing] = useState(!analysisData);
+  const [analysisResult, setAnalysisResult] = useState(analysisData || null);
+  const [analysisError, setAnalysisError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [imageScale, setImageScale] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    // 분석 시뮬레이션 (3초 후 결과 표시)
-    const timer = setTimeout(() => {
+  // 실시간으로 route params 변경 감지
+  React.useEffect(() => {
+    const { analysisData: newAnalysisData, error } = route.params;
+    if (newAnalysisData && newAnalysisData !== analysisData) {
+      setAnalysisResult(newAnalysisData);
       setIsAnalyzing(false);
-      setAnalysisResult(getHardcodedResult());
-    }, 3000);
+      setAnalysisError(null);
+    } else if (error) {
+      setIsAnalyzing(false);
+      setAnalysisError(error);
+    }
+  }, [route.params]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  useEffect(() => {
+    // 실제 분석 데이터가 없는 경우에만 하드코딩된 결과 사용
+    if (!analysisData) {
+      const timer = setTimeout(() => {
+        setIsAnalyzing(false);
+        setAnalysisResult(getHardcodedResult());
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [analysisData]);
 
   const getHardcodedResult = () => ({
-    safetyScore: 73,
-    riskLevel: 'medium',
-    mainIssues: [
+    subtitle: "대체로 안전하지만 일부 조항 추가 확인 필요",
+    main_title: {
+      user_name: "테스트 사용자",
+      score: 73
+    },
+    analysis_results: [
       {
-        type: 'warning',
-        title: '보증금 반환 조건 미흡',
-        description: '계약 종료 시 보증금 반환에 대한 구체적인 조건이 명시되지 않았습니다.',
-        severity: 'high'
+        text: "필수 항목이 모두 기재 완료되어 있습니다.",
+        type: "positive"
       },
       {
-        type: 'caution',
-        title: '수리비 부담 주체 불분명',
-        description: '시설물 수리비용의 부담 주체가 명확하게 구분되지 않았습니다.',
-        severity: 'medium'
+        text: "계약 기간·연장 조건이 명확합니다.",
+        type: "positive"
       },
       {
-        type: 'info',
-        title: '임대료 인상 제한 조항 확인',
-        description: '임대료 인상에 대한 제한 조항이 포함되어 있어 유리합니다.',
-        severity: 'low'
+        text: "서명란 이상 없습니다.",
+        type: "positive"
       }
     ],
-    checkedItems: [
-      { item: '임대인 신원 확인', status: 'good' },
-      { item: '임대료 및 관리비', status: 'good' },
-      { item: '계약 기간 명시', status: 'good' },
-      { item: '보증금 반환 조건', status: 'warning' },
-      { item: '수리비 부담 조건', status: 'warning' },
-      { item: '특약 사항', status: 'good' }
+    suspicious_clauses: [
+      {
+        text: "중도금 지불 시점 미기재",
+        severity: "warning"
+      },
+      {
+        text: "중도 해지 위약금 기준 미기재",
+        severity: "warning"
+      },
+      {
+        text: "보증금 반환 시점 구체적 기한 없음",
+        severity: "high"
+      }
+    ],
+    questions_for_landlord: [
+      {
+        text: "중도금은 언제 지불해야 하나요?"
+      },
+      {
+        text: "중도 해지 위약금 계산 방식은 어떻게 되나요?"
+      },
+      {
+        text: "보증금은 퇴거 후 며칠 이내 반환되나요?"
+      },
+      {
+        text: "시설 보수·수리 비용은 누가 부담하나요?"
+      }
     ]
   });
 
@@ -194,10 +227,10 @@ export default function ContractResultScreen({ navigation, route }) {
         {/* 상단 제목과 계약서 이미지 */}
         <View style={styles.topSection}>
           <Text style={styles.resultTopText}>
-            대제로 안전하지만 일부 조항 추가 확인 필요
+            {analysisResult.subtitle}
           </Text>
           <Text style={styles.resultMainText}>
-            유빈님의 계약서, <Text style={styles.scoreText}>{analysisResult.safetyScore}점</Text>
+            {analysisResult.main_title.user_name}님의 계약서, <Text style={styles.scoreText}>{analysisResult.main_title.score}점</Text>
           </Text>
           
           {/* 계약서 이미지 */}
@@ -214,30 +247,14 @@ export default function ContractResultScreen({ navigation, route }) {
         {/* 분석 결과 */}
         <View style={styles.analysisSection}>
           <Text style={styles.sectionTitle}>분석 결과</Text>
-          <View style={styles.resultItem}>
-            <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+          {analysisResult.analysis_results.map((result, index) => (
+            <View key={index} style={styles.resultItem}>
+              <View style={styles.checkCircle}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+              <Text style={styles.resultText}>{result.text}</Text>
             </View>
-            <Text style={styles.resultText}>필수 항목이 모두 기재 완료되어 있습니다.</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.resultText}>계약 기간·연장 조건이 명확합니다.</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.resultText}>서명란 이상 없습니다.</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <View style={styles.checkCircle}>
-              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.resultText}>특약 일부 표현이 모호합니다.</Text>
-          </View>
+          ))}
         </View>
 
         {/* 구분선 */}
@@ -246,22 +263,12 @@ export default function ContractResultScreen({ navigation, route }) {
         {/* 의심 조항 */}
         <View style={styles.analysisSection}>
           <Text style={styles.sectionTitle}>의심 조항</Text>
-          <View style={styles.resultItem}>
-            <Text style={styles.warningEmoji}>⚠️</Text>
-            <Text style={styles.resultText}>관리비 범위 불명확 ("기타 비용 포함")</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <Text style={styles.warningEmoji}>⚠️</Text>
-            <Text style={styles.resultText}>중도 해지 위약금 기준 미기재</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <Text style={styles.warningEmoji}>⚠️</Text>
-            <Text style={styles.resultText}>보증금 반환 시점 구체적 기한 없음</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <Text style={styles.warningEmoji}>⚠️</Text>
-            <Text style={styles.resultText}>특약 일부 표현이 모호합니다.</Text>
-          </View>
+          {analysisResult.suspicious_clauses.map((clause, index) => (
+            <View key={index} style={styles.resultItem}>
+              <Text style={styles.warningEmoji}>⚠️</Text>
+              <Text style={styles.resultText}>{clause.text}</Text>
+            </View>
+          ))}
         </View>
 
         {/* 구분선 */}
@@ -270,30 +277,14 @@ export default function ContractResultScreen({ navigation, route }) {
         {/* 집주인에게 물어볼 것 */}
         <View style={styles.analysisSection}>
           <Text style={styles.sectionTitle}>집주인에게 물어볼 것</Text>
-          <View style={styles.resultItem}>
-            <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#FFFFFF" />
+          {analysisResult.questions_for_landlord.map((question, index) => (
+            <View key={index} style={styles.resultItem}>
+              <View style={styles.questionCircle}>
+                <Ionicons name="help" size={12} color="#FFFFFF" />
+              </View>
+              <Text style={styles.resultText}>{question.text}</Text>
             </View>
-            <Text style={styles.resultText}>'기타 비용'에 포함되는 항목은 무엇인가요?</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.resultText}>중도 해지 위약금 계산 방식은 어떻게 되나요?</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.resultText}>보증금은 퇴거 후 며칠 이내 반환되나요?</Text>
-          </View>
-          <View style={styles.resultItem}>
-            <View style={styles.questionCircle}>
-              <Ionicons name="help" size={12} color="#FFFFFF" />
-            </View>
-            <Text style={styles.resultText}>시설 보수·수리 비용은 누가 부담하나요?</Text>
-          </View>
+          ))}
         </View>
 
         {/* 구분선 */}

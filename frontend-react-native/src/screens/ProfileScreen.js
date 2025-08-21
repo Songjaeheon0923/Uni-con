@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import ApiService from "../services/api";
+import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, isProfileComplete } from '../utils/personalityUtils';
 
 // 인증 체크 컴포넌트
 const VerificationCheck = ({ verified = true }) => (
@@ -27,7 +28,7 @@ const VerificationCheck = ({ verified = true }) => (
   </View>
 );
 
-export default function ProfileScreen({ user, onLogout }) {
+export default function ProfileScreen({ navigation, user, onLogout }) {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bio, setBio] = useState('');
@@ -50,6 +51,9 @@ export default function ProfileScreen({ user, onLogout }) {
   
   // 사용자 프로필 데이터
   const [userProfile, setUserProfile] = useState(null);
+  
+  // 개성 유형 데이터
+  const [personalityData, setPersonalityData] = useState(getDefaultPersonalityData());
   
   // refs
   const scrollViewRef = useRef(null);
@@ -94,6 +98,18 @@ export default function ProfileScreen({ user, onLogout }) {
     loadUserInfo();
     loadUserProfile();
   }, []);
+  
+  // 사용자 프로필이 변경될 때 개성 유형 데이터 업데이트
+  useEffect(() => {
+    if (userProfile && isProfileComplete(userProfile)) {
+      const mainType = generatePersonalityType(userProfile);
+      const subTags = generateSubTags(userProfile);
+      setPersonalityData({ mainType, subTags });
+    } else {
+      // 프로필이 완성되지 않은 경우 기본값 사용
+      setPersonalityData(getDefaultPersonalityData());
+    }
+  }, [userProfile]);
   
   // 사용자 프로필 로드
   const loadUserProfile = async () => {
@@ -308,38 +324,29 @@ export default function ProfileScreen({ user, onLogout }) {
           <View style={styles.tagContainer}>
             {/* 메인 태그와 버튼 */}
             <View style={styles.tagHeader}>
-              <Text style={styles.mainTagText}>청결을 중시하는 올빼미</Text>
-              <TouchableOpacity style={styles.retestButton}>
+              <Text style={styles.mainTagText}>{personalityData.mainType}</Text>
+              <TouchableOpacity 
+                style={styles.retestButton}
+                onPress={() => {
+                  if (navigation && navigation.navigate) {
+                    navigation.navigate('PersonalityTest', { from: 'profile' });
+                  } else {
+                    console.warn('Navigation prop not found');
+                  }
+                }}
+              >
                 <Text style={styles.retestButtonText}>다시 테스트하기</Text>
               </TouchableOpacity>
             </View>
             
             {/* 서브 태그들 */}
             <View style={styles.subTagsContainer}>
-              <View style={styles.subTagRow}>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>정갈함</Text>
-                </View>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>야행성</Text>
-                </View>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>과묵함</Text>
-                </View>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>조용함</Text>
-                </View>
-              </View>
-              <View style={styles.subTagRow}>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>집에서 잘 나가지 않음</Text>
-                </View>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>잠이 없어요</Text>
-                </View>
-                <View style={styles.subTag}>
-                  <Text style={styles.subTagText}>비둘기</Text>
-                </View>
+              <View style={styles.subTagsWrapper}>
+                {personalityData.subTags.map((tag, index) => (
+                  <View key={index} style={styles.subTag}>
+                    <Text style={styles.subTagText}>{tag}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           </View>
@@ -741,11 +748,11 @@ const styles = StyleSheet.create({
   subTagsContainer: {
     width: '100%',
   },
-  subTagRow: {
+  subTagsWrapper: {
     flexDirection: 'row',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    marginBottom: 8,
+    alignItems: 'center',
   },
   subTag: {
     backgroundColor: '#F0F0F0',

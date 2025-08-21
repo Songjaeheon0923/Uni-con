@@ -173,6 +173,53 @@ function MapStack({ user }) {
   );
 }
 
+function ProfileStack({ user, onLogout }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen 
+        name="ProfileMain"
+        options={{
+          headerShown: true,
+          headerTitle: '내 정보',
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: '#E0E0E0',
+          },
+          headerTintColor: '#000',
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 18,
+          },
+          headerTransparent: false,
+        }}
+      >
+        {(props) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
+      </Stack.Screen>
+      <Stack.Screen 
+        name="PersonalityTest" 
+        component={PersonalityTestScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="MatchResults" 
+        component={MatchResultsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function MainApp() {
   const { user, logout } = useAuth();
   return (
@@ -216,27 +263,8 @@ function MainApp() {
         {(props) => <MapStack {...props} user={user} />}
       </Tab.Screen>
       <Tab.Screen name="관심목록" component={FavoriteRoomsScreen} />
-      <Tab.Screen 
-        name="내 정보"
-        options={{
-          headerShown: true,
-          headerTitle: '내 정보',
-          headerStyle: {
-            backgroundColor: '#FFFFFF',
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: '#E0E0E0',
-          },
-          headerTintColor: '#000',
-          headerTitleStyle: {
-            fontWeight: '600',
-            fontSize: 18,
-          },
-          headerTransparent: false,
-        }}
-      >
-        {(props) => <ProfileScreen {...props} user={user} onLogout={logout} />}
+      <Tab.Screen name="내 정보">
+        {(props) => <ProfileStack {...props} user={user} onLogout={logout} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
