@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime
 
 try:
-    from utils.contract_analyzer import analyze_contract_main
+    from ai.contract_analyzer import analyze_contract_main
 except ImportError:
     print("Warning: contract_analyzer module not found. Contract analysis will not work.")
     analyze_contract_main = None

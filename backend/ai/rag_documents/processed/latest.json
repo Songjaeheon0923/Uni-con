@@ -1,0 +1,12 @@
+{
+  "timestamp": "20250822_162038",
+  "embeddings_file": "ai\\rag_documents\\processed\\embeddings\\embeddings_20250822_162038.npy",
+  "chunks_file": "ai\\rag_documents\\processed\\chunks\\chunks_20250822_162038.json",
+  "metadata_file": "ai\\rag_documents\\processed\\chunks\\metadata_20250822_162038.json",
+  "embedding_shape": [
+    59,
+    768
+  ],
+  "model_name": "jhgan/ko-sroberta-multitask",
+  "total_chunks": 59
+}

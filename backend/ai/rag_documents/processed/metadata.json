@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-08-22T16:20:38.651015",
+  "total_documents": 13,
+  "categories": {
+    "legal": {
+      "housing_act": 0,
+      "civil_law": 0,
+      "consumer_law": 0
+    },
+    "guidelines": {
+      "molit": 0,
+      "kab": 0,
+      "consumer_org": 0
+    },
+    "cases": {
+      "court_cases": 0,
+      "arbitration": 0
+    },
+    "templates": {
+      "standard": 0,
+      "checklists": 0
+    }
+  },
+  "processing_status": {
+    "raw_documents": 13,
+    "processed_documents": 13,
+    "total_chunks": 59,
+    "embeddings_generated": 59,
+    "indexed_documents": 59
+  },
+  "embedding_config": {
+    "model": "jhgan/ko-sroberta-multitask",
+    "chunk_size": 512,
+    "chunk_overlap": 50,
+    "vector_dimension": 384
+  }
+}

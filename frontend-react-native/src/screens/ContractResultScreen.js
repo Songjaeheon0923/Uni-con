@@ -375,18 +375,41 @@ export default function ContractResultScreen({ navigation, route }) {
             </View>
 
             {/* 완료된 단계들 표시 */}
-            {stages.length > 1 && (
+            {stages.length > 0 && (
               <View style={styles.stagesContainer}>
-                {stages.slice(0, -1).map((stage, index) => (
-                  <View key={index} style={styles.completedStageItem}>
-                    <View style={styles.completedStageIndicator}>
-                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                {stages.map((stage, index) => {
+                  // 현재 단계와 같지 않은 단계들은 완료된 것으로 표시
+                  if (stage.stage === currentStage) return null;
+                  
+                  // AI 관련 단계들은 누적 로그에 표시하지 않음
+                  if (stage.stage === "AI 분석 시작" || stage.stage === "AI 분석 중") {
+                    return null;
+                  }
+                  
+                  let stageText = stage.stage;
+                  if (stage.stage === "이미지 전처리 중") {
+                    stageText = "이미지 전처리 완료!";
+                  } else if (stage.stage === "텍스트 추출 중") {
+                    stageText = "텍스트 추출(OCR) 완료!";
+                  } else if (stage.stage === "분석 결과 검증 중") {
+                    stageText = "분석 결과 검증 완료!";
+                  } else if (stage.stage === "결과 처리 중") {
+                    stageText = "결과 처리 완료!";
+                  } else {
+                    stageText = `${stage.stage} 완료!`;
+                  }
+                  
+                  return (
+                    <View key={index} style={styles.completedStageItem}>
+                      <View style={styles.completedStageIndicator}>
+                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                      </View>
+                      <Text style={styles.completedStageText}>
+                        {stageText}
+                      </Text>
                     </View>
-                    <Text style={styles.completedStageText}>
-                      {stage.stage}
-                    </Text>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
 
