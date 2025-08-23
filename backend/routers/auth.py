@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
+from typing import Optional
 from models.user import UserCreate, UserLogin, User
 from database.connection import (
     get_user_by_email, create_user, create_user_with_email_password,
@@ -189,7 +190,7 @@ class CompleteSignupRequest(BaseModel):
     resident_number: str
     phone_number: str
     carrier: str
-    school_email: str = None
+    school_email: Optional[str] = None
 
 @router.post("/signup/complete")
 async def complete_signup(request: CompleteSignupRequest):
@@ -217,7 +218,7 @@ async def complete_signup(request: CompleteSignupRequest):
         cursor = conn.cursor()
         
         # 학교 인증 정보를 포함한 사용자 생성  
-        school_email = request.school_email if request.school_email else None
+        school_email = request.school_email if request.school_email and request.school_email.strip() else None
         
         cursor.execute("""
             INSERT INTO users (email, name, hashed_password, phone_number, gender, school_email) 

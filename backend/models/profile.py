@@ -86,6 +86,7 @@ class UserProfile(BaseModel):
     personality_type: Optional[PersonalityType] = None
     lifestyle_type: Optional[LifestyleType] = None
     budget_range: Optional[BudgetRange] = None
+    school_email: Optional[str] = None  # 학교 이메일
     is_complete: bool = False
 
 

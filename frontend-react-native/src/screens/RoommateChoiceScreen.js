@@ -1,23 +1,63 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path, G, Rect } from "react-native-svg";
+import ApiService from '../services/api';
 
 export default function RoommateChoiceScreen({ navigation, user }) {
+  const [userProfile, setUserProfile] = useState(null);
+  const [hasCompletedTest, setHasCompletedTest] = useState(false);
+  
   const userData = user || {
     id: "1",
     name: "유빈",
     location: "성북구"
   };
 
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await ApiService.getUserProfile();
+      setUserProfile(profile);
+      
+      // 프로필이 완성되어 있는지 확인 (한번이라도 테스트를 했는지)
+      const isComplete = profile && profile.is_complete;
+      setHasCompletedTest(isComplete);
+    } catch (error) {
+      console.error('사용자 프로필 로드 실패:', error);
+      setHasCompletedTest(false);
+    }
+  };
+
   const handlePersonalityTest = () => {
     navigation.navigate('PersonalityTest');
+  };
+
+  const handleSkipTest = () => {
+    Alert.alert(
+      '검사 건너뛰기',
+      '성향 검사를 건너뛰고 바로 룸메이트를 찾아보시겠어요?\n검사 없이도 다른 사용자들을 확인할 수 있습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        { 
+          text: '건너뛰기', 
+          onPress: () => {
+            // 매칭 결과 화면으로 바로 이동
+            navigation.navigate('MatchResults');
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -50,13 +90,22 @@ export default function RoommateChoiceScreen({ navigation, user }) {
       </View>
 
 
-      {/* 버튼 */}
-      <TouchableOpacity style={styles.actionButton} onPress={handlePersonalityTest}>
-        <Text style={styles.actionButtonText}>내 유형 알아보기</Text>
-        <View style={styles.actionButtonIcon}>
-          <Ionicons name="arrow-forward" size={16} color="#696969" />
-        </View>
-      </TouchableOpacity>
+      {/* 버튼들 */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.actionButton} onPress={handlePersonalityTest}>
+          <Text style={styles.actionButtonText}>내 유형 알아보기</Text>
+          <View style={styles.actionButtonIcon}>
+            <Ionicons name="arrow-forward" size={16} color="#696969" />
+          </View>
+        </TouchableOpacity>
+        
+        {/* 한번이라도 테스트를 완료한 사용자에게만 "검사 건너뛰기" 버튼 표시 */}
+        {hasCompletedTest && (
+          <TouchableOpacity style={styles.skipButton} onPress={handleSkipTest}>
+            <Text style={styles.skipButtonText}>검사 건너뛰기</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -111,9 +160,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   actionButton: {
-    position: 'absolute',
-    left: 95,
-    top: 648,
     width: 222,
     height: 56,
     backgroundColor: '#696969',
@@ -124,23 +170,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   actionButtonText: {
-    position: 'absolute',
-    left: 35,
-    top: 19,
     fontSize: 18,
     fontWeight: '600',
     color: '#ffffff',
     textAlign: 'center',
+    marginRight: 10,
   },
   actionButtonIcon: {
-    position: 'absolute',
-    left: 161,
-    top: 15,
     width: 26,
     height: 26,
     backgroundColor: '#D9D9D9',
     borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    left: 97,
+    top: 648,
+    alignItems: 'center',
+  },
+  skipButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 9,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

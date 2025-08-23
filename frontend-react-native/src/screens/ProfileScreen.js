@@ -77,6 +77,49 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
     if (gender === 'female') return '여성';
     return '';
   };
+
+  // 학교 이메일에서 학교명 추출 함수
+  const getSchoolNameFromEmail = (schoolEmail) => {
+    if (!schoolEmail) return '';
+    
+    // @를 기준으로 도메인 추출
+    const domain = schoolEmail.split('@')[1];
+    if (!domain) return '';
+    
+    // 일반적인 학교 도메인 패턴 매칭
+    const schoolPatterns = {
+      'snu.ac.kr': '서울대학교',
+      'korea.ac.kr': '고려대학교', 
+      'yonsei.ac.kr': '연세대학교',
+      'kaist.ac.kr': '카이스트',
+      'postech.ac.kr': '포스텍',
+      'seoul.ac.kr': '서울시립대학교',
+      'hanyang.ac.kr': '한양대학교',
+      'cau.ac.kr': '중앙대학교',
+      'konkuk.ac.kr': '건국대학교',
+      'dankook.ac.kr': '단국대학교',
+    };
+    
+    // 정확한 매칭이 있으면 사용
+    if (schoolPatterns[domain]) {
+      return schoolPatterns[domain];
+    }
+    
+    // 없으면 도메인에서 학교명 추출 시도 (university, univ 등 제거)
+    let schoolName = domain
+      .replace('.ac.kr', '')
+      .replace('.edu', '')
+      .replace('university', '')
+      .replace('univ', '')
+      .replace('.', '');
+    
+    // 첫글자 대문자로 변환하고 '대학교' 추가
+    if (schoolName && schoolName.length > 0) {
+      return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
+    }
+    
+    return '';
+  };
   
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user ? {
@@ -327,40 +370,65 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
           
           {/* 태그 컨테이너 */}
           <View style={styles.tagContainer}>
-            {/* 메인 태그와 버튼 */}
-            <View style={styles.tagHeader}>
-              <Text style={styles.mainTagText}>{personalityData.mainType}</Text>
-              <TouchableOpacity 
-                style={styles.retestButton}
-                onPress={() => {
-                  if (navigation && navigation.navigate) {
-                    navigation.navigate('PersonalityTest', { from: 'profile' });
-                  } else {
-                    console.warn('Navigation prop not found');
-                  }
-                }}
-              >
-                <Text style={styles.retestButtonText}>다시 테스트하기</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* 서브 태그들 */}
-            <View style={styles.subTagsContainer}>
-              <View style={styles.subTagsWrapper}>
-                {personalityData.subTags.map((tag, index) => (
-                  <View key={index} style={styles.subTag}>
-                    <Text style={styles.subTagText}>{tag}</Text>
+            {userProfile && isProfileComplete(userProfile) ? (
+              // 프로필이 완성된 경우 - 기존 성향 정보 표시
+              <>
+                {/* 메인 태그와 버튼 */}
+                <View style={styles.tagHeader}>
+                  <Text style={styles.mainTagText}>{personalityData.mainType}</Text>
+                  <TouchableOpacity 
+                    style={styles.retestButton}
+                    onPress={() => {
+                      if (navigation && navigation.navigate) {
+                        navigation.navigate('PersonalityTest', { from: 'profile' });
+                      } else {
+                        console.warn('Navigation prop not found');
+                      }
+                    }}
+                  >
+                    <Text style={styles.retestButtonText}>다시 테스트하기</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {/* 서브 태그들 */}
+                <View style={styles.subTagsContainer}>
+                  <View style={styles.subTagsWrapper}>
+                    {personalityData.subTags.map((tag, index) => (
+                      <View key={index} style={styles.subTag}>
+                        <Text style={styles.subTagText}>{tag}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
+                </View>
+              </>
+            ) : (
+              // 프로필이 완성되지 않은 경우 - 성향 테스트 안내
+              <View style={styles.incompleteProfileContainer}>
+                <Text style={styles.incompleteProfileTitle}>내 성향을 알아보세요!</Text>
+                <Text style={styles.incompleteProfileSubtitle}>
+                  성향 테스트를 완료하면 나와 잘 맞는{'\n'}룸메이트를 찾을 수 있어요
+                </Text>
+                <TouchableOpacity 
+                  style={styles.personalityTestButton}
+                  onPress={() => {
+                    if (navigation && navigation.navigate) {
+                      // RoommateChoiceScreen으로 이동 (성향 테스트 선택 화면)
+                      navigation.navigate('RoommateChoice');
+                    }
+                  }}
+                >
+                  <Text style={styles.personalityTestButtonText}>성향 테스트 하러가기</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
           
           {/* 기본 정보 */}
           <View style={styles.basicInfoRow}>
             <Text style={styles.basicInfoText}>
               {userProfile ? 
-                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}, 고려대학교` :
+                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}${getSchoolNameFromEmail(userProfile.school_email) ? `, ${getSchoolNameFromEmail(userProfile.school_email)}` : ''}` :
                 '정보 로딩 중...'
               }
             </Text>
@@ -1040,5 +1108,40 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: 20,
     minHeight: 100,
+  },
+  // 프로필 미완성 상태 스타일들
+  incompleteProfileContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  incompleteProfileTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  incompleteProfileSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  personalityTestButton: {
+    backgroundColor: '#666666',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  personalityTestButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

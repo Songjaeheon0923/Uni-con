@@ -34,6 +34,7 @@ import FavoritedUsersScreen from "./src/screens/FavoritedUsersScreen";
 import FavoriteRoomsScreen from "./src/screens/FavoriteRoomsScreen";
 import UserProfileScreen from "./src/screens/UserProfileScreen";
 import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
+import ChatListScreen from "./src/screens/ChatListScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -285,6 +286,13 @@ function MainApp() {
       <Stack.Screen 
         name="MatchResults" 
         component={MatchResultsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ChatList" 
+        component={ChatListScreen}
         options={{
           headerShown: false,
         }}

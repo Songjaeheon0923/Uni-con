@@ -136,6 +136,7 @@ export default function PersonalityTestScreen({ navigation, route }) {
     }
   };
 
+
   const getProgressPercentage = () => {
     return ((currentQuestionIndex + 1) / questions.length) * 100;
   };
@@ -351,6 +352,7 @@ export default function PersonalityTestScreen({ navigation, route }) {
               />
             </View>
           </TouchableOpacity>
+          
         </View>
       </View>
     </View>

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import init_db
-from routers import auth, users, profile, rooms, favorites, policies, admin, contract_analysis
+from routers import auth, users, profile, rooms, favorites, policies, admin, contract_analysis, chat
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.include_router(favorites.router)
 app.include_router(policies.router)
 app.include_router(admin.router)
 app.include_router(contract_analysis.router, prefix="/contract")
+app.include_router(chat.router)
 
 
 @app.get("/")

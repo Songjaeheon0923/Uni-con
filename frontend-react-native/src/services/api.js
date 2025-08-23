@@ -397,6 +397,50 @@ class ApiService {
   async searchPolicies(query, limit = 20) {
     return this.request(`/policies/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   }
+
+  // 채팅 관련 API
+  async createChatRoom(roomType, participantIds, name = null) {
+    return this.request('/chat/rooms', {
+      method: 'POST',
+      body: JSON.stringify({
+        room_type: roomType,
+        participant_ids: participantIds,
+        name: name
+      }),
+    });
+  }
+
+  async getChatRooms() {
+    return this.request('/chat/rooms');
+  }
+
+  async sendMessage(roomId, content, messageType = 'text', fileUrl = null, replyToId = null) {
+    return this.request(`/chat/rooms/${roomId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        content: content,
+        message_type: messageType,
+        file_url: fileUrl,
+        reply_to_id: replyToId
+      }),
+    });
+  }
+
+  async getChatMessages(roomId, limit = 50, offset = 0) {
+    return this.request(`/chat/rooms/${roomId}/messages?limit=${limit}&offset=${offset}`);
+  }
+
+  async markMessagesAsRead(roomId) {
+    return this.request(`/chat/rooms/${roomId}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async createDummyChatData() {
+    return this.request('/chat/rooms/dummy', {
+      method: 'POST',
+    });
+  }
 }
 
 export default new ApiService();

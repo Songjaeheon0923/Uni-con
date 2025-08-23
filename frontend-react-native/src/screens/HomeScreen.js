@@ -332,7 +332,10 @@ export default function HomeScreen({ navigation, user }) {
     >
       {/* 채팅 버튼 */}
       <View style={styles.topContainer}>
-        <TouchableOpacity style={styles.chatButton}>
+        <TouchableOpacity 
+          style={styles.chatButton}
+          onPress={() => navigation.navigate('ChatList')}
+        >
           <View style={styles.chatButtonInner}>
             <View style={styles.speechBubble}>
               <View style={styles.longLine} />

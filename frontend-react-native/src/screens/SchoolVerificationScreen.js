@@ -82,10 +82,18 @@ export default function SchoolVerificationScreen({ navigation }) {
         resident_number: getFullResidentNumber(),
         phone_number: signupData.phoneNumber,
         carrier: signupData.carrier,
-        school_email: isVerified ? schoolEmail : null,
+        school_email: isVerified ? schoolEmail : '',
       };
 
       console.log('최종 회원가입 데이터:', completeSignupData);
+      
+      // 필수 필드 검증
+      const requiredFields = ['email', 'password', 'name', 'nationality', 'resident_number', 'phone_number', 'carrier'];
+      for (const field of requiredFields) {
+        if (!completeSignupData[field] || completeSignupData[field].toString().trim() === '') {
+          throw new Error(`필수 필드가 누락되었습니다: ${field}`);
+        }
+      }
 
       // 모든 정보를 한 번에 전송하여 회원가입 완료
       const response = await ApiService.completeSignup(completeSignupData);
@@ -102,7 +110,24 @@ export default function SchoolVerificationScreen({ navigation }) {
       );
     } catch (error) {
       console.error('회원가입 완료 오류:', error);
-      Alert.alert('회원가입 실패', `회원가입 완료 중 오류가 발생했습니다.\n${error.message}`);
+      
+      // API 에러 상세 정보 로그
+      if (error.response && error.response.data) {
+        console.error('API error details:', error.response.data);
+      }
+      
+      let errorMessage = '회원가입 완료 중 오류가 발생했습니다.';
+      if (error.response && error.response.data && error.response.data.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          // Pydantic validation error의 경우
+          const errors = error.response.data.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n');
+          errorMessage = `입력 데이터 오류:\n${errors}`;
+        } else {
+          errorMessage = error.response.data.detail;
+        }
+      }
+      
+      Alert.alert('회원가입 실패', errorMessage);
     } finally {
       setIsLoading(false);
     }
