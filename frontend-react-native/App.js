@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -13,6 +14,7 @@ import MapScreen from "./src/screens/MapScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import RoommateSearchScreen from "./src/screens/RoommateSearchScreen";
 import PersonalityTestScreen from "./src/screens/PersonalityTestScreen";
+import PersonalityResultScreen from "./src/screens/PersonalityResultScreen";
 import MatchResultsScreen from "./src/screens/MatchResultsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
@@ -52,27 +54,6 @@ function HomeStack({ user }) {
       >
         {(props) => <HomeScreen {...props} user={user} />}
       </Stack.Screen>
-      <Stack.Screen 
-        name="RoommateSearch" 
-        component={RoommateSearchScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
-        name="PersonalityTest" 
-        component={PersonalityTestScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen 
-        name="MatchResults" 
-        component={MatchResultsScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
       <Stack.Screen 
         name="Chat" 
         component={ChatScreen}
@@ -136,13 +117,6 @@ function HomeStack({ user }) {
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="RoommateChoice" 
-        component={RoommateChoiceScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
     </Stack.Navigator>
   );
 }
@@ -191,21 +165,7 @@ function ProfileStack({ user, onLogout }) {
       <Stack.Screen 
         name="ProfileMain"
         options={{
-          headerShown: true,
-          headerTitle: '내 정보',
-          headerStyle: {
-            backgroundColor: '#FFFFFF',
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: '#E0E0E0',
-          },
-          headerTintColor: '#000',
-          headerTitleStyle: {
-            fontWeight: '600',
-            fontSize: 18,
-          },
-          headerTransparent: false,
+          headerShown: false,
         }}
       >
         {(props) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
@@ -213,6 +173,13 @@ function ProfileStack({ user, onLogout }) {
       <Stack.Screen 
         name="PersonalityTest" 
         component={PersonalityTestScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="PersonalityResult" 
+        component={PersonalityResultScreen}
         options={{
           headerShown: false,
         }}
@@ -228,7 +195,7 @@ function ProfileStack({ user, onLogout }) {
   );
 }
 
-function MainApp() {
+function MainTabs() {
   const { user, logout } = useAuth();
   return (
     <Tab.Navigator
@@ -278,13 +245,79 @@ function MainApp() {
   );
 }
 
+function MainApp() {
+  const { user, logout } = useAuth();
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen 
+        name="RoommateChoice" 
+        component={RoommateChoiceScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="RoommateSearch" 
+        component={RoommateSearchScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="PersonalityTest" 
+        component={PersonalityTestScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="PersonalityResult" 
+        component={PersonalityResultScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="MatchResults" 
+        component={MatchResultsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function AppContent() {
-  const { user, isLoading, isAuthenticated, handleUnauthorized } = useAuth();
+  const { user, isLoading, isAuthenticated, handleUnauthorized, validateToken, checkAuthState } = useAuth();
 
   useEffect(() => {
     // API 서비스에 401 에러 핸들러 등록
     api.setAuthErrorHandler(handleUnauthorized);
-  }, [handleUnauthorized]);
+    
+    // 앱 시작 시 즉시 토큰 검증
+    if (isAuthenticated && !isLoading) {
+      validateToken();
+    }
+  }, [handleUnauthorized, isAuthenticated, isLoading, validateToken]);
+
+  useEffect(() => {
+    // 앱이 포그라운드로 돌아올 때마다 세션 검증
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active' && isAuthenticated) {
+        // 앱이 활성화될 때 토큰 유효성 검사
+        validateToken();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [isAuthenticated, validateToken]);
 
   if (isLoading) {
     return null; // 또는 로딩 스피너

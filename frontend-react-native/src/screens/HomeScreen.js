@@ -356,7 +356,7 @@ export default function HomeScreen({ navigation, user }) {
           </View>
         </View>
         <View style={styles.arrowCircle}>
-          <Ionicons name="arrow-forward" size={20} color="#737373" />
+          <Ionicons name="arrow-forward" size={45} color="#737373" style={styles.arrowIcon} />
         </View>
       </TouchableOpacity>
 
@@ -369,7 +369,7 @@ export default function HomeScreen({ navigation, user }) {
           </View>
         </View>
         <View style={styles.contractArrowCircle}>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          <Ionicons name="arrow-forward" size={45} color="#FFFFFF" style={styles.arrowIcon} />
         </View>
       </TouchableOpacity>
 
@@ -401,6 +401,8 @@ export default function HomeScreen({ navigation, user }) {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.roomCardContainer}
+          overScrollMode="never"
+          bounces={false}
         />
       </View>
 
@@ -566,6 +568,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#D9D9D9',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  arrowIcon: {
+    fontWeight: 'bold',
   },
   contractBox: {
     backgroundColor: '#E5E5E5',

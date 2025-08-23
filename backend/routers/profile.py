@@ -97,7 +97,7 @@ async def get_profile_questions():
                 "question": "보통 몇 시쯤 기상하고,\n몇 시쯤 잠자리에 드시나요?",
                 "options": [
                     {"value": "morning", "label": "아침형 (기상 7-9시, 취침 22-24시)"},
-                    {"value": "night", "label": "야행형 (기상 10-12시, 취침 01-03시)"}
+                    {"value": "evening", "label": "야행형 (기상 10-12시, 취침 01-03시)"}
                 ]
             },
             {

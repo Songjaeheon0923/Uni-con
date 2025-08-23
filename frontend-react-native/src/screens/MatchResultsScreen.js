@@ -168,7 +168,7 @@ export default function MatchResultsScreen({ navigation }) {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={() => navigation.navigate('HomeMain')}
+          onPress={() => navigation.navigate('MainTabs', { screen: '홈', params: { screen: 'HomeMain' } })}
         >
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>

@@ -299,6 +299,11 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
+      {/* 내 정보 타이틀 - 고정 위치 */}
+      <View style={styles.fixedHeaderContainer}>
+        <Text style={styles.headerTitle}>내 정보</Text>
+      </View>
+
       <ScrollView 
         ref={scrollViewRef}
         style={styles.container} 
@@ -680,7 +685,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    paddingTop: 0,
+    paddingTop: 100,
+  },
+  fixedHeaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FAFAFA',
+    paddingTop: 60,
+    paddingBottom: 20,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
   },
   profileSection: {
     alignItems: 'center',

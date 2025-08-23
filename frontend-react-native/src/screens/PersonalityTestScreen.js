@@ -112,23 +112,22 @@ export default function PersonalityTestScreen({ navigation, route }) {
     try {
       await ApiService.updateUserProfile(answers);
       
-      if (fromScreen === 'profile') {
-        Alert.alert(
-          '완료!', 
-          '성격 유형 분석이 완료되었습니다!\n업데이트된 개성 유형을 확인해보세요.',
-          [
-            { text: '확인', onPress: () => navigation.goBack() }
-          ]
-        );
-      } else {
-        Alert.alert(
-          '완료!', 
-          '성격 유형 분석이 완료되었습니다!\n이제 매칭된 룸메이트를 확인해보세요.',
-          [
-            { text: '확인', onPress: () => navigation.navigate('MatchResults') }
-          ]
-        );
-      }
+      // 사용자 프로필 정보와 함께 결과 화면으로 이동
+      const userProfile = {
+        name: '유빈', // 실제로는 현재 사용자 이름을 가져와야 함
+        sleep_type: answers.sleep_type,
+        home_time: answers.home_time,
+        cleaning_frequency: answers.cleaning_frequency,
+        cleaning_sensitivity: answers.cleaning_sensitivity,
+        smoking_status: answers.smoking_status,
+        noise_sensitivity: answers.noise_sensitivity
+      };
+      
+      navigation.navigate('PersonalityResult', { 
+        userProfile, 
+        fromScreen 
+      });
+      
     } catch (error) {
       console.error('프로필 저장 실패:', error);
       Alert.alert('오류', '프로필 저장에 실패했습니다.');

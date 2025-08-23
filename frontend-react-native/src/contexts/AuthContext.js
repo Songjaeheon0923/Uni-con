@@ -87,10 +87,20 @@ export const AuthProvider = ({ children }) => {
 
   const validateToken = async () => {
     try {
-      await api.getMe();
+      if (!accessToken) {
+        handleUnauthorized();
+        return;
+      }
+      
+      const response = await api.getMe();
+      if (!response) {
+        // API에서 null을 반환하면 401 에러로 간주하여 로그아웃 처리
+        handleUnauthorized();
+      }
     } catch (error) {
-      // 토큰 유효성 검사 실패 시 자동으로 handleUnauthorized가 호출됨
-      console.log('토큰 유효성 검사 실패 - 자동 로그아웃 처리');
+      // 토큰 유효성 검사 실패 시 강제 로그아웃
+      console.log('토큰 유효성 검사 실패 - 강제 로그아웃 처리');
+      handleUnauthorized();
     }
   };
 
