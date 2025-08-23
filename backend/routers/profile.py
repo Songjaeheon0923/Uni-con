@@ -94,18 +94,18 @@ async def get_profile_questions():
         "questions": [
             {
                 "id": "sleep_type",
-                "question": "기상, 취침시간은 어떻게 되시나요?",
+                "question": "보통 몇 시쯤 기상하고,\n몇 시쯤 잠자리에 드시나요?",
                 "options": [
-                    {"value": "morning", "label": "아침형"},
-                    {"value": "evening", "label": "저녁형"}
+                    {"value": "morning", "label": "아침형 (기상 7-9시, 취침 22-24시)"},
+                    {"value": "night", "label": "야행형 (기상 10-12시, 취침 01-03시)"}
                 ]
             },
             {
                 "id": "home_time",
-                "question": "집에 머무는 시간대는 언제인가요?",
+                "question": "하루 중 집에 머무는 시간대는\n언제가 많으신가요?",
                 "options": [
-                    {"value": "day", "label": "낮 시간"},
-                    {"value": "night", "label": "밤 시간"},
+                    {"value": "day", "label": "낮 시간 (08:00~18:00)"},
+                    {"value": "night", "label": "밤 시간 (18:00~02:00)"},
                     {"value": "irregular", "label": "일정하지 않아요"}
                 ]
             },
@@ -120,30 +120,38 @@ async def get_profile_questions():
             },
             {
                 "id": "cleaning_sensitivity",
-                "question": "룸메이트의 청소 상태가 신경 쓰이는 편인가요?",
+                "question": "룸메이트의 청소 상태가\n신경 쓰이는 편인가요?",
                 "options": [
-                    {"value": "very_sensitive", "label": "매우 민감함"},
+                    {"value": "very_sensitive", "label": "매우 민감함 (먼지, 정리에 예민)"},
                     {"value": "normal", "label": "보통"},
                     {"value": "not_sensitive", "label": "크게 상관 없음"}
                 ]
             },
             {
                 "id": "smoking_status",
-                "question": "흡연 관련 선호사항을 선택해주세요",
+                "question": "흡연을 하시나요?",
                 "options": [
-                    {"value": "non_smoker_strict", "label": "비흡연자 - 흡연자와 함께 지내기 어려움"},
-                    {"value": "non_smoker_ok", "label": "비흡연자 - 흡연자와 함께 지내기 가능"},
-                    {"value": "smoker_indoor_no", "label": "흡연자 - 실내 금연"},
-                    {"value": "smoker_indoor_yes", "label": "흡연자 - 실내 흡연"}
-                ]
+                    {"value": "non_smoker", "label": "비흡연자"},
+                    {"value": "smoker", "label": "흡연자"}
+                ],
+                "sub_options": {
+                    "non_smoker": [
+                        {"value": "non_smoker_strict", "label": "흡연자와 함께 지내기 어려움"},
+                        {"value": "non_smoker_ok", "label": "흡연자와 함께 지내기 가능"}
+                    ],
+                    "smoker": [
+                        {"value": "smoker_indoor_no", "label": "실내 금연, 외부에서만 흡연"},
+                        {"value": "smoker_indoor_yes", "label": "실내 흡연 희망"}
+                    ]
+                }
             },
             {
                 "id": "noise_sensitivity",
-                "question": "생활 소음에 대한 민감도는 어떠신가요?",
+                "question": "생활 소음에 얼마나 민감하신가요?\n(예: 발소리, 말소리, 음악 등)",
                 "options": [
-                    {"value": "sensitive", "label": "민감함"},
-                    {"value": "normal", "label": "보통"},
-                    {"value": "not_sensitive", "label": "둔감함"}
+                    {"value": "sensitive", "label": "매우 민감함 (소음에 예민)"},
+                    {"value": "normal", "label": "보통 (일상 소음은 괜찮음)"},
+                    {"value": "not_sensitive", "label": "크게 상관 없음 (소음에 둔감)"}
                 ]
             }
         ]

@@ -330,34 +330,46 @@ export default function HomeScreen({ navigation, user }) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
+      {/* 채팅 버튼 */}
+      <View style={styles.topContainer}>
+        <TouchableOpacity style={styles.chatButton}>
+          <View style={styles.chatButtonInner}>
+            <View style={styles.speechBubble}>
+              <View style={styles.longLine} />
+              <View style={styles.shortLine} />
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* 인사말 */}
       <View style={styles.greetingContainer}>
         <Text style={styles.greeting}>안녕하세요 {userData.name}님 :)</Text>
       </View>
 
       {/* 나만의 룸메이트 찾기 박스 */}
-      <View style={styles.roommateBox}>
+      <TouchableOpacity style={styles.roommateBox} onPress={() => navigation.navigate('RoommateChoice')}>
         <View style={styles.roommateBoxContent}>
           <View style={styles.roommateTextContainer}>
             <Text style={styles.roommateBoxTitle}>나만의 룸메이트 찾기</Text>
-            <Text style={styles.roommateBoxSubtitle}>내 성향 파악하고 딱 맞는 룸메이트를 찾아보세요!</Text>
+            <Text style={styles.roommateBoxSubtitle}>내 성향을 파악하고 딱 맞는 룸메이트를 찾아보세요!</Text>
           </View>
         </View>
-        <View style={styles.roommateButtonContainer}>
-          <TouchableOpacity style={styles.roommateButton} onPress={handleRoommateSearch}>
-            <Text style={styles.roommateButtonText}>성격 유형 파악하기</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.skipTestButton} onPress={handleSkipTest}>
-            <Text style={styles.skipTestButtonText}>검사 스킵하기</Text>
-          </TouchableOpacity>
+        <View style={styles.arrowCircle}>
+          <Ionicons name="arrow-forward" size={20} color="#737373" />
         </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* 계약서 안전성 검증 박스 */}
+      {/* 계약서 안정성 검증 박스 */}
       <TouchableOpacity style={styles.contractBox} onPress={handleContractVerification}>
         <View style={styles.contractBoxContent}>
-          <Text style={styles.contractBoxTitle}>계약서 안전성 검증하기</Text>
-          <Ionicons name="shield-checkmark-outline" size={18} color="#666" />
+          <View style={styles.contractTextContainer}>
+            <Text style={styles.contractBoxTitle}>계약서 안전성 검증하기</Text>
+            <Text style={styles.contractBoxSubtitle}>내가 갖고 있는 계약서의 안전 정도를 검증해보세요</Text>
+          </View>
+        </View>
+        <View style={styles.contractArrowCircle}>
+          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
         </View>
       </TouchableOpacity>
 
@@ -457,8 +469,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  topContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    backgroundColor: '#fff',
+  },
   greetingContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
     backgroundColor: '#fff',
   },
   greeting: {
@@ -466,81 +485,129 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  chatButton: {
+    padding: 4,
+  },
+  chatButtonInner: {
+    width: 37,
+    height: 37,
+    borderRadius: 18.5,
+    backgroundColor: '#E8E8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speechBubble: {
+    width: 17,
+    height: 17,
+    borderWidth: 2.0,
+    borderColor: '#464646',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+  },
+  longLine: {
+    right: 0,
+    width: 9,
+    height: 2.0,
+    backgroundColor: '#464646',
+    borderRadius: 1,
+    marginBottom: 2,
+  },
+  shortLine: {
+    right: 0,
+    width: 6,
+    height: 2.0,
+    backgroundColor: '#464646',
+    borderRadius: 1,
+  },
   roommateBox: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#737373',
     marginHorizontal: 20,
     marginTop: 15,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingHorizontal: 19,
+    paddingTop: 23,
+    paddingBottom: 25,
+    borderRadius: 18,
+    position: 'relative',
+    height: 193,
   },
   roommateBoxContent: {
-    marginBottom: 16,
+    flex: 1,
   },
   roommateTextContainer: {
     alignItems: 'flex-start',
   },
   roommateBoxTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    lineHeight: 24,
   },
   roommateBoxSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
-    color: '#666',
-    lineHeight: 20,
-  },
-  roommateButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  roommateButton: {
-    flex: 1,
-    backgroundColor: '#FF6600',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  roommateButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    opacity: 0.8,
+    lineHeight: 14,
   },
-  skipTestButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  arrowCircle: {
+    position: 'absolute',
+    right: 15,
+    bottom: 17,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#D9D9D9',
+    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FF6600',
-  },
-  skipTestButtonText: {
-    color: '#FF6600',
-    fontSize: 14,
-    fontWeight: '600',
   },
   contractBox: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#E5E5E5',
     marginHorizontal: 20,
-    marginTop: 10,
-    padding: 15,
-    borderRadius: 12,
+    marginTop: 12,
+    paddingHorizontal: 19,
+    paddingTop: 21,
+    paddingBottom: 21,
+    borderRadius: 18,
+    position: 'relative',
+    height: 87,
   },
   contractBoxContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flex: 1,
+  },
+  contractTextContainer: {
+    alignItems: 'flex-start',
   },
   contractBoxTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#343434',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  contractBoxSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#343434',
+    opacity: 0.8,
+    lineHeight: 14,
+  },
+  contractArrowCircle: {
+    position: 'absolute',
+    right: 15,
+    top: 14,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#CACACA',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sectionContainer: {
     marginTop: 25,

@@ -13,10 +13,11 @@ import sys
 # RAG 시스템 import
 try:
     from .rag_system.contract_rag import ContractRAGSystem
-    RAG_AVAILABLE = True
+    RAG_AVAILABLE = False  # 임시로 RAG 비활성화
+    print("[RAG] RAG 시스템이 임시로 비활성화되었습니다.")
 except ImportError:
     RAG_AVAILABLE = False
-    print("Warning: RAG system not available. Basic analysis only.")
+    print("[RAG] Warning: RAG system not available. Basic analysis only.")
 
 load_dotenv()
 
@@ -37,12 +38,14 @@ class ContractAnalyzer:
         # RAG 시스템 초기화
         if RAG_AVAILABLE:
             try:
+                print("[RAG] ContractRAGSystem 초기화 중...")
                 self.rag_system = ContractRAGSystem("ai/rag_documents")
-                print("RAG 시스템이 성공적으로 로드되었습니다.")
+                print("[RAG] ✅ RAG 시스템이 성공적으로 로드되었습니다.")
             except Exception as e:
-                print(f"RAG 시스템 로드 실패: {e}")
+                print(f"[RAG] ❌ RAG 시스템 로드 실패: {e}")
                 self.rag_system = None
         else:
+            print("[RAG] ⚠️ RAG 모듈을 사용할 수 없습니다.")
             self.rag_system = None
         
     def extract_text_from_image(self, image_path: str) -> str:
@@ -113,7 +116,9 @@ class ContractAnalyzer:
         """
         
         # RAG 시스템에서 관련 법률 정보 수집
+        print("[RAG] 법률 정보 컨텍스트 수집 시작...")
         rag_context = self._get_rag_context_for_analysis(contract_text)
+        print(f"[RAG] 컨텍스트 수집 완료 (길이: {len(rag_context)} 글자)")
         
         prompt = f"""
 다음 임대차 계약서를 분석해서 JSON 형식으로 결과를 반환해주세요.
@@ -234,31 +239,41 @@ JSON 형식으로만 응답하고, 다른 설명은 포함하지 마세요.
             str: 분석용 법률 컨텍스트
         """
         if not self.rag_system:
+            print("[RAG] ⚠️ RAG 시스템이 사용 불가능합니다.")
             return "RAG 시스템이 사용 불가능합니다."
         
         try:
+            print("[RAG] 🔍 4가지 관점에서 관련 정보 수집 중...")
             # 다양한 관점에서 관련 정보 수집
             contexts = []
             
             # 1. 일반적인 계약서 분석 정보
+            print("[RAG] 1/4 일반 체크리스트 검색 중...")
             general_results = self.rag_system.embedder.search_similar(
                 "임대차 계약서 체크리스트 필수 확인사항", top_k=2, threshold=0.4
             )
+            print(f"[RAG] 일반 체크리스트: {len(general_results)}개 결과")
             
             # 2. 위험 조항 관련 정보  
+            print("[RAG] 2/4 위험 조항 검색 중...")
             risk_results = self.rag_system.embedder.search_similar(
                 "위험 조항 불공정 약관 임차인 불리", top_k=2, threshold=0.4
             )
+            print(f"[RAG] 위험 조항: {len(risk_results)}개 결과")
             
             # 3. 법률 근거 정보
+            print("[RAG] 3/4 법률 근거 검색 중...")
             legal_results = self.rag_system.embedder.search_similar(
                 "주택임대차보호법 민법 임대차 조항", top_k=2, threshold=0.4
             )
+            print(f"[RAG] 법률 근거: {len(legal_results)}개 결과")
             
             # 4. 계약서 내용 기반 구체적 검색
+            print("[RAG] 4/4 계약서 특화 검색 중...")
             contract_specific = self.rag_system.embedder.search_similar(
                 contract_text[:150], top_k=1, threshold=0.4
             )
+            print(f"[RAG] 계약서 특화: {len(contract_specific)}개 결과")
             
             all_results = general_results + risk_results + legal_results + contract_specific
             
@@ -273,23 +288,27 @@ JSON 형식으로만 응답하고, 다른 설명은 포함하지 마세요.
             
             # 컨텍스트 구성
             if unique_results:
+                print(f"[RAG] ✅ 총 {len(unique_results)}개의 고유한 법률 정보를 수집했습니다.")
                 contexts.append("【핵심 법률 정보】")
                 for i, result in enumerate(unique_results, 1):
                     file_name = result['metadata'].get('file_name', '').replace('.md', '')
                     content = result['content'][:200]  # 200자로 제한
                     contexts.append(f"{i}. {file_name}: {content}")
+                    print(f"[RAG]   - {file_name} (유사도: {result.get('similarity_score', 0):.3f})")
                 
                 contexts.append("\n【분석 요구사항】")
                 contexts.append("- 법적 근거를 포함한 구체적 분석")
                 contexts.append("- 임차인 권리 보호 관점 적용")
                 contexts.append("- JSON 형식 준수")
                 
+                print("[RAG] 🎯 RAG 컨텍스트 구성 완료")
                 return "\n".join(contexts)
             else:
+                print("[RAG] ⚠️ 관련 법률 정보를 찾을 수 없습니다.")
                 return "관련 법률 정보를 찾을 수 없습니다. 일반적인 계약서 분석을 진행합니다."
                 
         except Exception as e:
-            print(f"RAG 컨텍스트 수집 중 오류: {e}")
+            print(f"[RAG] ❌ RAG 컨텍스트 수집 중 오류: {e}")
             return "RAG 컨텍스트 수집 중 오류가 발생했습니다. 기본 분석을 진행합니다."
     
     def enhance_with_rag(self, contract_text: str, basic_analysis: Dict[str, Any]) -> Dict[str, Any]:
@@ -304,7 +323,7 @@ JSON 형식으로만 응답하고, 다른 설명은 포함하지 마세요.
             Dict: 분석 결과 (RAG가 이미 통합되어 추가 처리 불필요)
         """
         # RAG가 이미 GPT-4 분석 과정에 통합되어 추가 처리 불필요
-        print("RAG 컨텍스트가 이미 AI 분석에 통합되어 있습니다.")
+        print("[RAG] 📋 RAG 컨텍스트가 이미 AI 분석에 통합되어 있습니다.")
         return basic_analysis
     
     def analyze_contract(self, image_path: str) -> Dict[str, Any]:
@@ -319,23 +338,23 @@ JSON 형식으로만 응답하고, 다른 설명은 포함하지 마세요.
         """
         try:
             # 1. OCR로 텍스트 추출
-            print("OCR을 통해 텍스트를 추출하는 중...")
+            print("📄 OCR을 통해 텍스트를 추출하는 중...")
             contract_text = self.extract_text_from_image(image_path)
             
             if not contract_text.strip():
                 raise Exception("계약서에서 텍스트를 추출할 수 없습니다.")
             
-            print(f"추출된 텍스트 길이: {len(contract_text)} 글자")
+            print(f"✅ 추출된 텍스트 길이: {len(contract_text)} 글자")
             
             # 2. AI로 계약서 분석
-            print("AI를 통해 계약서를 분석하는 중...")
+            print("🤖 AI를 통해 계약서를 분석하는 중...")
             analysis_result = self.analyze_contract_with_ai(contract_text)
             
             # 3. RAG 시스템 통합 완료 (이미 GPT-4 분석에 포함됨)
             if self.rag_system:
-                print("RAG 시스템이 분석에 통합되었습니다.")
+                print("[RAG] ✅ RAG 시스템이 분석에 성공적으로 통합되었습니다.")
             else:
-                print("RAG 시스템 없이 기본 GPT-4 분석을 사용합니다.")
+                print("[RAG] ⚠️ RAG 시스템 없이 기본 GPT 분석을 사용합니다.")
             
             # 4. 새로운 형식으로 반환
             final_result = {

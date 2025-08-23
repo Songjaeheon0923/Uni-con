@@ -31,6 +31,7 @@ import ContractViewScreen from "./src/screens/ContractViewScreen";
 import FavoritedUsersScreen from "./src/screens/FavoritedUsersScreen";
 import FavoriteRoomsScreen from "./src/screens/FavoriteRoomsScreen";
 import UserProfileScreen from "./src/screens/UserProfileScreen";
+import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -131,6 +132,13 @@ function HomeStack({ user }) {
       <Stack.Screen 
         name="UserProfile" 
         component={UserProfileScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="RoommateChoice" 
+        component={RoommateChoiceScreen}
         options={{
           headerShown: false,
         }}

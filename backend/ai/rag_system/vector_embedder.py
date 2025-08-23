@@ -265,6 +265,7 @@ class VectorEmbedder:
             self.documents = chunks
             self.document_metadata = metadata
             
+            print(f"[RAG] ✅ 임베딩 로드 완료: {embeddings.shape[0]}개 청크, {embeddings.shape[1]}차원")
             logger.info(f"Loaded embeddings: {embeddings.shape}")
             return True
             
@@ -329,6 +330,7 @@ class VectorEmbedder:
                             "rank": i + 1
                         })
             
+            print(f"[RAG] 🔍 검색어: '{query[:50]}...' → {len(results)}개 결과 (임계값: {threshold})")
             logger.info(f"Search query: '{query}' - Found {len(results)} results")
             return results
             

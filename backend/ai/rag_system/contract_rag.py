@@ -34,8 +34,12 @@ class ContractRAGSystem:
     
     def _initialize(self):
         """RAG 시스템 초기화"""
+        print("[RAG] 임베딩 데이터 로드 시도...")
         if not self.embedder.load_latest_embeddings():
+            print("[RAG] ⚠️ 기존 임베딩을 찾을 수 없습니다. generate_embeddings_simple.py를 먼저 실행해주세요.")
             logger.warning("No pre-generated embeddings found. Please generate embeddings first.")
+        else:
+            print(f"[RAG] ✅ 임베딩 데이터 로드 성공 (문서 {len(self.embedder.documents)}개)")
     
     def analyze_contract_clause(
         self, 
