@@ -13,31 +13,31 @@ async def search_rooms_by_text(
     limit: int = Query(100, description="결과 개수 제한"),
 ):
     """텍스트 기반 방 검색"""
-    
+
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     try:
         # 주소, 설명, 거래유형에서 검색어를 포함하는 방 검색
         search_query = f"%{query}%"
-        
+
         sql = """
             SELECT room_id, address, latitude, longitude, price_deposit, price_monthly,
                    transaction_type, area, rooms, risk_score, favorite_count
             FROM rooms
             WHERE is_active = 1
             AND (
-                address LIKE ? OR 
+                address LIKE ? OR
                 description LIKE ? OR
                 transaction_type LIKE ?
             )
             ORDER BY view_count DESC, favorite_count DESC
             LIMIT ?
         """
-        
+
         cursor.execute(sql, (search_query, search_query, search_query, limit))
         results = cursor.fetchall()
-        
+
         # 결과를 RoomPin 모델로 변환
         rooms = []
         for row in results:
@@ -55,9 +55,9 @@ async def search_rooms_by_text(
                 favorite_count=row[10],
             )
             rooms.append(room)
-        
+
         return rooms
-        
+
     except Exception as e:
         print(f"Error searching rooms by text: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -106,8 +106,8 @@ async def search_rooms_on_map(
             query += " AND transaction_type = ?"
             params.append(transaction_type)
 
-        # 조회수 높은 순으로 정렬 (인기 매물 우선)
-        query += " ORDER BY view_count DESC, favorite_count DESC LIMIT 500"
+        # 모든 매물 반환 (프론트엔드에서 클러스터링 처리)
+        query += " ORDER BY room_id LIMIT 3000"
 
         cursor.execute(query, params)
         results = cursor.fetchall()

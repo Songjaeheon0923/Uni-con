@@ -59,15 +59,30 @@ export default function MapScreen({ navigation }) {
 
   const loadRooms = async () => {
     try {
-      // 서울 지역 범위로 방 검색
+      // 서울 전체 지역 범위로 방 검색
       const bounds = {
-        latMin: 37.4,
-        latMax: 37.6,
-        lngMin: 126.9,
-        lngMax: 127.2,
+        latMin: 37.42,
+        latMax: 37.71,
+        lngMin: 126.76,
+        lngMax: 127.18,
       };
 
       const roomData = await ApiService.searchRooms(bounds);
+      console.log(`🔍 API 응답: ${roomData?.length || 0}개 매물`);
+      
+      // 강북쪽 데이터 확인
+      const northernData = roomData?.filter(room => 
+        room.address.includes('강북구') || 
+        room.address.includes('도봉구') || 
+        room.address.includes('노원구') || 
+        room.address.includes('광진구') || 
+        room.address.includes('성북구') || 
+        room.address.includes('용산구')
+      ) || [];
+      console.log(`🌟 강북쪽 매물: ${northernData.length}개`);
+      northernData.slice(0, 3).forEach(room => {
+        console.log(`  - ${room.address} (${room.latitude}, ${room.longitude})`);
+      });
 
       // API 데이터를 MapView에서 사용할 수 있는 형태로 변환
       const formattedRooms = roomData.map(room => ({
