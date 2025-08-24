@@ -52,3 +52,4 @@ class RoomPin(BaseModel):
     rooms: Optional[int] = 1
     risk_score: int
     favorite_count: int
+    floor: Optional[int] = None
