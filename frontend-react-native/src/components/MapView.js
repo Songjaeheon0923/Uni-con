@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef, forwardRef } from "react";
+import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
 import { View, StyleSheet, Text, Dimensions, Animated } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "./HomeIcon";
 import * as Location from "expo-location";
+import Supercluster from "supercluster";
 
 const { width, height } = Dimensions.get("window");
 
@@ -17,11 +18,22 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
     }
   };
 
+
+  // 좌표를 숫자로 강제 변환
+  const lat = parseFloat(property.latitude);
+  const lng = parseFloat(property.longitude);
+  
+  // 변환 후 유효성 검사
+  if (isNaN(lat) || isNaN(lng)) {
+    console.error(`❌ 유효하지 않은 좌표: ${property.address} - lat:${property.latitude}(${typeof property.latitude}), lng:${property.longitude}(${typeof property.longitude})`);
+    return null;
+  }
+
   return (
     <Marker
       coordinate={{
-        latitude: property.latitude,
-        longitude: property.longitude,
+        latitude: lat,
+        longitude: lng,
       }}
       onPress={handlePress}
       tracksViewChanges={false}
@@ -30,16 +42,21 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
       <View style={[
         styles.houseMarkerContainer,
         isSelected ? {
-          backgroundColor: "#333333",
+          backgroundColor: "#FF0000",
           borderColor: "#ffffff",
+          borderWidth: 3,
+          transform: [{ scale: 1.5 }]
+        } : {
+          backgroundColor: "#FF6600",
           borderWidth: 2,
-          transform: [{ scale: 1.2 }]
-        } : {}
+          borderColor: "#000000"
+        }
       ]}>
-        <HomeIcon 
-          size={20} 
-          color={isSelected ? "#ffffff" : "#333333"}
-        />
+        <Text style={{ 
+          color: isSelected ? "#ffffff" : "#000000",
+          fontSize: 12,
+          fontWeight: 'bold'
+        }}>📍</Text>
       </View>
     </Marker>
   );
@@ -51,20 +68,137 @@ const PropertyMapView = forwardRef(({
   selectedPropertyId,
 }, ref) => {
   const [region, setRegion] = useState({
-    latitude: 37.5665, // 서울 시청 위치
-    longitude: 126.978,
-    latitudeDelta: 0.15,  // 서울 전체가 보이도록 확대
-    longitudeDelta: 0.12,
+    latitude: 37.566, // 서울 중심 (강북 포함)
+    longitude: 126.98,
+    latitudeDelta: 0.25,  // 서울 전체가 잘 보이도록 더 확대
+    longitudeDelta: 0.2,
   });
   const [userLocation, setUserLocation] = useState(null);
   const mapRef = useRef(null);
+  
+  // Supercluster 인스턴스 생성
+  const supercluster = useMemo(() => {
+    const cluster = new Supercluster({
+      radius: 60,
+      maxZoom: 16,
+      minZoom: 0,
+      extent: 512,
+      nodeSize: 64,
+    });
+    
+    // properties를 GeoJSON 포인트로 변환
+    const points = properties
+      .filter(p => p.latitude && p.longitude)
+      .map(property => ({
+        type: "Feature",
+        properties: {
+          cluster: false,
+          property: property,
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [property.longitude, property.latitude],
+        },
+      }));
+    
+    cluster.load(points);
+    return cluster;
+  }, [properties]);
+  
+  // 현재 줌 레벨에 따른 클러스터 계산
+  const clusteredMarkers = useMemo(() => {
+    if (!region || !supercluster) return [];
+    
+    const zoom = Math.round(Math.log2(360 / region.latitudeDelta));
+    const bbox = [
+      region.longitude - region.longitudeDelta / 2,
+      region.latitude - region.latitudeDelta / 2,
+      region.longitude + region.longitudeDelta / 2,
+      region.latitude + region.latitudeDelta / 2,
+    ];
+    
+    return supercluster.getClusters(bbox, Math.max(0, Math.min(16, zoom)));
+  }, [region, supercluster]);
+
+  // 클러스터 마커 컴포넌트
+  const ClusterMarker = ({ cluster, onPress }) => {
+    const [longitude, latitude] = cluster.geometry.coordinates;
+    const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+
+    if (isCluster) {
+      return (
+        <Marker
+          coordinate={{ latitude, longitude }}
+          onPress={onPress}
+          tracksViewChanges={false}
+          anchor={{ x: 0.5, y: 0.5 }}
+        >
+          <View style={[
+            styles.clusterMarkerContainer,
+            { 
+              backgroundColor: pointCount >= 100 ? "#FF3B30" : pointCount >= 50 ? "#FF9500" : pointCount >= 10 ? "#FFCC02" : "#30D158",
+              width: Math.max(40, Math.min(80, 40 + pointCount / 10)),
+              height: Math.max(40, Math.min(80, 40 + pointCount / 10)),
+              borderRadius: Math.max(20, Math.min(40, 20 + pointCount / 10))
+            }
+          ]}>
+            <Text style={styles.clusterText}>+{pointCount}</Text>
+          </View>
+        </Marker>
+      );
+    }
+
+    const property = cluster.properties.property;
+    return (
+      <PropertyMarker 
+        property={property}
+        selectedPropertyId={selectedPropertyId}
+        onMarkerPress={onMarkerPress}
+      />
+    );
+  };
+
+  // 클러스터 클릭 핸들러
+  const handleClusterPress = (cluster) => {
+    if (!mapRef.current || !cluster.properties.cluster) return;
+    
+    const zoom = Math.round(Math.log2(360 / region.latitudeDelta));
+    const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(cluster.id), 16);
+    
+    if (expansionZoom > zoom) {
+      const [longitude, latitude] = cluster.geometry.coordinates;
+      const newDelta = 360 / Math.pow(2, expansionZoom + 1);
+      
+      mapRef.current.animateToRegion({
+        latitude,
+        longitude,
+        latitudeDelta: newDelta,
+        longitudeDelta: newDelta,
+      }, 500);
+    }
+  };
 
   useEffect(() => {
     getCurrentLocation();
   }, []);
 
   useEffect(() => {
+    console.log(`📍 MapView에 전달된 매물 수: ${properties.length}개`);
     if (properties.length > 0) {
+      // 강북쪽 매물 확인
+      const northernProps = properties.filter(p => 
+        p.address?.includes('강북구') || 
+        p.address?.includes('도봉구') || 
+        p.address?.includes('노원구') || 
+        p.address?.includes('광진구') || 
+        p.address?.includes('성북구') || 
+        p.address?.includes('용산구')
+      );
+      console.log(`🌟 MapView 강북쪽 매물: ${northernProps.length}개`);
+      northernProps.slice(0, 3).forEach(p => {
+        console.log(`  - ${p.address} (${p.latitude}, ${p.longitude})`);
+      });
+      
       setTimeout(() => fitToMarkers(), 1000); // 지도 로드 후 실행
     }
   }, [properties]);
@@ -160,9 +294,10 @@ const PropertyMapView = forwardRef(({
         pitchEnabled={false}
         scrollEnabled={true}
         zoomEnabled={true}
-        maxZoomLevel={18}
-        minZoomLevel={10}
         customMapStyle={zigbangMapStyle}
+        onRegionChangeComplete={(newRegion) => {
+          setRegion(newRegion);
+        }}
         onMapReady={() => {
           console.log("지도 로드 완료");
           if (properties.length > 0) {
@@ -172,16 +307,15 @@ const PropertyMapView = forwardRef(({
       >
         <CurrentLocationMarker />
 
-        {properties
-          .filter((property) => property.latitude && property.longitude)
-          .map((property) => (
-            <PropertyMarker 
-              key={`marker-${property.id}-${selectedPropertyId === property.id ? 'selected' : 'unselected'}`} 
-              property={property}
-              selectedPropertyId={selectedPropertyId}
-              onMarkerPress={onMarkerPress}
-            />
-          ))}
+        {clusteredMarkers.map((cluster, index) => (
+          <ClusterMarker
+            key={cluster.properties.cluster 
+              ? `cluster-${cluster.id || index}` 
+              : `marker-${cluster.properties.property.id}-${selectedPropertyId === cluster.properties.property.id ? 'selected' : 'unselected'}`}
+            cluster={cluster}
+            onPress={() => handleClusterPress(cluster)}
+          />
+        ))}
       </MapView>
     </View>
   );
@@ -261,5 +395,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#4A90E2",
     borderWidth: 2,
     borderColor: "white",
+  },
+  clusterMarkerContainer: {
+    backgroundColor: "#30D158",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#ffffff",
+  },
+  clusterText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });
