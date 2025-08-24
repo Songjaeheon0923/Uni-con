@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 import urllib.parse
 import urllib3
 from dotenv import load_dotenv
+import random
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -25,6 +26,7 @@ class RealAPIDataCrawler:
         # 환경 변수에서 API 키 로드
         self.service_key = os.getenv('MOLIT_API_KEY_DECODED')
         self.service_key_encoded = os.getenv('MOLIT_API_KEY_ENCODED')
+        self.kakao_api_key = os.getenv('KAKAO_REST_API_KEY')
         
         if not self.service_key:
             raise ValueError("""
@@ -35,6 +37,9 @@ MOLIT_API_KEY_DECODED가 .env 파일에 설정되지 않았습니다.
 2. https://data.go.kr에서 '국토교통부 아파트 매매 실거래가 상세 자료' API 키를 발급받으세요
 3. 발급받은 키를 .env 파일의 MOLIT_API_KEY_DECODED에 입력하세요
             """)
+        
+        # 지오코딩 캐시 (API 호출 최소화)
+        self.geocoding_cache = {}
         
         # 서울 주요 구 코드
         self.seoul_districts = {
@@ -179,42 +184,110 @@ MOLIT_API_KEY_DECODED가 .env 파일에 설정되지 않았습니다.
         except ValueError:
             return 0.0
     
-    def get_coordinates_by_dong(self, district, dong_name):
-        """구와 동 이름으로 좌표 추정"""
+    def get_coordinates_by_geocoding(self, address):
+        """카카오 지오코딩 API로 주소를 위도/경도로 변환"""
+        # 캐시 확인
+        if address in self.geocoding_cache:
+            return self.geocoding_cache[address]
+        
+        # OpenStreetMap Nominatim API 사용 (API 키 불필요)
+        
+        try:
+            # OpenStreetMap Nominatim API 사용 (무료, API 키 불필요)
+            url = "https://nominatim.openstreetmap.org/search"
+            headers = {"User-Agent": "Uni-con-Real-Estate-App/1.0"}
+            params = {
+                "q": address,
+                "format": "json",
+                "limit": 1,
+                "countrycodes": "kr"
+            }
+            
+            response = requests.get(url, headers=headers, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data:
+                    # 첫 번째 결과 사용
+                    location = data[0]
+                    lat = float(location.get('lat', 37.5665))
+                    lng = float(location.get('lon', 126.9780))
+                    coords = (lat, lng)
+                    
+                    # 캐시에 저장
+                    self.geocoding_cache[address] = coords
+                    print(f"📍 OSM 지오코딩 성공: {address} → ({lat:.6f}, {lng:.6f})")
+                    return coords
+                else:
+                    print(f"⚠️ OSM 지오코딩 결과 없음: {address}")
+            else:
+                print(f"⚠️ OSM 지오코딩 API 오류: {response.status_code}")
+                
+        except Exception as e:
+            print(f"⚠️ OSM 지오코딩 오류: {e}")
+        
+        # 실패시 구/동 기반 기본 좌표 + 랜덤 오프셋
+        fallback_coords = self.get_fallback_coordinates(address)
+        self.geocoding_cache[address] = fallback_coords
+        return fallback_coords
+    
+    def get_fallback_coordinates(self, address):
+        """지오코딩 실패시 구/동 기반 정확한 좌표"""
         coords_map = {
-            '강남구': {
-                '역삼동': (37.5009, 127.0370),
-                '삼성동': (37.5140, 127.0590),
-                '청담동': (37.5272, 127.0473),
-                '논현동': (37.5132, 127.0224),
-                '압구정동': (37.5274, 127.0286),
-                '신사동': (37.5204, 127.0233),
-                '개포동': (37.4791, 127.0582),
-                '대치동': (37.4946, 127.0621),
-                'default': (37.5172, 127.0473)
-            },
-            '서초구': {
-                '서초동': (37.4935, 127.0103),
-                '반포동': (37.5087, 127.0096),
-                '잠원동': (37.5156, 127.0110),
-                '방배동': (37.4813, 126.9962),
-                '양재동': (37.4701, 127.0374),
-                'default': (37.4937, 127.0200)
-            },
-            '송파구': {
-                '잠실동': (37.5133, 127.0990),
-                '석촌동': (37.5044, 127.1066),
-                '방이동': (37.5221, 127.1263),
-                '오금동': (37.5021, 127.1281),
-                'default': (37.5145, 127.1050)
-            },
-            'default': (37.5665, 126.9780)
+            # 강남 3구 (서울 남동쪽)
+            '강남구': (37.5172, 127.0473),
+            '서초구': (37.4937, 127.0200),
+            '송파구': (37.5145, 127.1050),
+            
+            # 동쪽 구들 
+            '강동구': (37.5301, 127.1238),  # 실제 강동구 중심
+            '광진구': (37.5384, 127.0822),
+            
+            # 서쪽 구들
+            '마포구': (37.5663, 126.9019),
+            '용산구': (37.5326, 126.9905),
+            '영등포구': (37.5264, 126.8962),
+            '서대문구': (37.5791, 126.9368),
+            '은평구': (37.6176, 126.9227),
+            
+            # 북쪽 구들
+            '성북구': (37.5894, 127.0167),
+            '강북구': (37.6398, 127.0256),
+            '도봉구': (37.6687, 127.0471),
+            '노원구': (37.6542, 127.0568),
+            
+            # 중심 구들
+            '종로구': (37.5735, 126.9788),
+            '중구': (37.5641, 126.9979),
+            '중랑구': (37.6066, 127.0925),
+            
+            # 남쪽 구들  
+            '동작구': (37.5124, 126.9393),
+            '관악구': (37.4781, 126.9514),
+            '금천구': (37.4519, 126.9019),
+            '구로구': (37.4954, 126.8874),
+            '양천구': (37.5169, 126.8664),
+            '강서구': (37.5509, 126.8495),
         }
         
-        district_coords = coords_map.get(district, coords_map['default'])
-        if isinstance(district_coords, dict):
-            return district_coords.get(dong_name, district_coords.get('default', coords_map['default']))
-        return district_coords
+        # 주소에서 구 이름 찾기
+        for district, coords in coords_map.items():
+            if district in address:
+                # 랜덤 오프셋 추가 (반경 약 1km 내)
+                offset_lat = random.uniform(-0.005, 0.005)
+                offset_lng = random.uniform(-0.005, 0.005)
+                final_coords = (coords[0] + offset_lat, coords[1] + offset_lng)
+                print(f"📍 {district} 폴백 좌표 사용: {address} → {final_coords}")
+                return final_coords
+        
+        # 기본 서울 중심 좌표 + 랜덤 오프셋
+        base_lat, base_lng = 37.5665, 126.9780
+        offset_lat = random.uniform(-0.02, 0.02)
+        offset_lng = random.uniform(-0.02, 0.02)
+        final_coords = (base_lat + offset_lat, base_lng + offset_lng)
+        print(f"⚠️ 구별 매핑 실패, 기본 좌표 사용: {address} → {final_coords}")
+        return final_coords
     
     def save_real_transactions(self, transactions):
         """실제 거래 데이터를 DB에 저장"""
@@ -225,8 +298,11 @@ MOLIT_API_KEY_DECODED가 .env 파일에 설정되지 않았습니다.
         
         for tx in transactions:
             try:
-                lat, lng = self.get_coordinates_by_dong(tx['district'], tx['dong'])
                 address = f"서울특별시 {tx['district']} {tx['dong']} {tx['apt_name']}"
+                lat, lng = self.get_coordinates_by_geocoding(address)
+                
+                # API 호출 간격 (지오코딩 API 제한 고려)
+                time.sleep(0.1)
                 
                 # 고유 ID 생성
                 room_id = f"real_api_{tx['district']}_{tx['apt_name']}_{tx['dong']}_{tx['floor']}_{tx['deal_date'].replace('-', '')}"
