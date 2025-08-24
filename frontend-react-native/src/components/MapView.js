@@ -6,6 +6,7 @@ import HomeIcon from "./HomeIcon";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import BuildingClusterView from "./BuildingClusterView";
+import { normalizePrice } from '../utils/priceUtils';
 
 const { width, height } = Dimensions.get("window");
 
@@ -70,17 +71,31 @@ const PropertyMapView = forwardRef(({
   onBuildingModalStateChange, // 바텀시트 상태 변경 콜백 추가
   onMarkerSelectionChange, // 마커 선택 상태 변경 콜백 추가
 }, ref) => {
+  
+  // 디버깅: MapView가 받는 properties 개수 확인
+  console.log('🗺️ MapView 받은 properties 개수:', properties.length);
   const [region, setRegion] = useState({
-    latitude: 37.566, // 서울 중심 (강북 포함)
-    longitude: 126.98,
-    latitudeDelta: 0.25,  // 서울 전체가 잘 보이도록 더 확대
-    longitudeDelta: 0.2,
+    latitude: 37.35, // 서울이 화면 중앙에 오도록 조정
+    longitude: 127.1,
+    latitudeDelta: 0.6,  // 서울 주변 지역까지 포함하여 표시
+    longitudeDelta: 0.5,
   });
   const [userLocation, setUserLocation] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [buildingProperties, setBuildingProperties] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState(null);
   const mapRef = useRef(null);
+  
+  // forwardRef로 외부 ref에도 mapRef를 연결
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(mapRef.current);
+      } else {
+        ref.current = mapRef.current;
+      }
+    }
+  }, [ref, mapRef.current]);
   const markerScales = useRef({});
   const markerClickTime = useRef(0);
   
@@ -107,10 +122,13 @@ const PropertyMapView = forwardRef(({
         };
       }
       
+      // 가격을 만원 단위로 정규화하여 비교
+      const normalizedPrice = normalizePrice(property.price_deposit, property.room_id, property.transaction_type);
+      
       groups[buildingKey].properties.push(property);
       groups[buildingKey].count++;
-      groups[buildingKey].minPrice = Math.min(groups[buildingKey].minPrice, property.price_deposit);
-      groups[buildingKey].maxPrice = Math.max(groups[buildingKey].maxPrice, property.price_deposit);
+      groups[buildingKey].minPrice = Math.min(groups[buildingKey].minPrice, normalizedPrice);
+      groups[buildingKey].maxPrice = Math.max(groups[buildingKey].maxPrice, normalizedPrice);
     });
     
     return groups;
@@ -132,7 +150,6 @@ const PropertyMapView = forwardRef(({
       .map(group => ({
         type: "Feature",
         properties: {
-          cluster: false,
           buildingGroup: group,
         },
         geometry: {
@@ -164,8 +181,11 @@ const PropertyMapView = forwardRef(({
   const ClusterMarker = ({ cluster }) => {
     const [longitude, latitude] = cluster.geometry.coordinates;
     const { cluster: isCluster, point_count: pointCount, buildingGroup } = cluster.properties;
+    
+    // 실제 클러스터인지 확인 (point_count가 있거나 cluster가 true인 경우)
+    const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
 
-    if (isCluster) {
+    if (isRealCluster) {
       // 지역 클러스터 (여러 건물)
       const clusterId = `cluster-${latitude}-${longitude}`;
       const isSelected = selectedMarkerId === clusterId;
@@ -200,16 +220,23 @@ const PropertyMapView = forwardRef(({
           tracksViewChanges={true}
           anchor={{ x: 0.5, y: 1 }}
         >
-          <Animated.View style={[
-            styles.clusterMarkerContainer,
-            {
-              transform: [{ scale: markerScales.current[clusterId] }],
-              backgroundColor: '#4A90E2',
-              width: Math.max(50, Math.min(80, 50 + pointCount / 20)),
-              height: Math.max(50, Math.min(80, 50 + pointCount / 20)),
-              borderRadius: Math.max(25, Math.min(40, 25 + pointCount / 20))
-            }
-          ]}>
+          <View style={{
+            // 애니메이션을 위한 외부 컨테이너 (border 여유 공간 포함)
+            width: Math.max(56, Math.min(86, 56 + pointCount / 20)), // border 3px * 2 = 6px 추가
+            height: Math.max(56, Math.min(86, 56 + pointCount / 20)),
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Animated.View style={[
+              styles.clusterMarkerContainer,
+              {
+                transform: [{ scale: markerScales.current[clusterId] }],
+                backgroundColor: '#4A90E2',
+                width: Math.max(50, Math.min(80, 50 + pointCount / 20)),
+                height: Math.max(50, Math.min(80, 50 + pointCount / 20)),
+                borderRadius: Math.max(25, Math.min(40, 25 + pointCount / 20))
+              }
+            ]}>
             <HomeIcon 
               size={Math.max(24, Math.min(36, 24 + pointCount / 50))} 
               color="#FFFFFF"
@@ -218,7 +245,8 @@ const PropertyMapView = forwardRef(({
               styles.clusterText,
               { fontSize: Math.max(14, Math.min(20, 14 + pointCount / 50)) }
             ]}>+{pointCount}</Text>
-          </Animated.View>
+            </Animated.View>
+          </View>
         </Marker>
       );
     }
@@ -324,7 +352,23 @@ const PropertyMapView = forwardRef(({
 
   // 클러스터 클릭 핸들러
   const handleClusterPress = (cluster) => {
-    if (!mapRef.current || !cluster.properties.cluster) return;
+    const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+    const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
+    
+    console.log('handleClusterPress:', {
+      isCluster,
+      pointCount,
+      isRealCluster,
+      clusterId: cluster.id,
+      hasMapRef: !!mapRef.current
+    });
+    
+    if (!mapRef.current || !isRealCluster || !cluster.id) {
+      console.log('Early return from handleClusterPress');
+      return;
+    }
+    
+    console.log('Proceeding with cluster expansion...');
     
     // 현재 클러스터에 포함된 모든 포인트 가져오기
     const clusterId = cluster.id;
@@ -371,12 +415,12 @@ const PropertyMapView = forwardRef(({
     getCurrentLocation();
   }, []);
 
-  useEffect(() => {
-    if (properties.length > 0) {
-      
-      setTimeout(() => fitToMarkers(), 1000); // 지도 로드 후 실행
-    }
-  }, [properties]);
+  // useEffect(() => {
+  //   if (properties.length > 0) {
+  //     
+  //     setTimeout(() => fitToMarkers(), 1000); // 지도 로드 후 실행
+  //   }
+  // }, [properties]);
 
   const getCurrentLocation = async () => {
     try {
@@ -452,7 +496,7 @@ const PropertyMapView = forwardRef(({
     <>
       <View style={styles.container}>
         <MapView
-        ref={ref || mapRef}
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={region}
@@ -497,9 +541,10 @@ const PropertyMapView = forwardRef(({
           setRegion(newRegion);
         }}
         onMapReady={() => {
-          if (properties.length > 0) {
-            setTimeout(() => fitToMarkers(), 500);
-          }
+          // 초기 지도 로드 시 자동 맞춤 비활성화 (서울 중심 유지)
+          // if (properties.length > 0) {
+          //   setTimeout(() => fitToMarkers(), 500);
+          // }
         }}
       >
         <CurrentLocationMarker />

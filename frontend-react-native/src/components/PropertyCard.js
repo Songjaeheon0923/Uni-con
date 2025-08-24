@@ -1,92 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { formatPrice, formatArea, getRoomType, formatFloor } from '../utils/priceUtils';
 
 const PropertyCard = ({ property, onPress, onFavorite, isFavorited = false }) => {
-  const formatPrice = (price, type) => {
-    if (!price || isNaN(price)) return '가격 정보 없음';
-    
-    const numericPrice = parseFloat(price);
-    if (isNaN(numericPrice)) return '가격 정보 없음';
-    
-    if (type === '월세') {
-      const monthlyPrice = property.price_monthly || 0;
-      // price_deposit이 이미 만원 단위인 경우
-      const deposit = Math.floor(numericPrice);
-      const monthly = Math.floor(monthlyPrice);
-      return `${deposit}/${monthly}만원`;
-    } else {
-      // 전세나 매매의 경우
-      if (numericPrice >= 10000) {
-        const eok = Math.floor(numericPrice / 10000);
-        const man = Math.floor(numericPrice % 10000);
-        if (eok > 0 && man > 0) {
-          return `${eok}억${man}만원`;
-        } else if (eok > 0) {
-          return `${eok}억원`;
-        } else {
-          return `${man}만원`;
-        }
-      } else {
-        return `${numericPrice}만원`;
-      }
-    }
-  };
-
-  const getRoomTypeText = (area, rooms) => {
-    // rooms 데이터가 없는 경우 면적을 기준으로 추정
-    if (!rooms || rooms === undefined) {
-      const numericArea = typeof area === 'string' && area.includes('㎡') 
-        ? parseFloat(area) 
-        : parseFloat(area);
-      
-      if (numericArea && numericArea <= 35) {
-        return '원룸';
-      } else if (numericArea && numericArea <= 50) {
-        return '투룸';
-      } else if (numericArea && numericArea <= 70) {
-        return '쓰리룸';
-      } else {
-        return '원룸'; // 기본값
-      }
-    }
-    
-    if (rooms === 1) {
-      return '원룸';
-    } else if (rooms === 2) {
-      return '투룸';
-    } else if (rooms === 3) {
-      return '쓰리룸';
-    } else {
-      return `${rooms}룸`;
-    }
-  };
-
-  const getFloorText = (floor) => {
-    if (!floor) return '';
-    if (floor === 1) return '1층';
-    if (floor < 0) return `지하${Math.abs(floor)}층`;
-    return `${floor}층`;
-  };
-
-  const getAreaText = (area) => {
-    if (!area) return '';
-    
-    // 이미 단위가 포함된 문자열인 경우 (예: "29.82㎡")
-    if (typeof area === 'string' && area.includes('㎡')) {
-      const numericArea = parseFloat(area);
-      if (isNaN(numericArea) || numericArea <= 0) return '';
-      const pyeong = Math.round(numericArea * 0.3025);
-      return `${pyeong}평`;
-    }
-    
-    // 숫자인 경우
-    if (isNaN(area)) return '';
-    const numericArea = parseFloat(area);
-    if (isNaN(numericArea) || numericArea <= 0) return '';
-    const pyeong = Math.round(numericArea * 0.3025);
-    return `${pyeong}평`;
-  };
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
@@ -101,11 +18,11 @@ const PropertyCard = ({ property, onPress, onFavorite, isFavorited = false }) =>
         {/* 매물 정보 */}
         <View style={styles.propertyInfo}>
           <Text style={styles.priceText}>
-            {formatPrice(property.price_deposit, property.transaction_type)}
+            {formatPrice(property.price_deposit, property.transaction_type, property.price_monthly, property.room_id || property.id)}
           </Text>
           
           <Text style={styles.detailText}>
-            {getRoomTypeText(property.area, property.rooms)} | {getAreaText(property.area)} | {getFloorText(property.floor)}
+            {getRoomType(property.area, property.rooms)} | {formatArea(property.area)} | {formatFloor(property.floor)}
           </Text>
           
           <Text style={styles.addressText} numberOfLines={1}>

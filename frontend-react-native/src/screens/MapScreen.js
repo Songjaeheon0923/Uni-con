@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import PropertyMapView from "../components/MapView";
 import ApiService from "../services/api";
-import { mockRooms } from "../data/mockRooms";
+import { formatArea, getRoomType, formatFloor, formatPrice } from "../utils/priceUtils";
 import SearchIcon from "../components/SearchIcon";
 import ChevronDownIcon from "../components/ChevronDownIcon";
 import LocationIcon from "../components/LocationIcon";
@@ -110,37 +110,60 @@ export default function MapScreen({ navigation }) {
   };
 
   useEffect(() => {
+    console.log('🔄 useEffect 트리거 - 필터 적용');
     applyFilter();
   }, [selectedFilterValues, allRooms]);
 
   const applyFilter = () => {
+    console.log('🔍 필터 적용 중...', selectedFilterValues);
     let filteredRooms = [...allRooms];
+    console.log('📊 전체 매물 수:', allRooms.length);
 
     // 거래 유형 필터
     if (selectedFilterValues.transaction) {
+      console.log('🏠 거래 유형 필터:', selectedFilterValues.transaction);
       filteredRooms = filteredRooms.filter(room =>
         room.transaction_type === selectedFilterValues.transaction
       );
+      console.log('🏠 거래 유형 필터 후 매물 수:', filteredRooms.length);
     }
 
     // 매물 종류 필터
     if (selectedFilterValues.type) {
+      console.log('🏢 매물 종류 필터:', selectedFilterValues.type);
       const typeKeywords = {
-        '원룸': ['원룸'],
-        '투룸': ['투룸', '2룸'],
-        '오피스텔': ['오피스텔'],
-        '아파트': ['아파트']
+        '원룸': ['원룸', '1룸', 'oneroom'],
+        '투룸': ['투룸', '2룸', 'tworoom'],
+        '오피스텔': ['오피스텔', 'officetel', '오피', '상업시설'],
+        '아파트': ['아파트', 'apartment', '아파', '공동주택']
       };
       const keywords = typeKeywords[selectedFilterValues.type] || [];
-      filteredRooms = filteredRooms.filter(room =>
-        keywords.some(keyword =>
-          room.address.includes(keyword) || room.description.includes(keyword)
-        )
-      );
+      
+      // 더 유연한 매칭: 주소, 설명, 제목에서 검색하고 부분 매칭도 허용
+      filteredRooms = filteredRooms.filter(room => {
+        const searchText = `${room.address || ''} ${room.description || ''} ${room.title || ''}`.toLowerCase();
+        const hasKeyword = keywords.some(keyword => 
+          searchText.includes(keyword.toLowerCase())
+        );
+        
+        // 키워드가 없으면 면적 기반으로도 추정
+        if (!hasKeyword && selectedFilterValues.type === '원룸') {
+          // 25㎡ 이하면 원룸으로 추정
+          return room.area && parseFloat(room.area) <= 25;
+        } else if (!hasKeyword && selectedFilterValues.type === '투룸') {
+          // 25-50㎡이면 투룸으로 추정  
+          return room.area && parseFloat(room.area) > 25 && parseFloat(room.area) <= 50;
+        }
+        
+        return hasKeyword;
+      });
+      
+      console.log('🏢 매물 종류 필터 후 매물 수:', filteredRooms.length);
     }
 
     // 가격 필터
     if (selectedFilterValues.price) {
+      console.log('💰 가격 필터:', selectedFilterValues.price);
       const priceRanges = {
         '1억 이하': [0, 10000],
         '1-3억': [10000, 30000],
@@ -151,9 +174,17 @@ export default function MapScreen({ navigation }) {
       filteredRooms = filteredRooms.filter(room =>
         room.price_deposit >= min && room.price_deposit <= max
       );
+      console.log('💰 가격 필터 후 매물 수:', filteredRooms.length);
     }
 
-    setRooms(filteredRooms);
+    console.log('✅ 최종 필터링된 매물 수:', filteredRooms.length);
+    
+    // 강제 리렌더링을 위해 새 배열 생성
+    setRooms([...filteredRooms]);
+    console.log('📍 MapScreen rooms 상태 업데이트:', filteredRooms.length);
+    
+    // MapView 강제 리렌더링
+    setMapKey(prev => prev + 1);
   };
 
   const goToCurrentLocation = async () => {
@@ -263,9 +294,44 @@ export default function MapScreen({ navigation }) {
     setRecentSearches(recentSearches.filter(item => item !== query));
   };
 
+  // 매물 타입별 키워드 매칭 함수
+  const matchPropertyType = (room, query) => {
+    const roomTypeKeywords = {
+      '원룸': ['원룸', '1룸', 'oneroom'],
+      '투룸': ['투룸', '2룸', 'tworoom'],
+      '쓰리룸': ['쓰리룸', '3룸', 'threeroom'],
+      '오피스텔': ['오피스텔', 'officetel'],
+      '아파트': ['아파트', 'apartment', '아파'],
+      '빌라': ['빌라', 'villa'],
+      '연립': ['연립', '연립주택'],
+      '다세대': ['다세대', '다세대주택']
+    };
+
+    // 검색어에서 매물 유형 키워드 찾기
+    for (const [type, keywords] of Object.entries(roomTypeKeywords)) {
+      if (keywords.some(keyword => query.toLowerCase().includes(keyword.toLowerCase()))) {
+        // 매물의 주소나 설명에서 해당 타입이 있는지 확인
+        const hasTypeInRoom = keywords.some(keyword => 
+          room.address.toLowerCase().includes(keyword.toLowerCase()) || 
+          room.description.toLowerCase().includes(keyword.toLowerCase()) ||
+          (room.title && room.title.toLowerCase().includes(keyword.toLowerCase()))
+        );
+        return hasTypeInRoom;
+      }
+    }
+    return true; // 매물 타입 검색어가 없으면 모든 매물 포함
+  };
+
   const handleSearch = async (customQuery = null) => {
     const query = customQuery || searchQuery;
-    if (!query.trim()) return;
+    
+    // 검색어가 비어있으면 전체 매물 표시
+    if (!query.trim()) {
+      setRooms(allRooms);
+      setShowRecentSearches(false);
+      console.log(`✅ 전체 매물 표시: ${allRooms.length}개 결과`);
+      return;
+    }
 
     try {
       console.log(`🔍 검색 실행: ${query}`);
@@ -311,16 +377,29 @@ export default function MapScreen({ navigation }) {
         risk_score: room.risk_score,
       }));
 
-      // Mock 데이터도 검색에 포함
-      const mockSearchResults = mockRooms.filter(room =>
-        room.address.includes(query) ||
-        room.description.includes(query) ||
-        room.transaction_type.includes(query)
-      );
+      let combinedResults = [...formattedResults];
 
-      const combinedResults = [...formattedResults, ...mockSearchResults];
+      // 매물 유형별 필터링 적용
+      combinedResults = combinedResults.filter(room => matchPropertyType(room, query));
+
+      // 전체 매물에서도 매물 유형 검색 적용 (API 검색 결과가 없는 경우)
+      if (combinedResults.length === 0) {
+        combinedResults = allRooms.filter(room => 
+          matchPropertyType(room, query) && (
+            room.address.toLowerCase().includes(query.toLowerCase()) ||
+            room.description.toLowerCase().includes(query.toLowerCase()) ||
+            room.transaction_type.includes(query) ||
+            (room.title && room.title.toLowerCase().includes(query.toLowerCase()))
+          )
+        );
+      }
+
       setRooms(combinedResults);
-      setAllRooms(combinedResults);
+      
+      // 검색 결과가 없을 때 처리
+      if (combinedResults.length === 0) {
+        Alert.alert('검색 결과 없음', `'${query}'에 대한 검색 결과를 찾을 수 없습니다.`);
+      }
 
       // 지역/주소 검색 시 해당 위치로 포커싱
       await focusOnSearchLocation(query, combinedResults);
@@ -386,6 +465,7 @@ export default function MapScreen({ navigation }) {
 
   const [activeFilter, setActiveFilter] = useState(null);
   const [selectedFilterValues, setSelectedFilterValues] = useState({});
+  const [mapKey, setMapKey] = useState(0);
 
   const FilterButton = ({ option }) => {
     const hasSelection = selectedFilterValues[option.id];
@@ -412,14 +492,6 @@ export default function MapScreen({ navigation }) {
   const PropertyCard = () => {
     if (!selectedProperty || showBuildingModal) return null;
 
-    const formatPrice = (property) => {
-      if (property.transaction_type === '월세') {
-        return `월세 ${property.price_deposit}/${property.price_monthly}만원`;
-      } else if (property.transaction_type === '전세') {
-        return `전세 ${property.price_deposit}만원`;
-      }
-      return `${property.price_deposit}만원`;
-    };
 
     const handleCloseCard = () => {
       Animated.parallel([
@@ -468,10 +540,10 @@ export default function MapScreen({ navigation }) {
 
           <View style={styles.cardInfo}>
             <Text style={styles.cardPrice}>
-              {formatPrice(selectedProperty)}
+              {formatPrice(selectedProperty.price_deposit, selectedProperty.transaction_type, selectedProperty.price_monthly, selectedProperty.room_id)}
             </Text>
             <Text style={styles.cardSubInfo} numberOfLines={1}>
-              원룸 | 6평 | 4층
+              {getRoomType(selectedProperty.area, selectedProperty.rooms)} | {formatArea(selectedProperty.area)} | {formatFloor(selectedProperty.floor)}
             </Text>
             <Text style={styles.cardAddress} numberOfLines={1}>
               {selectedProperty.address.split(' ').slice(-3).join(' ')}
@@ -633,6 +705,7 @@ export default function MapScreen({ navigation }) {
       {/* 지도 */}
       <View style={styles.mapContainer}>
         <PropertyMapView
+          key={mapKey}
           ref={mapViewRef}
           properties={rooms}
           onMarkerPress={handleMarkerPress}
@@ -690,11 +763,17 @@ export default function MapScreen({ navigation }) {
                     selectedFilterValues[activeFilter.id] === option && styles.filterOptionSelected
                   ]}
                   onPress={() => {
-                    setSelectedFilterValues({
+                    const newFilterValues = {
                       ...selectedFilterValues,
                       [activeFilter.id]: selectedFilterValues[activeFilter.id] === option ? null : option
-                    });
+                    };
+                    setSelectedFilterValues(newFilterValues);
                     setActiveFilter(null);
+                    
+                    // 필터 변경 후 즉시 적용 (useEffect 대기 없이)
+                    setTimeout(() => {
+                      console.log('🔄 필터 즉시 적용');
+                    }, 100);
                   }}
                 >
                   <Text style={[

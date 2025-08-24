@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
-import { formatRentPrice } from '../utils/priceFormatter';
+import { formatPrice as formatPriceUtil, formatArea, getRoomType, formatFloor } from '../utils/priceUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -52,7 +52,12 @@ export default function RoomDetailScreen({ route, navigation }) {
 
   const formatPrice = () => {
     if (!room) return '';
-    return formatRentPrice(room.price_deposit, room.price_monthly);
+    return formatPriceUtil(
+      room.price_deposit, 
+      room.transaction_type, 
+      room.price_monthly, 
+      room.room_id || room.id
+    );
   };
 
   const toggleFavorite = async () => {
@@ -162,7 +167,7 @@ export default function RoomDetailScreen({ route, navigation }) {
           </View>
           
           <Text style={styles.price}>{formatPrice()}</Text>
-          <Text style={styles.description}>안암역 10분거리 넓고 깔끔한 풀 옵션 원룸</Text>
+          <Text style={styles.description}>{room?.description || '매물 설명이 없습니다.'}</Text>
           
           <View style={styles.basicDetails}>
             <View style={styles.detailRowContainer}>
@@ -170,13 +175,13 @@ export default function RoomDetailScreen({ route, navigation }) {
                 <View style={styles.detailIcon}>
                   <Ionicons name="cube-outline" size={16} color="#666" />
                 </View>
-                <Text style={styles.detailText}>신축, 빌라, 원룸, 풀옵션</Text>
+                <Text style={styles.detailText}>{getRoomType(room?.area, room?.rooms)}, {room?.building_year && (new Date().getFullYear() - room.building_year < 5) ? '신축' : '기존건물'}</Text>
               </View>
               <View style={styles.detailItem}>
                 <View style={styles.detailIcon}>
                   <Ionicons name="resize-outline" size={16} color="#666" />
                 </View>
-                <Text style={styles.detailText}>6평 ({room?.area || 19.8347}㎡)</Text>
+                <Text style={styles.detailText}>{formatArea(room?.area)} ({room?.area || 19.8347}㎡)</Text>
               </View>
             </View>
             <View style={styles.detailRowContainer}>
@@ -184,13 +189,13 @@ export default function RoomDetailScreen({ route, navigation }) {
                 <View style={styles.detailIcon}>
                   <Ionicons name="business-outline" size={16} color="#666" />
                 </View>
-                <Text style={styles.detailText}>4층, 엘리베이터 사용</Text>
+                <Text style={styles.detailText}>{formatFloor(room?.floor)}, {(room?.floor >= 3) ? '엘리베이터 사용' : '계단 이용'}</Text>
               </View>
               <View style={styles.detailItem}>
                 <View style={styles.detailIcon}>
                   <Ionicons name="card-outline" size={16} color="#666" />
                 </View>
-                <Text style={styles.detailText}>관리비 7만원(수도 포함)</Text>
+                <Text style={styles.detailText}>관리비 {room?.area ? Math.round(room.area * 1000) : '5만'}원 (수도 포함)</Text>
               </View>
             </View>
           </View>
@@ -202,19 +207,19 @@ export default function RoomDetailScreen({ route, navigation }) {
           <View style={styles.infoTable}>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>매물 유형</Text>
-              <Text style={styles.tableValue}>빌라, 신축 빌라</Text>
+              <Text style={styles.tableValue}>{getRoomType(room?.area, room?.rooms)}, {room?.building_year && (new Date().getFullYear() - room.building_year < 5) ? '신축' : '기존'} 건물</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>크기</Text>
-              <Text style={styles.tableValue}>6평 (19.8347㎡)</Text>
+              <Text style={styles.tableValue}>{formatArea(room?.area)} ({room?.area || 19.8347}㎡)</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>가격 정보</Text>
-              <Text style={styles.tableValue}>보증금 3000, 월세 35만원</Text>
+              <Text style={styles.tableValue}>{formatPrice()}</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>관리비</Text>
-              <Text style={styles.tableValue}>7만원 (수도세 포함)</Text>
+              <Text style={styles.tableValue}>{room?.area ? Math.round(room.area * 1000) : '5만'}원 (수도세 포함)</Text>
             </View>
           </View>
         </View>
@@ -225,15 +230,25 @@ export default function RoomDetailScreen({ route, navigation }) {
           <View style={styles.infoTable}>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>건물 이름</Text>
-              <Text style={styles.tableValue}>가나다라빌라</Text>
+              <Text style={styles.tableValue}>{(() => {
+                const addressParts = room?.address?.trim().split(' ').filter(part => part !== '');
+                const lastPart = addressParts?.pop();
+                // 마지막 부분이 단순히 동/가로 끝나는지 (예: "장충동1가") vs 건물명인지 (예: "비전빌라트2동") 구분
+                if (!lastPart || 
+                    (lastPart?.endsWith('동') && lastPart?.length < 6 && /\d+동$/.test(lastPart)) ||
+                    (lastPart?.endsWith('가') && lastPart?.length < 6)) {
+                  return room?.room_id?.split('_')[2] || '건물명 정보 없음';
+                }
+                return lastPart;
+              })()}</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>해당층/건물층</Text>
-              <Text style={styles.tableValue}>4층 / 5층</Text>
+              <Text style={styles.tableValue}>{formatFloor(room?.floor)} / {room?.floor ? room.floor + 1 : '-'}층</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>방 수/화장실 수</Text>
-              <Text style={styles.tableValue}>1개 / 1개</Text>
+              <Text style={styles.tableValue}>{room?.rooms || 1}개 / {room?.rooms || 1}개</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>방향</Text>
@@ -245,7 +260,7 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>엘리베이터</Text>
-              <Text style={styles.tableValue}>있음</Text>
+              <Text style={styles.tableValue}>{(room?.floor >= 3) ? '있음' : '없음'}</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>입주가능일</Text>
@@ -253,11 +268,11 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>사용승인일</Text>
-              <Text style={styles.tableValue}>2024.03.25</Text>
+              <Text style={styles.tableValue}>{room?.building_year || '정보 없음'}</Text>
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>최초등록일</Text>
-              <Text style={styles.tableValue}>2024.09.23</Text>
+              <Text style={styles.tableValue}>{room?.created_at ? new Date(room.created_at).toLocaleDateString('ko-KR') : '정보 없음'}</Text>
             </View>
           </View>
         </View>
@@ -275,8 +290,8 @@ export default function RoomDetailScreen({ route, navigation }) {
               <Ionicons name="person" size={28} color="#999" />
             </View>
             <View style={styles.landlordDetails}>
-              <Text style={styles.landlordName}>송*현</Text>
-              <Text style={styles.landlordPhone}>어떤 수다 0504-123-4567 (안심번호)</Text>
+              <Text style={styles.landlordName}>{room?.landlord_name || '정보 없음'}</Text>
+              <Text style={styles.landlordPhone}>{room?.landlord_phone || '연락처 비공개'}</Text>
               <Text style={styles.landlordSubtext}>실제 집주인과 연결됩니다.</Text>
               <TouchableOpacity style={styles.landlordCallButton}>
                 <Text style={styles.landlordCallText}>소유자 매물 · 등기부 소유자</Text>
