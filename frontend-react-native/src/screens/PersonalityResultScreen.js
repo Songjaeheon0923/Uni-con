@@ -42,7 +42,8 @@ export default function PersonalityResultScreen({ navigation, route }) {
   
   const handleFindRoommate = () => {
     if (fromScreen === 'profile') {
-      navigation.goBack();
+      // 내 정보 화면으로 직접 이동
+      navigation.navigate('ProfileMain');
     } else {
       navigation.navigate('MatchResults');
     }
@@ -87,15 +88,23 @@ export default function PersonalityResultScreen({ navigation, route }) {
           />
         </View>
         
-        {/* 룸메이트 찾기 버튼 */}
+        {/* 룸메이트 찾기 / 내 정보로 돌아가기 버튼 */}
         <TouchableOpacity style={styles.findButton} onPress={handleFindRoommate}>
           <View style={styles.findButtonContent}>
-            <Text style={styles.findButtonTitle}>나와 잘 맞는 룸메이트 찾기</Text>
+            <Text style={styles.findButtonTitle}>
+              {fromScreen === 'profile' ? '내 정보 화면으로 돌아가기' : '나와 잘 맞는 룸메이트 찾기'}
+            </Text>
             <View style={styles.findButtonIcon}>
-              <Ionicons name="arrow-forward" size={16} color="#404040" />
+              <Ionicons 
+                name={fromScreen === 'profile' ? "home" : "arrow-forward"} 
+                size={16} 
+                color="#404040" 
+              />
             </View>
           </View>
-          <Text style={styles.findButtonSubtext}>어울리는 유형의 룸메이트를 찾아보세요!</Text>
+          <Text style={styles.findButtonSubtext}>
+            {fromScreen === 'profile' ? '성향 테스트가 완료되었습니다!' : '어울리는 유형의 룸메이트를 찾아보세요!'}
+          </Text>
         </TouchableOpacity>
         
         {/* 다시 테스트하기 링크 */}

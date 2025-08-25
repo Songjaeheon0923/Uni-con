@@ -98,6 +98,18 @@ export default function LoginScreen({ navigation }) {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
+              {email.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setEmail('')}
+                  style={styles.clearIcon}
+                >
+                  <Ionicons 
+                    name="close-circle" 
+                    size={20} 
+                    color="#ccc" 
+                  />
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.inputContainer}>
@@ -269,6 +281,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   eyeIcon: {
+    padding: 4,
+  },
+  clearIcon: {
     padding: 4,
   },
   loginButton: {

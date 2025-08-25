@@ -232,10 +232,12 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
     }
   };
 
-  // 화면이 포커스될 때마다 찜 목록 새로고침
+  // 화면이 포커스될 때마다 찜 목록 및 사용자 프로필 새로고침
   useFocusEffect(
     React.useCallback(() => {
       loadFavorites();
+      // 사용자 프로필 새로고침 (성향 테스트 완료 시 반영)
+      loadUserProfile();
       
       // AsyncStorage에서 찜 변경 감지
       const checkFavoriteChanges = async () => {

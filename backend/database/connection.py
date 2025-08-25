@@ -250,11 +250,30 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_deleted BOOLEAN DEFAULT FALSE,
+            sent BOOLEAN DEFAULT 0, -- 전송됨
+            delivered BOOLEAN DEFAULT 0, -- 수신됨
+            read_status BOOLEAN DEFAULT 0, -- 읽음
             FOREIGN KEY (room_id) REFERENCES chat_rooms (id),
             FOREIGN KEY (sender_id) REFERENCES users (id),
             FOREIGN KEY (reply_to_id) REFERENCES chat_messages (id)
         )
     ''')
+    
+    # 기존 테이블에 새 컬럼들 추가 (이미 존재하는 경우 에러 무시)
+    try:
+        cursor.execute('ALTER TABLE chat_messages ADD COLUMN sent BOOLEAN DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE chat_messages ADD COLUMN delivered BOOLEAN DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE chat_messages ADD COLUMN read_status BOOLEAN DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass
     
     conn.commit()
     
@@ -1038,8 +1057,8 @@ def create_chat_room(created_by: int, room_type: str = 'individual', name: str =
         
         for user_id in participants:
             cursor.execute("""
-                INSERT INTO chat_participants (room_id, user_id)
-                VALUES (?, ?)
+                INSERT INTO chat_participants (room_id, user_id, last_read_at)
+                VALUES (?, ?, NULL)
             """, (room_id, user_id))
         
         conn.commit()
@@ -1069,7 +1088,7 @@ def get_user_chat_rooms(user_id: int):
                 SELECT MAX(id) FROM chat_messages WHERE room_id = cr.id AND is_deleted = FALSE
             )
             LEFT JOIN users u ON cm.sender_id = u.id
-            WHERE cp.user_id = ? AND cp.is_active = TRUE AND cr.is_active = TRUE
+            WHERE cp.user_id = ?
             ORDER BY COALESCE(cm.created_at, cr.created_at) DESC
         """, (user_id,))
         
@@ -1080,13 +1099,50 @@ def get_user_chat_rooms(user_id: int):
         for room in rooms:
             room_id = room[0]
             
-            # 참가자 정보 조회
+            # 참가자 정보 조회 (프로필 정보 포함)
             cursor.execute("""
-                SELECT u.id, u.name FROM users u
+                SELECT u.id, u.name, u.gender, u.school_email,
+                       p.age, p.sleep_type, p.smoking_status, p.personality_type,
+                       p.lifestyle_type, p.budget_range
+                FROM users u
                 JOIN chat_participants cp ON u.id = cp.user_id
-                WHERE cp.room_id = ? AND cp.is_active = TRUE
+                LEFT JOIN user_profiles p ON u.id = p.user_id
+                WHERE cp.room_id = ?
             """, (room_id,))
-            participants = cursor.fetchall()
+            participants_data = cursor.fetchall()
+            
+            # 참가자 정보를 딕셔너리로 변환
+            participants = []
+            for p in participants_data:
+                # 학교명 추출 (이메일에서)
+                school = None
+                if p[3]:  # school_email이 있는 경우
+                    if 'korea' in p[3].lower():
+                        school = '고려대학교'
+                    elif 'sungshin' in p[3].lower():
+                        school = '성신여자대학교'
+                    elif 'kyunghee' in p[3].lower():
+                        school = '경희대학교'
+                    else:
+                        school = p[3].split('@')[1].replace('.ac.kr', '').capitalize() + '대학교'
+                
+                participant_info = {
+                    'id': p[0],
+                    'name': p[1],
+                    'gender': p[2],
+                    'school': school,
+                    'university': school,  # 호환성을 위해 둘 다 제공
+                    'age': p[4],
+                    'birth_year': 2024 - p[4] if p[4] else None,
+                    'profile': {
+                        'sleep_type': p[5],
+                        'smoking_status': p[6],
+                        'personality_type': p[7],
+                        'lifestyle_type': p[8],
+                        'budget_range': p[9]
+                    }
+                }
+                participants.append(participant_info)
             
             # 읽지 않은 메시지 수 계산
             cursor.execute("""
@@ -1105,7 +1161,7 @@ def get_user_chat_rooms(user_id: int):
                 'last_message': room[4],
                 'last_message_time': room[5],
                 'last_sender_name': room[6],
-                'participants': [{'id': p[0], 'name': p[1]} for p in participants],
+                'participants': participants,
                 'unread_count': unread_count
             })
         
@@ -1120,9 +1176,10 @@ def send_message(room_id: int, sender_id: int, content: str, message_type: str =
     cursor = conn.cursor()
     
     try:
+        # 메시지 생성 (기본 상태: sent=true, delivered=false, read=false)
         cursor.execute("""
-            INSERT INTO chat_messages (room_id, sender_id, message_type, content, file_url, reply_to_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO chat_messages (room_id, sender_id, message_type, content, file_url, reply_to_id, sent, delivered, read_status)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0)
         """, (room_id, sender_id, message_type, content, file_url, reply_to_id))
         
         message_id = cursor.lastrowid
@@ -1131,6 +1188,11 @@ def send_message(room_id: int, sender_id: int, content: str, message_type: str =
         cursor.execute("""
             UPDATE chat_rooms SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
         """, (room_id,))
+        
+        # 메시지 전송 직후 delivered 상태로 업데이트 (실시간 시뮬레이션)
+        cursor.execute("""
+            UPDATE chat_messages SET delivered = 1 WHERE id = ?
+        """, (message_id,))
         
         conn.commit()
         return message_id
@@ -1142,7 +1204,7 @@ def send_message(room_id: int, sender_id: int, content: str, message_type: str =
         conn.close()
 
 
-def get_chat_messages(room_id: int, user_id: int, limit: int = 50, offset: int = 0):
+def get_chat_messages(room_id: int, user_id: int, limit: int = 50, offset: int = 0, mark_as_read: bool = True):
     """채팅 메시지 목록 조회"""
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
@@ -1151,18 +1213,18 @@ def get_chat_messages(room_id: int, user_id: int, limit: int = 50, offset: int =
         # 해당 사용자가 채팅방 참가자인지 확인
         cursor.execute("""
             SELECT 1 FROM chat_participants 
-            WHERE room_id = ? AND user_id = ? AND is_active = TRUE
+            WHERE room_id = ? AND user_id = ?
         """, (room_id, user_id))
         
         if not cursor.fetchone():
             return []
         
-        # 메시지 조회
+        # 메시지 조회 (새로운 상태 필드들 포함)
         cursor.execute("""
             SELECT 
                 cm.id, cm.room_id, cm.sender_id, cm.message_type, cm.content,
                 cm.file_url, cm.reply_to_id, cm.created_at, cm.updated_at, cm.is_deleted,
-                u.name as sender_name
+                u.name as sender_name, cm.sent, cm.delivered, cm.read_status
             FROM chat_messages cm
             JOIN users u ON cm.sender_id = u.id
             WHERE cm.room_id = ? AND cm.is_deleted = FALSE
@@ -1172,20 +1234,86 @@ def get_chat_messages(room_id: int, user_id: int, limit: int = 50, offset: int =
         
         messages = cursor.fetchall()
         
-        return [{
-            'id': msg[0],
-            'room_id': msg[1],
-            'sender_id': msg[2],
-            'message_type': msg[3],
-            'content': msg[4],
-            'file_url': msg[5],
-            'reply_to_id': msg[6],
-            'created_at': msg[7],
-            'updated_at': msg[8],
-            'is_deleted': msg[9],
-            'sender_name': msg[10]
-        } for msg in reversed(messages)]  # 시간 순 정렬
+        # 읽음 상태로 마크 (기본값 True)
+        if mark_as_read:
+            cursor.execute("""
+                UPDATE chat_participants 
+                SET last_read_at = CURRENT_TIMESTAMP
+                WHERE room_id = ? AND user_id = ?
+            """, (room_id, user_id))
+            
+            # 내가 받은 메시지들을 read 상태로 업데이트
+            cursor.execute("""
+                UPDATE chat_messages 
+                SET read_status = 1
+                WHERE room_id = ? AND sender_id != ? AND read_status = 0
+            """, (room_id, user_id))
+            
+            conn.commit()
         
+        # 각 메시지에 대해 읽지 않은 사용자 수 계산
+        result_messages = []
+        for msg in reversed(messages):  # 시간 순 정렬
+            # 해당 메시지를 읽지 않은 참가자 수 계산 (발신자 제외)
+            cursor.execute("""
+                SELECT COUNT(*) FROM chat_participants cp
+                WHERE cp.room_id = ? 
+                AND cp.user_id != ? 
+                AND (cp.last_read_at IS NULL OR cp.last_read_at < ?)
+            """, (room_id, msg[2], msg[7]))  # msg[2]는 sender_id, msg[7]은 created_at
+            
+            unread_count = cursor.fetchone()[0]
+            
+            message_data = {
+                'id': msg[0],
+                'room_id': msg[1],
+                'sender_id': msg[2],
+                'message_type': msg[3],
+                'content': msg[4],
+                'file_url': msg[5],
+                'reply_to_id': msg[6],
+                'created_at': msg[7],
+                'updated_at': msg[8],
+                'is_deleted': msg[9],
+                'sender_name': msg[10],
+                'sent': bool(msg[11]),
+                'delivered': bool(msg[12]),
+                'read': bool(msg[13]),
+                'unread_count': unread_count,  # 읽지 않은 사용자 수
+                'status': 'read' if msg[13] else ('delivered' if msg[12] else ('sent' if msg[11] else 'pending'))
+            }
+            result_messages.append(message_data)
+        
+        return result_messages
+        
+    finally:
+        conn.close()
+
+
+def get_chat_messages_without_marking_read(room_id: int, user_id: int, limit: int = 50, offset: int = 0):
+    """읽음 상태를 업데이트하지 않고 채팅 메시지 목록 조회 (실시간 업데이트용)"""
+    return get_chat_messages(room_id, user_id, limit, offset, mark_as_read=False)
+
+
+def update_message_status(message_id: int, status_type: str):
+    """메시지 상태 업데이트 (sent, delivered, read)"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        if status_type == 'sent':
+            cursor.execute("UPDATE chat_messages SET sent = 1 WHERE id = ?", (message_id,))
+        elif status_type == 'delivered':
+            cursor.execute("UPDATE chat_messages SET delivered = 1 WHERE id = ?", (message_id,))
+        elif status_type == 'read':
+            cursor.execute("UPDATE chat_messages SET read_status = 1 WHERE id = ?", (message_id,))
+        
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating message status: {e}")
+        return False
     finally:
         conn.close()
 
@@ -1206,6 +1334,59 @@ def update_last_read_time(room_id: int, user_id: int):
     except Exception as e:
         conn.rollback()
         print(f"Error updating last read time: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def delete_chat_room(room_id: int, user_id: int):
+    """채팅방 완전 삭제 - DB에서 모든 관련 데이터 삭제"""
+    print(f"🗑️ [DB DELETE] 시작: room_id={room_id}, user_id={user_id}")
+    
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # 해당 사용자가 채팅방 참가자인지 확인
+        print(f"🔍 [DB DELETE] 참가자 확인 중...")
+        cursor.execute("""
+            SELECT 1 FROM chat_participants 
+            WHERE room_id = ? AND user_id = ?
+        """, (room_id, user_id))
+        
+        participant_check = cursor.fetchone()
+        print(f"🔍 [DB DELETE] 참가자 확인 결과: {participant_check}")
+        
+        if not participant_check:
+            print(f"❌ [DB DELETE] 사용자가 해당 채팅방의 참가자가 아님")
+            return False
+        
+        # 1. 채팅 메시지 삭제
+        print(f"🔄 [DB DELETE] 채팅 메시지 삭제 중...")
+        cursor.execute("DELETE FROM chat_messages WHERE room_id = ?", (room_id,))
+        messages_deleted = cursor.rowcount
+        print(f"🔄 [DB DELETE] 채팅 메시지 삭제 완료: {messages_deleted}개")
+        
+        # 2. 채팅 참가자 삭제
+        print(f"🔄 [DB DELETE] 채팅 참가자 삭제 중...")
+        cursor.execute("DELETE FROM chat_participants WHERE room_id = ?", (room_id,))
+        participants_deleted = cursor.rowcount
+        print(f"🔄 [DB DELETE] 채팅 참가자 삭제 완료: {participants_deleted}개")
+        
+        # 3. 채팅방 삭제
+        print(f"🔄 [DB DELETE] 채팅방 삭제 중...")
+        cursor.execute("DELETE FROM chat_rooms WHERE id = ?", (room_id,))
+        rooms_deleted = cursor.rowcount
+        print(f"🔄 [DB DELETE] 채팅방 삭제 완료: {rooms_deleted}개")
+        
+        conn.commit()
+        print(f"✅ [DB DELETE] 완전 삭제 처리 완료 (메시지: {messages_deleted}, 참가자: {participants_deleted}, 방: {rooms_deleted})")
+        return True
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ [DB DELETE] 오류 발생: {e}")
+        print(f"❌ [DB DELETE] 트랜잭션 롤백됨")
         return False
     finally:
         conn.close()

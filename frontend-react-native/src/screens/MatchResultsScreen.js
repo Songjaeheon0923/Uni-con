@@ -40,6 +40,31 @@ export default function MatchResultsScreen({ navigation }) {
     loadMatches();
   };
 
+  const handleContactUser = async (otherUser) => {
+    try {
+      // 1:1 채팅방 생성 또는 기존 채팅방 찾기
+      const chatResponse = await ApiService.createChatRoom(
+        'individual',
+        [otherUser.user_id]
+      );
+      
+      if (chatResponse && chatResponse.room_id) {
+        // 채팅방이 생성되거나 기존 방을 찾으면 채팅 화면으로 이동
+        navigation.navigate('Chat', {
+          roomId: chatResponse.room_id,
+          otherUser: {
+            id: otherUser.user_id,
+            name: otherUser.name,
+            email: otherUser.email
+          }
+        });
+      }
+    } catch (error) {
+      console.error('채팅방 생성 실패:', error);
+      Alert.alert('알림', '채팅방을 생성하는데 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   const getCompatibilityColor = (score) => {
     if (score >= 0.8) return '#FF6600'; // 녹색
     if (score >= 0.6) return '#FF9800'; // 주황색
@@ -107,9 +132,9 @@ export default function MatchResultsScreen({ navigation }) {
 
       <TouchableOpacity 
         style={styles.contactButton}
-        onPress={() => Alert.alert('연락하기', `${item.name}님께 메시지를 보내시겠습니까?`)}
+        onPress={() => handleContactUser(item)}
       >
-        <Ionicons name="chatbubble-ellipses" size={16} color="#228B22" />
+        <Ionicons name="chatbubble-ellipses" size={16} color="#FF6600" />
         <Text style={styles.contactButtonText}>연락하기</Text>
       </TouchableOpacity>
     </View>

@@ -297,6 +297,13 @@ function MainApp() {
           headerShown: false,
         }}
       />
+      <Stack.Screen 
+        name="Chat" 
+        component={ChatScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 }

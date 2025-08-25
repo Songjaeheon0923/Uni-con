@@ -430,15 +430,37 @@ class ApiService {
     return this.request(`/chat/rooms/${roomId}/messages?limit=${limit}&offset=${offset}`);
   }
 
+  // 읽음 처리 없이 메시지 조회 (실시간 업데이트용)
+  async peekChatMessages(roomId, limit = 50, offset = 0) {
+    return this.request(`/chat/rooms/${roomId}/messages/peek?limit=${limit}&offset=${offset}`);
+  }
+
   async markMessagesAsRead(roomId) {
     return this.request(`/chat/rooms/${roomId}/read`, {
       method: 'PUT',
     });
   }
 
+  // 메시지 상태 업데이트
+  async updateMessageStatus(messageId, status) {
+    return this.request(`/chat/messages/${messageId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    });
+  }
+
   async createDummyChatData() {
     return this.request('/chat/rooms/dummy', {
       method: 'POST',
+    });
+  }
+
+  async deleteChatRoom(roomId) {
+    return this.request(`/chat/rooms/${roomId}`, {
+      method: 'DELETE',
     });
   }
 }
