@@ -75,6 +75,9 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
+# Exception: include development database with sample data
+!backend/users.db
+
 # Log files
 *.log
 logs/

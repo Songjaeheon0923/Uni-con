@@ -6,6 +6,7 @@ import threading
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from crawlers.advanced_policy_crawler import AdvancedPolicyCrawler
+from crawlers.youth_center_crawler import YouthCenterCrawler
 from database.connection import DATABASE_PATH
 import sqlite3
 
@@ -28,6 +29,7 @@ class PolicyCrawlerScheduler:
     
     def __init__(self, service_key: str = None):
         self.crawler = AdvancedPolicyCrawler(service_key)
+        self.youth_center_crawler = YouthCenterCrawler()
         self.db_path = DATABASE_PATH
         self.is_running = False
         self.last_run_status = None
@@ -41,8 +43,19 @@ class PolicyCrawlerScheduler:
         logger.info(f"Starting daily policy crawling at {start_time}")
         
         try:
-            # 크롤링 실행
+            # 기존 크롤링 실행
             result = await self.crawler.run_advanced_crawling()
+            
+            # 온통청년 크롤링 실행
+            logger.info("Starting Youth Center crawling...")
+            youth_saved, youth_updated = self.youth_center_crawler.crawl_all_policies(max_pages=5)
+            
+            # 결과 통합
+            result['youth_center'] = {
+                'saved': youth_saved,
+                'updated': youth_updated,
+                'total': youth_saved + youth_updated
+            }
             
             # 실행 결과 로깅
             end_time = datetime.now()

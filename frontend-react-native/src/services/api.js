@@ -372,12 +372,14 @@ class ApiService {
   }
 
   // 정책 관련 API
-  async getPolicyRecommendations(limit = 10) {
-    return this.request(`/policies/recommendations?limit=${limit}`);
+  async getPolicyRecommendations(limit = 10, offset = 0) {
+    return this.request(`/policies/recommendations?limit=${limit}&offset=${offset}`);
   }
 
   async getPopularPolicies(limit = 10) {
-    return this.request(`/policies/popular?limit=${limit}`);
+    const response = await this.request(`/policies/popular?limit=${limit}`);
+    // 새로운 형식이면 data 필드만 반환, 기존 형식이면 그대로 반환
+    return response && response.data ? response.data : response;
   }
 
   async recordPolicyView(policyId) {

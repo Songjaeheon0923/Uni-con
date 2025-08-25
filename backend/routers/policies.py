@@ -1,40 +1,170 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import asyncio
+import json
+from datetime import datetime
 from models.policy import Policy, PolicyRecommendation
 from utils.policy_recommender import PolicyRecommender
 from crawlers.policy_crawler import PolicyCrawler
 from crawlers.youth_policy_crawler import YouthPolicyCrawler
+from crawlers.youth_center_crawler import YouthCenterCrawler
 from auth.jwt_handler import verify_token
+from database.connection import get_db_connection
 
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 recommender = PolicyRecommender()
 
 
-@router.get("/recommendations", response_model=List[PolicyRecommendation])
+@router.get("/recommendations")
 async def get_policy_recommendations(
     limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
     token_data: dict = Depends(verify_token)
 ):
     """개인화된 정책 추천 조회"""
     try:
         user_id = token_data.get("user_id")
-        recommendations = recommender.get_personalized_policies(user_id, limit)
-        return recommendations
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 사용자 맞춤 정책 조회 (지역, 연령 등 고려)
+        # 전체 개수 조회
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM policies
+            WHERE is_active = 1 
+            AND ([region] = '전국' OR [region] IS NULL OR [region] = '')
+        """)
+        total_count = cursor.fetchone()[0]
+        
+        # 정책 데이터 조회
+        cursor.execute(f"""
+            SELECT id, source, source_id, title, organization, target, 
+                   content, application_period, start_date, end_date,
+                   application_url, reference_url, category, [region], details,
+                   view_count, created_at
+            FROM policies
+            WHERE is_active = 1 
+            AND ([region] = '전국' OR [region] IS NULL OR [region] = '')
+            ORDER BY view_count DESC, created_at DESC
+            LIMIT {limit} OFFSET {offset}
+        """)
+        
+        policies = cursor.fetchall()
+        conn.close()
+        
+        result = []
+        for p in policies:
+            try:
+                details = json.loads(p[14]) if p[14] else {}
+            except:
+                details = {}
+            result.append({
+                "id": p[0],
+                "source": p[1],
+                "source_id": p[2], 
+                "title": p[3],
+                "organization": p[4],
+                "target": p[5],
+                "content": p[6],
+                "application_period": p[7],
+                "start_date": p[8],
+                "end_date": p[9],
+                "application_url": p[10],
+                "reference_url": p[11],
+                "category": p[12],
+                "region": p[13],
+                "details": details,
+                "view_count": p[15],
+                "created_at": p[16],
+                "policy": {
+                    "id": p[0],
+                    "title": p[3],
+                    "category": p[12],
+                    "description": (p[6][:200] + "...") if p[6] and len(p[6]) > 200 else (p[6] or ""),
+                    "url": p[10] or p[11] or ""
+                },
+                "reason": "맞춤 추천"
+            })
+        
+        return {
+            "data": result,
+            "total_count": total_count,
+            "page": (offset // limit) + 1,
+            "total_pages": (total_count + limit - 1) // limit
+        }
     except Exception as e:
         print(f"Error getting policy recommendations: {e}")
         raise HTTPException(status_code=500, detail="정책 추천 조회에 실패했습니다")
 
 
-@router.get("/popular", response_model=List[PolicyRecommendation])
+@router.get("/popular")
 async def get_popular_policies(
-    limit: int = Query(10, ge=1, le=50)
+    limit: int = Query(10, ge=1, le=50),
+    region: Optional[str] = Query(None, description="지역 필터"),
+    category: Optional[str] = Query(None, description="카테고리 필터")
 ):
     """인기 정책 조회 (로그인 불필요)"""
     try:
-        recommendations = recommender.get_popular_policies(limit)
-        return recommendations
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 전체 개수 조회
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM policies
+            WHERE is_active = 1
+        """)
+        total_count = cursor.fetchone()[0]
+        
+        # 쿼리 실행  
+        query = f"""
+            SELECT id, source, source_id, title, organization, target, 
+                   content, application_period, start_date, end_date,
+                   application_url, reference_url, category, region, details,
+                   view_count, created_at
+            FROM policies
+            WHERE is_active = 1
+            ORDER BY view_count DESC, created_at DESC LIMIT {limit}
+        """
+        cursor.execute(query)
+        policies = cursor.fetchall()
+        conn.close()
+        
+        result = []
+        for p in policies:
+            try:
+                details = json.loads(p[14]) if p[14] else {}
+            except:
+                details = {}
+            result.append({
+                "id": p[0],
+                "source": p[1],
+                "source_id": p[2],
+                "title": p[3],
+                "organization": p[4],
+                "target": p[5],
+                "content": p[6],
+                "application_period": p[7],
+                "start_date": p[8],
+                "end_date": p[9],
+                "application_url": p[10],
+                "reference_url": p[11],
+                "category": p[12],
+                "region": p[13],
+                "details": details,
+                "view_count": p[15],
+                "created_at": p[16]
+            })
+        
+        return {
+            "data": result,
+            "total_count": total_count,
+            "page": 1,  # 인기 정책은 페이지네이션 미지원이므로 항상 1
+            "total_pages": (total_count + limit - 1) // limit
+        }
     except Exception as e:
         print(f"Error getting popular policies: {e}")
         raise HTTPException(status_code=500, detail="인기 정책 조회에 실패했습니다")
@@ -158,6 +288,27 @@ async def trigger_youth_policy_crawling():
     except Exception as e:
         print(f"Error triggering youth policy crawling: {e}")
         raise HTTPException(status_code=500, detail="청년 정책 크롤링 실행에 실패했습니다")
+
+
+@router.post("/crawl/youth-center")
+async def trigger_youth_center_crawling(
+    max_pages: int = Query(5, ge=1, le=20, description="크롤링할 페이지 수")
+):
+    """온통청년 API 크롤링 수동 실행 (관리자용)"""
+    try:
+        crawler = YouthCenterCrawler()
+        saved, updated = crawler.crawl_all_policies(max_pages=max_pages)
+        return {
+            "message": "온통청년 정책 크롤링이 완료되었습니다",
+            "result": {
+                "saved": saved,
+                "updated": updated,
+                "total": saved + updated
+            }
+        }
+    except Exception as e:
+        print(f"Error triggering youth center crawling: {e}")
+        raise HTTPException(status_code=500, detail="온통청년 크롤링 실행에 실패했습니다")
 
 
 @router.get("/youth", response_model=List[PolicyRecommendation])

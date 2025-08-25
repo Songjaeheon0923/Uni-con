@@ -30,6 +30,8 @@ export default function HomeScreen({ navigation, user }) {
   const [currentLocation, setCurrentLocation] = useState('성북구');
   const [policyNews, setPolicyNews] = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
+  const [policyPage, setPolicyPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user || {
@@ -114,29 +116,86 @@ export default function HomeScreen({ navigation, user }) {
     }
   };
 
-  const loadPolicyNews = async () => {
+  const loadPolicyNews = async (page = 1) => {
     setLoadingPolicies(true);
     try {
-      const policies = await ApiService.getPolicyRecommendations(3);
-      setPolicyNews(policies || []);
+      const offset = (page - 1) * 5;
+      const response = await ApiService.getPolicyRecommendations(5, offset);
+      
+      // 새로운 응답 형식 처리
+      if (response && response.data) {
+        setPolicyNews(response.data || []);
+        setPolicyPage(page);
+        setTotalPages(response.total_pages || 1);
+      } else {
+        // 기존 형식 호환성
+        setPolicyNews(response || []);
+        setPolicyPage(page);
+        setTotalPages(Math.ceil((response || []).length > 0 ? 20 : 1)); // 임시
+      }
     } catch (error) {
       console.error('정책 뉴스 로드 실패:', error);
       // 로그인하지 않은 경우 인기 정책으로 대체
       try {
-        const popularPolicies = await ApiService.getPopularPolicies(3);
+        const popularPolicies = await ApiService.getPopularPolicies(5);
         setPolicyNews(popularPolicies || []);
+        setPolicyPage(page);
+        setTotalPages(Math.ceil(205 / 5)); // 전체 정책 수 기반
       } catch (fallbackError) {
         console.error('인기 정책 로드도 실패:', fallbackError);
         setPolicyNews([]);
+        setPolicyPage(1);
+        setTotalPages(1);
       }
     } finally {
       setLoadingPolicies(false);
     }
   };
 
+  const goToPage = async (page) => {
+    if (loadingPolicies || page < 1 || page > totalPages || page === policyPage) return;
+    await loadPolicyNews(page);
+  };
+
+  const renderPaginationNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, policyPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // 끝에서부터 계산해서 시작점 조정
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <TouchableOpacity
+          key={i}
+          style={[
+            styles.pageButton,
+            policyPage === i && styles.activePageButton
+          ]}
+          onPress={() => goToPage(i)}
+          disabled={loadingPolicies}
+        >
+          <Text style={[
+            styles.pageButtonText,
+            policyPage === i && styles.activePageButtonText
+          ]}>
+            {i}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    
+    return pages;
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
-    Promise.all([loadData(), loadPolicyNews()]);
+    Promise.all([loadData(), loadPolicyNews(1)]);
   };
 
   const toggleFavorite = async (roomId, event) => {
@@ -443,6 +502,34 @@ export default function HomeScreen({ navigation, user }) {
               <Text style={styles.newsTag}>#청년 정책</Text>
               <Text style={styles.newsTitle}>정책 정보를 준비 중입니다</Text>
             </View>
+          </View>
+        )}
+        
+        {/* 페이지네이션 */}
+        {policyNews.length > 0 && totalPages > 1 && (
+          <View style={styles.paginationContainer}>
+            {/* 이전 버튼 */}
+            <TouchableOpacity 
+              style={[styles.arrowButton, policyPage === 1 && styles.disabledButton]}
+              onPress={() => goToPage(policyPage - 1)}
+              disabled={loadingPolicies || policyPage === 1}
+            >
+              <Ionicons name="chevron-back" size={16} color={policyPage === 1 ? "#ccc" : "#007AFF"} />
+            </TouchableOpacity>
+            
+            {/* 페이지 번호들 */}
+            <View style={styles.pageNumbersContainer}>
+              {renderPaginationNumbers()}
+            </View>
+            
+            {/* 다음 버튼 */}
+            <TouchableOpacity 
+              style={[styles.arrowButton, policyPage === totalPages && styles.disabledButton]}
+              onPress={() => goToPage(policyPage + 1)}
+              disabled={loadingPolicies || policyPage === totalPages}
+            >
+              <Ionicons name="chevron-forward" size={16} color={policyPage === totalPages ? "#ccc" : "#007AFF"} />
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -756,5 +843,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     marginTop: 2,
+  },
+  paginationContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pageNumbersContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  pageButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    marginHorizontal: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activePageButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  pageButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  activePageButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  arrowButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ddd',
   },
 });

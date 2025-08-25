@@ -3,6 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import init_db
 from routers import auth, users, profile, rooms, favorites, policies, admin, contract_analysis, chat
+from dotenv import load_dotenv
+
+# 환경변수 로드
+load_dotenv()
 
 
 @asynccontextmanager
