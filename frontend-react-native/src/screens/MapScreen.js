@@ -1,24 +1,31 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Text, TextInput, SafeAreaView, Animated, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import PropertyMapView from "../components/MapView";
 import ApiService from "../services/api";
-import { mockRooms } from "../data/mockRooms";
+import { formatArea, getRoomType, formatFloor, formatPrice } from "../utils/priceUtils";
+import SearchIcon from "../components/SearchIcon";
+import ChevronDownIcon from "../components/ChevronDownIcon";
+import LocationIcon from "../components/LocationIcon";
+import CurrentLocationIcon from "../components/CurrentLocationIcon";
+import HeartIcon from "../components/HeartIcon";
 
 export default function MapScreen({ navigation }) {
   const [rooms, setRooms] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
   const [selectedFilters, setSelectedFilters] = useState([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('성북구 안암동 2가');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [recentSearches, setRecentSearches] = useState(['안암동 2가', '안암동 1가', '보문역', '성신여대입구역']);
   const [showRecentSearches, setShowRecentSearches] = useState(false);
+  const [showBuildingModal, setShowBuildingModal] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const locationButtonAnim = useRef(new Animated.Value(0)).current;
   const mapViewRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // Mock user data
   const userData = {
@@ -51,6 +58,12 @@ export default function MapScreen({ navigation }) {
       icon: 'chevron-down',
       options: ['10평 이하', '10-20평', '20-30평', '30평 이상']
     },
+    {
+      id: 'favorites',
+      label: '찜한 매물',
+      icon: 'chevron-down',
+      options: ['사람1']
+    },
   ];
 
   useEffect(() => {
@@ -68,21 +81,6 @@ export default function MapScreen({ navigation }) {
       };
 
       const roomData = await ApiService.searchRooms(bounds);
-      console.log(`🔍 API 응답: ${roomData?.length || 0}개 매물`);
-      
-      // 강북쪽 데이터 확인
-      const northernData = roomData?.filter(room => 
-        room.address.includes('강북구') || 
-        room.address.includes('도봉구') || 
-        room.address.includes('노원구') || 
-        room.address.includes('광진구') || 
-        room.address.includes('성북구') || 
-        room.address.includes('용산구')
-      ) || [];
-      console.log(`🌟 강북쪽 매물: ${northernData.length}개`);
-      northernData.slice(0, 3).forEach(room => {
-        console.log(`  - ${room.address} (${room.latitude}, ${room.longitude})`);
-      });
 
       // API 데이터를 MapView에서 사용할 수 있는 형태로 변환
       const formattedRooms = roomData.map(room => ({
@@ -106,43 +104,66 @@ export default function MapScreen({ navigation }) {
       setAllRooms(formattedRooms);
       setRooms(formattedRooms);
     } catch (error) {
-      console.error('방 데이터 로드 실패:', error);
+      // 방 데이터 로드 실패
       Alert.alert('오류', '방 데이터를 불러오는데 실패했습니다.');
     }
   };
 
   useEffect(() => {
+    console.log('🔄 useEffect 트리거 - 필터 적용');
     applyFilter();
   }, [selectedFilterValues, allRooms]);
 
   const applyFilter = () => {
+    console.log('🔍 필터 적용 중...', selectedFilterValues);
     let filteredRooms = [...allRooms];
+    console.log('📊 전체 매물 수:', allRooms.length);
 
     // 거래 유형 필터
     if (selectedFilterValues.transaction) {
+      console.log('🏠 거래 유형 필터:', selectedFilterValues.transaction);
       filteredRooms = filteredRooms.filter(room =>
         room.transaction_type === selectedFilterValues.transaction
       );
+      console.log('🏠 거래 유형 필터 후 매물 수:', filteredRooms.length);
     }
 
     // 매물 종류 필터
     if (selectedFilterValues.type) {
+      console.log('🏢 매물 종류 필터:', selectedFilterValues.type);
       const typeKeywords = {
-        '원룸': ['원룸'],
-        '투룸': ['투룸', '2룸'],
-        '오피스텔': ['오피스텔'],
-        '아파트': ['아파트']
+        '원룸': ['원룸', '1룸', 'oneroom'],
+        '투룸': ['투룸', '2룸', 'tworoom'],
+        '오피스텔': ['오피스텔', 'officetel', '오피', '상업시설'],
+        '아파트': ['아파트', 'apartment', '아파', '공동주택']
       };
       const keywords = typeKeywords[selectedFilterValues.type] || [];
-      filteredRooms = filteredRooms.filter(room =>
-        keywords.some(keyword =>
-          room.address.includes(keyword) || room.description.includes(keyword)
-        )
-      );
+      
+      // 더 유연한 매칭: 주소, 설명, 제목에서 검색하고 부분 매칭도 허용
+      filteredRooms = filteredRooms.filter(room => {
+        const searchText = `${room.address || ''} ${room.description || ''} ${room.title || ''}`.toLowerCase();
+        const hasKeyword = keywords.some(keyword => 
+          searchText.includes(keyword.toLowerCase())
+        );
+        
+        // 키워드가 없으면 면적 기반으로도 추정
+        if (!hasKeyword && selectedFilterValues.type === '원룸') {
+          // 25㎡ 이하면 원룸으로 추정
+          return room.area && parseFloat(room.area) <= 25;
+        } else if (!hasKeyword && selectedFilterValues.type === '투룸') {
+          // 25-50㎡이면 투룸으로 추정  
+          return room.area && parseFloat(room.area) > 25 && parseFloat(room.area) <= 50;
+        }
+        
+        return hasKeyword;
+      });
+      
+      console.log('🏢 매물 종류 필터 후 매물 수:', filteredRooms.length);
     }
 
     // 가격 필터
     if (selectedFilterValues.price) {
+      console.log('💰 가격 필터:', selectedFilterValues.price);
       const priceRanges = {
         '1억 이하': [0, 10000],
         '1-3억': [10000, 30000],
@@ -153,9 +174,17 @@ export default function MapScreen({ navigation }) {
       filteredRooms = filteredRooms.filter(room =>
         room.price_deposit >= min && room.price_deposit <= max
       );
+      console.log('💰 가격 필터 후 매물 수:', filteredRooms.length);
     }
 
-    setRooms(filteredRooms);
+    console.log('✅ 최종 필터링된 매물 수:', filteredRooms.length);
+    
+    // 강제 리렌더링을 위해 새 배열 생성
+    setRooms([...filteredRooms]);
+    console.log('📍 MapScreen rooms 상태 업데이트:', filteredRooms.length);
+    
+    // MapView 강제 리렌더링
+    setMapKey(prev => prev + 1);
   };
 
   const goToCurrentLocation = async () => {
@@ -179,7 +208,7 @@ export default function MapScreen({ navigation }) {
         }, 1000);
       }
     } catch (error) {
-      console.error('현재 위치 가져오기 실패:', error);
+      // 현재 위치 가져오기 실패
       Alert.alert('오류', '현재 위치를 가져올 수 없습니다.');
     }
   };
@@ -265,9 +294,44 @@ export default function MapScreen({ navigation }) {
     setRecentSearches(recentSearches.filter(item => item !== query));
   };
 
+  // 매물 타입별 키워드 매칭 함수
+  const matchPropertyType = (room, query) => {
+    const roomTypeKeywords = {
+      '원룸': ['원룸', '1룸', 'oneroom'],
+      '투룸': ['투룸', '2룸', 'tworoom'],
+      '쓰리룸': ['쓰리룸', '3룸', 'threeroom'],
+      '오피스텔': ['오피스텔', 'officetel'],
+      '아파트': ['아파트', 'apartment', '아파'],
+      '빌라': ['빌라', 'villa'],
+      '연립': ['연립', '연립주택'],
+      '다세대': ['다세대', '다세대주택']
+    };
+
+    // 검색어에서 매물 유형 키워드 찾기
+    for (const [type, keywords] of Object.entries(roomTypeKeywords)) {
+      if (keywords.some(keyword => query.toLowerCase().includes(keyword.toLowerCase()))) {
+        // 매물의 주소나 설명에서 해당 타입이 있는지 확인
+        const hasTypeInRoom = keywords.some(keyword => 
+          room.address.toLowerCase().includes(keyword.toLowerCase()) || 
+          room.description.toLowerCase().includes(keyword.toLowerCase()) ||
+          (room.title && room.title.toLowerCase().includes(keyword.toLowerCase()))
+        );
+        return hasTypeInRoom;
+      }
+    }
+    return true; // 매물 타입 검색어가 없으면 모든 매물 포함
+  };
+
   const handleSearch = async (customQuery = null) => {
     const query = customQuery || searchQuery;
-    if (!query.trim()) return;
+    
+    // 검색어가 비어있으면 전체 매물 표시
+    if (!query.trim()) {
+      setRooms(allRooms);
+      setShowRecentSearches(false);
+      console.log(`✅ 전체 매물 표시: ${allRooms.length}개 결과`);
+      return;
+    }
 
     try {
       console.log(`🔍 검색 실행: ${query}`);
@@ -313,16 +377,29 @@ export default function MapScreen({ navigation }) {
         risk_score: room.risk_score,
       }));
 
-      // Mock 데이터도 검색에 포함
-      const mockSearchResults = mockRooms.filter(room =>
-        room.address.includes(query) ||
-        room.description.includes(query) ||
-        room.transaction_type.includes(query)
-      );
+      let combinedResults = [...formattedResults];
 
-      const combinedResults = [...formattedResults, ...mockSearchResults];
+      // 매물 유형별 필터링 적용
+      combinedResults = combinedResults.filter(room => matchPropertyType(room, query));
+
+      // 전체 매물에서도 매물 유형 검색 적용 (API 검색 결과가 없는 경우)
+      if (combinedResults.length === 0) {
+        combinedResults = allRooms.filter(room => 
+          matchPropertyType(room, query) && (
+            room.address.toLowerCase().includes(query.toLowerCase()) ||
+            room.description.toLowerCase().includes(query.toLowerCase()) ||
+            room.transaction_type.includes(query) ||
+            (room.title && room.title.toLowerCase().includes(query.toLowerCase()))
+          )
+        );
+      }
+
       setRooms(combinedResults);
-      setAllRooms(combinedResults);
+      
+      // 검색 결과가 없을 때 처리
+      if (combinedResults.length === 0) {
+        Alert.alert('검색 결과 없음', `'${query}'에 대한 검색 결과를 찾을 수 없습니다.`);
+      }
 
       // 지역/주소 검색 시 해당 위치로 포커싱
       await focusOnSearchLocation(query, combinedResults);
@@ -388,6 +465,7 @@ export default function MapScreen({ navigation }) {
 
   const [activeFilter, setActiveFilter] = useState(null);
   const [selectedFilterValues, setSelectedFilterValues] = useState({});
+  const [mapKey, setMapKey] = useState(0);
 
   const FilterButton = ({ option }) => {
     const hasSelection = selectedFilterValues[option.id];
@@ -400,27 +478,20 @@ export default function MapScreen({ navigation }) {
         <Text style={[styles.filterButtonText, hasSelection && styles.filterButtonTextActive]}>
           {option.label}
         </Text>
-        <Ionicons
-          name={option.icon}
-          size={12}
-          color={hasSelection ? "#FF6600" : "#666"}
-          style={{ marginLeft: 4 }}
-        />
+        <View style={{ marginLeft: 4 }}>
+          <ChevronDownIcon
+            width={8}
+            height={5}
+            color={hasSelection ? "#FF6600" : "#666"}
+          />
+        </View>
       </TouchableOpacity>
     );
   };
 
   const PropertyCard = () => {
-    if (!selectedProperty) return null;
+    if (!selectedProperty || showBuildingModal) return null;
 
-    const formatPrice = (property) => {
-      if (property.transaction_type === '월세') {
-        return `월세 ${property.price_deposit}/${property.price_monthly}만원`;
-      } else if (property.transaction_type === '전세') {
-        return `전세 ${property.price_deposit}만원`;
-      }
-      return `${property.price_deposit}만원`;
-    };
 
     const handleCloseCard = () => {
       Animated.parallel([
@@ -469,10 +540,10 @@ export default function MapScreen({ navigation }) {
 
           <View style={styles.cardInfo}>
             <Text style={styles.cardPrice}>
-              {formatPrice(selectedProperty)}
+              {formatPrice(selectedProperty.price_deposit, selectedProperty.transaction_type, selectedProperty.price_monthly, selectedProperty.room_id)}
             </Text>
             <Text style={styles.cardSubInfo} numberOfLines={1}>
-              원룸 | 6평 | 4층
+              {getRoomType(selectedProperty.area, selectedProperty.rooms)} | {formatArea(selectedProperty.area)} | {formatFloor(selectedProperty.floor)}
             </Text>
             <Text style={styles.cardAddress} numberOfLines={1}>
               {selectedProperty.address.split(' ').slice(-3).join(' ')}
@@ -504,6 +575,38 @@ export default function MapScreen({ navigation }) {
     );
   };
 
+  const handleMarkerSelectionChange = useCallback((propertyId) => {
+    if (!propertyId) {
+      // 지도 배경 클릭 시 - 마커 선택 해제 및 검색창 닫기
+      setShowRecentSearches(false);
+      // 검색창의 포커스 해제
+      if (searchInputRef.current) {
+        searchInputRef.current.blur();
+      }
+      if (selectedProperty) {
+        // PropertyCard 닫기 애니메이션 실행
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(locationButtonAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          setSelectedProperty(null);
+          setSelectedPropertyId(null);
+        });
+      } else {
+        setSelectedProperty(null);
+        setSelectedPropertyId(null);
+      }
+    }
+  }, [selectedProperty, slideAnim, locationButtonAnim]);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 헤더 - 검색바 */}
@@ -523,10 +626,11 @@ export default function MapScreen({ navigation }) {
       {/* 검색바 */}
       <View style={styles.searchWrapper}>
         <View style={styles.searchContainer}>
-          <Ionicons name="location-outline" size={20} color="#666" />
+          <LocationIcon width={22} height={22} color="#666" />
           <TextInput
+            ref={searchInputRef}
             style={styles.searchInput}
-            placeholder="성북구 안암동 2가"
+            placeholder="지역, 지하철역, 학교명 검색"
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={() => handleSearch()}
@@ -536,13 +640,18 @@ export default function MapScreen({ navigation }) {
             placeholderTextColor="#999"
           />
           <TouchableOpacity style={styles.searchButton} onPress={() => handleSearch()}>
-            <Ionicons name="search" size={20} color="#666" />
+            <SearchIcon width={16} height={16} color="#666" />
           </TouchableOpacity>
         </View>
 
         {/* 최근 검색어 드롭다운 */}
-        {showRecentSearches && (
-          <View style={styles.recentSearchDropdown}>
+        <View style={[
+          styles.recentSearchDropdown,
+          { 
+            opacity: showRecentSearches ? 1 : 0,
+            pointerEvents: showRecentSearches ? 'auto' : 'none'
+          }
+        ]}>
             <Text style={styles.recentSearchTitle}>최근 검색어</Text>
             {recentSearches.map((item, index) => (
               <TouchableOpacity
@@ -561,12 +670,10 @@ export default function MapScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
-        )}
       </View>
 
       {/* 필터 바 */}
-      {!showRecentSearches && (
-        <View style={styles.filterContainer}>
+      <View style={styles.filterContainer}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -591,41 +698,41 @@ export default function MapScreen({ navigation }) {
 
           {/* 더보기 버튼 */}
           <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="chevron-down" size={16} color="#666" />
+            <Ionicons name="chevron-down" size={12} color="#666" />
           </TouchableOpacity>
         </View>
-      )}
 
       {/* 지도 */}
       <View style={styles.mapContainer}>
         <PropertyMapView
+          key={mapKey}
           ref={mapViewRef}
           properties={rooms}
           onMarkerPress={handleMarkerPress}
           selectedPropertyId={selectedPropertyId}
+          navigation={navigation}
+          onBuildingModalStateChange={setShowBuildingModal}
+          onMarkerSelectionChange={handleMarkerSelectionChange}
         />
 
-        {/* 현재 위치 버튼 */}
-        <Animated.View
-          style={[
-            styles.currentLocationButton,
-            {
-              transform: [{
-                translateY: locationButtonAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, -90],
-                })
-              }]
-            }
-          ]}
-        >
+        {/* 오른쪽 상단 버튼들 */}
+        <View style={styles.topRightButtons}>
+          {/* 하트(찜 목록) 버튼 */}
           <TouchableOpacity
-            style={styles.locationButtonInner}
+            style={styles.heartButton}
+            onPress={() => navigation.navigate('FavoriteRooms')}
+          >
+            <HeartIcon width={22} height={20} color="#333" />
+          </TouchableOpacity>
+
+          {/* 현재 위치 버튼 */}
+          <TouchableOpacity
+            style={styles.locationButton}
             onPress={goToCurrentLocation}
           >
-            <Ionicons name="locate" size={24} color="#FF6600" />
+            <CurrentLocationIcon width={20} height={20} color="#333" />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </View>
 
       {/* Property Card */}
@@ -656,11 +763,17 @@ export default function MapScreen({ navigation }) {
                     selectedFilterValues[activeFilter.id] === option && styles.filterOptionSelected
                   ]}
                   onPress={() => {
-                    setSelectedFilterValues({
+                    const newFilterValues = {
                       ...selectedFilterValues,
                       [activeFilter.id]: selectedFilterValues[activeFilter.id] === option ? null : option
-                    });
+                    };
+                    setSelectedFilterValues(newFilterValues);
                     setActiveFilter(null);
+                    
+                    // 필터 변경 후 즉시 적용 (useEffect 대기 없이)
+                    setTimeout(() => {
+                      console.log('🔄 필터 즉시 적용');
+                    }, 100);
                   }}
                 >
                   <Text style={[
@@ -700,7 +813,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#000',
     flex: 1,
@@ -773,12 +886,13 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     backgroundColor: '#ffffff',
-    paddingVertical: 8,
+    paddingVertical: 0,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 0,
   },
   filterScrollContent: {
     flexDirection: 'row',
@@ -788,17 +902,18 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    marginRight: 8,
+    borderRadius: 16,
+    marginRight: 6,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    marginBottom: 15,
   },
   filterButtonText: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 12,
+    color: '#888888',
     fontWeight: '500',
   },
   filterButtonActive: {
@@ -817,9 +932,9 @@ const styles = StyleSheet.create({
     width: 100,
   },
   moreButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 16,
+    width: 18,
+    height: 18,
+    borderRadius: 14,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#000000',
@@ -827,18 +942,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'absolute',
     right: 14,
-    top: 15,
+    top: 7,
   },
   mapContainer: {
     flex: 1,
     position: 'relative',
   },
-  currentLocationButton: {
+  topRightButtons: {
     position: 'absolute',
-    bottom: 100,
+    top: 16,
     right: 16,
+    flexDirection: 'column',
   },
-  locationButtonInner: {
+  heartButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
+  },
+  locationButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -857,6 +987,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     backgroundColor: '#ffffff',
+    zIndex: 10,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -957,7 +1088,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    zIndex: 1000,
+    zIndex: 9999,
   },
   recentSearchTitle: {
     fontSize: 13,

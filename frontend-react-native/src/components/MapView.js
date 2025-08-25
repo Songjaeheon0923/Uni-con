@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
-import { View, StyleSheet, Text, Dimensions, Animated } from "react-native";
+import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "./HomeIcon";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
+import BuildingClusterView from "./BuildingClusterView";
+import { normalizePrice } from '../utils/priceUtils';
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,7 +27,6 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
   
   // 변환 후 유효성 검사
   if (isNaN(lat) || isNaN(lng)) {
-    console.error(`❌ 유효하지 않은 좌표: ${property.address} - lat:${property.latitude}(${typeof property.latitude}), lng:${property.longitude}(${typeof property.longitude})`);
     return null;
   }
 
@@ -66,17 +67,74 @@ const PropertyMapView = forwardRef(({
   properties = [],
   onMarkerPress,
   selectedPropertyId,
+  navigation,
+  onBuildingModalStateChange, // 바텀시트 상태 변경 콜백 추가
+  onMarkerSelectionChange, // 마커 선택 상태 변경 콜백 추가
 }, ref) => {
+  
+  // 디버깅: MapView가 받는 properties 개수 확인
+  console.log('🗺️ MapView 받은 properties 개수:', properties.length);
   const [region, setRegion] = useState({
-    latitude: 37.566, // 서울 중심 (강북 포함)
-    longitude: 126.98,
-    latitudeDelta: 0.25,  // 서울 전체가 잘 보이도록 더 확대
-    longitudeDelta: 0.2,
+    latitude: 37.35, // 서울이 화면 중앙에 오도록 조정
+    longitude: 127.1,
+    latitudeDelta: 0.6,  // 서울 주변 지역까지 포함하여 표시
+    longitudeDelta: 0.5,
   });
   const [userLocation, setUserLocation] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
+  const [buildingProperties, setBuildingProperties] = useState([]);
+  const [selectedMarkerId, setSelectedMarkerId] = useState(null);
   const mapRef = useRef(null);
   
-  // Supercluster 인스턴스 생성
+  // forwardRef로 외부 ref에도 mapRef를 연결
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(mapRef.current);
+      } else {
+        ref.current = mapRef.current;
+      }
+    }
+  }, [ref, mapRef.current]);
+  const markerScales = useRef({});
+  const markerClickTime = useRef(0);
+  
+  // 건물별로 그룹화
+  const buildingGroups = useMemo(() => {
+    const groups = {};
+    properties.forEach(property => {
+      // 주소에서 건물 식별자 추출 (동/호 제거)
+      let buildingKey = property.address;
+      // 호수 제거
+      buildingKey = buildingKey.replace(/\d+호/g, '');
+      // 층수 정보 제거  
+      buildingKey = buildingKey.replace(/\d+층/g, '');
+      
+      if (!groups[buildingKey]) {
+        groups[buildingKey] = {
+          buildingAddress: buildingKey,
+          latitude: property.latitude,
+          longitude: property.longitude,
+          properties: [],
+          minPrice: Infinity,
+          maxPrice: 0,
+          count: 0
+        };
+      }
+      
+      // 가격을 만원 단위로 정규화하여 비교
+      const normalizedPrice = normalizePrice(property.price_deposit, property.room_id, property.transaction_type);
+      
+      groups[buildingKey].properties.push(property);
+      groups[buildingKey].count++;
+      groups[buildingKey].minPrice = Math.min(groups[buildingKey].minPrice, normalizedPrice);
+      groups[buildingKey].maxPrice = Math.max(groups[buildingKey].maxPrice, normalizedPrice);
+    });
+    
+    return groups;
+  }, [properties]);
+
+  // Supercluster 인스턴스 생성 (건물 그룹 기반)
   const supercluster = useMemo(() => {
     const cluster = new Supercluster({
       radius: 60,
@@ -86,24 +144,23 @@ const PropertyMapView = forwardRef(({
       nodeSize: 64,
     });
     
-    // properties를 GeoJSON 포인트로 변환
-    const points = properties
-      .filter(p => p.latitude && p.longitude)
-      .map(property => ({
+    // 건물 그룹을 GeoJSON 포인트로 변환
+    const points = Object.values(buildingGroups)
+      .filter(group => group.latitude && group.longitude)
+      .map(group => ({
         type: "Feature",
         properties: {
-          cluster: false,
-          property: property,
+          buildingGroup: group,
         },
         geometry: {
           type: "Point",
-          coordinates: [property.longitude, property.latitude],
+          coordinates: [group.longitude, group.latitude],
         },
       }));
     
     cluster.load(points);
     return cluster;
-  }, [properties]);
+  }, [buildingGroups]);
   
   // 현재 줌 레벨에 따른 클러스터 계산
   const clusteredMarkers = useMemo(() => {
@@ -121,60 +178,236 @@ const PropertyMapView = forwardRef(({
   }, [region, supercluster]);
 
   // 클러스터 마커 컴포넌트
-  const ClusterMarker = ({ cluster, onPress }) => {
+  const ClusterMarker = ({ cluster }) => {
     const [longitude, latitude] = cluster.geometry.coordinates;
-    const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+    const { cluster: isCluster, point_count: pointCount, buildingGroup } = cluster.properties;
+    
+    // 실제 클러스터인지 확인 (point_count가 있거나 cluster가 true인 경우)
+    const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
 
-    if (isCluster) {
+    if (isRealCluster) {
+      // 지역 클러스터 (여러 건물)
+      const clusterId = `cluster-${latitude}-${longitude}`;
+      const isSelected = selectedMarkerId === clusterId;
+      
+      if (!markerScales.current[clusterId]) {
+        markerScales.current[clusterId] = new Animated.Value(1);
+      }
+      
       return (
         <Marker
           coordinate={{ latitude, longitude }}
-          onPress={onPress}
-          tracksViewChanges={false}
-          anchor={{ x: 0.5, y: 0.5 }}
+          onPress={() => {
+            // 선택 애니메이션
+            Animated.sequence([
+              Animated.spring(markerScales.current[clusterId], {
+                toValue: 1.2,
+                useNativeDriver: true,
+                tension: 40,
+                friction: 7,
+              }),
+              Animated.spring(markerScales.current[clusterId], {
+                toValue: 1,
+                useNativeDriver: true,
+                tension: 40,
+                friction: 7,
+              }),
+            ]).start();
+            
+            // 클러스터 확대
+            handleClusterPress(cluster);
+          }}
+          tracksViewChanges={true}
+          anchor={{ x: 0.5, y: 1 }}
         >
-          <View style={[
-            styles.clusterMarkerContainer,
-            { 
-              backgroundColor: pointCount >= 100 ? "#FF3B30" : pointCount >= 50 ? "#FF9500" : pointCount >= 10 ? "#FFCC02" : "#30D158",
-              width: Math.max(40, Math.min(80, 40 + pointCount / 10)),
-              height: Math.max(40, Math.min(80, 40 + pointCount / 10)),
-              borderRadius: Math.max(20, Math.min(40, 20 + pointCount / 10))
-            }
-          ]}>
-            <Text style={styles.clusterText}>+{pointCount}</Text>
+          <View style={{
+            // 애니메이션을 위한 외부 컨테이너 (border 여유 공간 포함)
+            width: Math.max(56, Math.min(86, 56 + pointCount / 20)), // border 3px * 2 = 6px 추가
+            height: Math.max(56, Math.min(86, 56 + pointCount / 20)),
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Animated.View style={[
+              styles.clusterMarkerContainer,
+              {
+                transform: [{ scale: markerScales.current[clusterId] }],
+                backgroundColor: '#4A90E2',
+                width: Math.max(50, Math.min(80, 50 + pointCount / 20)),
+                height: Math.max(50, Math.min(80, 50 + pointCount / 20)),
+                borderRadius: Math.max(25, Math.min(40, 25 + pointCount / 20))
+              }
+            ]}>
+            <HomeIcon 
+              size={Math.max(24, Math.min(36, 24 + pointCount / 50))} 
+              color="#FFFFFF"
+            />
+            <Text style={[
+              styles.clusterText,
+              { fontSize: Math.max(14, Math.min(20, 14 + pointCount / 50)) }
+            ]}>+{pointCount}</Text>
+            </Animated.View>
           </View>
         </Marker>
       );
     }
 
-    const property = cluster.properties.property;
-    return (
-      <PropertyMarker 
-        property={property}
-        selectedPropertyId={selectedPropertyId}
-        onMarkerPress={onMarkerPress}
-      />
-    );
+    // 건물 그룹 마커
+    if (buildingGroup) {
+      const group = buildingGroup;
+      const hasMultiple = group.count > 1;
+      const markerId = `building-${group.buildingAddress}`;
+      const isSelected = selectedMarkerId === markerId;
+      
+      // 애니메이션 스케일 초기화
+      if (!markerScales.current[markerId]) {
+        markerScales.current[markerId] = new Animated.Value(1);
+      }
+      
+      const handleMarkerPress = () => {
+        // 마커 클릭 시간 기록
+        markerClickTime.current = Date.now();
+        
+        // 이미 선택된 마커를 다시 클릭한 경우 무시
+        if (selectedMarkerId === markerId) {
+          return;
+        }
+        
+        // 이전 선택 해제
+        if (selectedMarkerId && markerScales.current[selectedMarkerId]) {
+          Animated.spring(markerScales.current[selectedMarkerId], {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 7,
+          }).start();
+        }
+        
+        // 새 마커 선택
+        setSelectedMarkerId(markerId);
+        
+        // 선택 애니메이션
+        Animated.sequence([
+          Animated.spring(markerScales.current[markerId], {
+            toValue: 1.3,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 7,
+          }),
+          Animated.spring(markerScales.current[markerId], {
+            toValue: 1.15,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 7,
+          }),
+        ]).start();
+        
+        if (hasMultiple) {
+          // 여러 매물이 있는 건물 - 모달 표시
+          setSelectedBuilding(group.buildingAddress);
+          setBuildingProperties(group.properties);
+          // 바텀시트 표시 상태 알림
+          if (onBuildingModalStateChange) {
+            onBuildingModalStateChange(true);
+          }
+        } else {
+          // 단일 매물 - 직접 선택
+          onMarkerPress(group.properties[0]);
+        }
+      };
+      
+      return (
+        <Marker
+          coordinate={{ latitude: group.latitude, longitude: group.longitude }}
+          onPress={handleMarkerPress}
+          tracksViewChanges={true}
+          anchor={{ x: 0.5, y: 0.5 }}
+        >
+          <Animated.View style={[
+            styles.houseMarkerContainer,
+            {
+              transform: [{ scale: markerScales.current[markerId] }],
+              backgroundColor: isSelected ? '#2C2C2C' : '#FFFFFF',
+              borderColor: isSelected ? '#FFFFFF' : '#2C2C2C',
+            }
+          ]}>
+            <HomeIcon 
+              size={24} 
+              color={isSelected ? '#FFFFFF' : '#2C2C2C'}
+            />
+            {hasMultiple && (
+              <View style={[
+                styles.countBadge,
+                { backgroundColor: isSelected ? '#FF6600' : '#4A90E2' }
+              ]}>
+                <Text style={styles.countBadgeText}>{group.count}</Text>
+              </View>
+            )}
+          </Animated.View>
+        </Marker>
+      );
+    }
+
+    return null;
   };
 
   // 클러스터 클릭 핸들러
   const handleClusterPress = (cluster) => {
-    if (!mapRef.current || !cluster.properties.cluster) return;
+    const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+    const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
     
-    const zoom = Math.round(Math.log2(360 / region.latitudeDelta));
-    const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(cluster.id), 16);
+    console.log('handleClusterPress:', {
+      isCluster,
+      pointCount,
+      isRealCluster,
+      clusterId: cluster.id,
+      hasMapRef: !!mapRef.current
+    });
     
-    if (expansionZoom > zoom) {
-      const [longitude, latitude] = cluster.geometry.coordinates;
-      const newDelta = 360 / Math.pow(2, expansionZoom + 1);
+    if (!mapRef.current || !isRealCluster || !cluster.id) {
+      console.log('Early return from handleClusterPress');
+      return;
+    }
+    
+    console.log('Proceeding with cluster expansion...');
+    
+    // 현재 클러스터에 포함된 모든 포인트 가져오기
+    const clusterId = cluster.id;
+    const clusterChildren = supercluster.getLeaves(clusterId, Infinity);
+    
+    if (clusterChildren && clusterChildren.length > 0) {
+      // 클러스터 내 모든 포인트의 경계 계산
+      let minLat = Infinity, maxLat = -Infinity;
+      let minLng = Infinity, maxLng = -Infinity;
+      
+      clusterChildren.forEach(child => {
+        const [lng, lat] = child.geometry.coordinates;
+        minLat = Math.min(minLat, lat);
+        maxLat = Math.max(maxLat, lat);
+        minLng = Math.min(minLng, lng);
+        maxLng = Math.max(maxLng, lng);
+      });
+      
+      // 경계에 여유 공간 추가 (10%)
+      const latPadding = (maxLat - minLat) * 0.1;
+      const lngPadding = (maxLng - minLng) * 0.1;
+      
+      const newLatitudeDelta = (maxLat - minLat) + (latPadding * 2);
+      const newLongitudeDelta = (maxLng - minLng) + (lngPadding * 2);
+      
+      // 중심점 계산
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
+      
+      // 최소/최대 줌 레벨 제한
+      const finalLatDelta = Math.max(0.005, Math.min(0.5, newLatitudeDelta));
+      const finalLngDelta = Math.max(0.004, Math.min(0.4, newLongitudeDelta));
       
       mapRef.current.animateToRegion({
-        latitude,
-        longitude,
-        latitudeDelta: newDelta,
-        longitudeDelta: newDelta,
-      }, 500);
+        latitude: centerLat,
+        longitude: centerLng,
+        latitudeDelta: finalLatDelta,
+        longitudeDelta: finalLngDelta,
+      }, 600);
     }
   };
 
@@ -182,26 +415,12 @@ const PropertyMapView = forwardRef(({
     getCurrentLocation();
   }, []);
 
-  useEffect(() => {
-    console.log(`📍 MapView에 전달된 매물 수: ${properties.length}개`);
-    if (properties.length > 0) {
-      // 강북쪽 매물 확인
-      const northernProps = properties.filter(p => 
-        p.address?.includes('강북구') || 
-        p.address?.includes('도봉구') || 
-        p.address?.includes('노원구') || 
-        p.address?.includes('광진구') || 
-        p.address?.includes('성북구') || 
-        p.address?.includes('용산구')
-      );
-      console.log(`🌟 MapView 강북쪽 매물: ${northernProps.length}개`);
-      northernProps.slice(0, 3).forEach(p => {
-        console.log(`  - ${p.address} (${p.latitude}, ${p.longitude})`);
-      });
-      
-      setTimeout(() => fitToMarkers(), 1000); // 지도 로드 후 실행
-    }
-  }, [properties]);
+  // useEffect(() => {
+  //   if (properties.length > 0) {
+  //     
+  //     setTimeout(() => fitToMarkers(), 1000); // 지도 로드 후 실행
+  //   }
+  // }, [properties]);
 
   const getCurrentLocation = async () => {
     try {
@@ -228,11 +447,10 @@ const PropertyMapView = forwardRef(({
           });
         } else {
           // 사용자가 서울 외 지역에 있으면 서울 중심으로 유지
-          console.log('사용자가 서울 외 지역에 있어 서울 중심으로 유지합니다');
         }
       }
     } catch (error) {
-      console.log("Location error:", error);
+      // Location permission denied or unavailable
       // 에러시 서울로 고정
       setRegion({
         latitude: 37.5665,
@@ -275,9 +493,10 @@ const PropertyMapView = forwardRef(({
   };
 
   return (
-    <View style={styles.container}>
-      <MapView
-        ref={ref || mapRef}
+    <>
+      <View style={styles.container}>
+        <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={region}
@@ -287,6 +506,29 @@ const PropertyMapView = forwardRef(({
         showsScale={false}
         showsBuildings={false}
         showsTraffic={false}
+        onPress={() => {
+          // 마커 클릭 직후 100ms 이내이면 무시 (마커 클릭으로 간주)
+          const now = Date.now();
+          if (now - markerClickTime.current < 100) {
+            return;
+          }
+          
+          // 마커 선택 상태 해제 (애니메이션)
+          if (selectedMarkerId && markerScales.current[selectedMarkerId]) {
+            Animated.spring(markerScales.current[selectedMarkerId], {
+              toValue: 1,
+              useNativeDriver: true,
+              tension: 40,
+              friction: 7,
+            }).start();
+          }
+          setSelectedMarkerId(null);
+          
+          // 지도 배경 클릭 시 마커 선택 해제
+          if (onMarkerSelectionChange) {
+            onMarkerSelectionChange(null);
+          }
+        }}
         showsIndoors={false}
         loadingEnabled={true}
         mapType="standard"
@@ -299,10 +541,10 @@ const PropertyMapView = forwardRef(({
           setRegion(newRegion);
         }}
         onMapReady={() => {
-          console.log("지도 로드 완료");
-          if (properties.length > 0) {
-            setTimeout(() => fitToMarkers(), 500);
-          }
+          // 초기 지도 로드 시 자동 맞춤 비활성화 (서울 중심 유지)
+          // if (properties.length > 0) {
+          //   setTimeout(() => fitToMarkers(), 500);
+          // }
         }}
       >
         <CurrentLocationMarker />
@@ -311,13 +553,36 @@ const PropertyMapView = forwardRef(({
           <ClusterMarker
             key={cluster.properties.cluster 
               ? `cluster-${cluster.id || index}` 
-              : `marker-${cluster.properties.property.id}-${selectedPropertyId === cluster.properties.property.id ? 'selected' : 'unselected'}`}
+              : `building-${index}`}
             cluster={cluster}
-            onPress={() => handleClusterPress(cluster)}
           />
         ))}
       </MapView>
-    </View>
+      
+      {/* 건물 내 매물 리스트 모달 */}
+      {selectedBuilding && buildingProperties.length > 0 && (
+        <>
+          <BuildingClusterView
+            building={selectedBuilding}
+            properties={buildingProperties}
+            navigation={navigation}
+            onClose={() => {
+              setSelectedBuilding(null);
+              setBuildingProperties([]);
+              setSelectedMarkerId(null);
+              // 바텀시트 숨김 상태 알림
+              if (onBuildingModalStateChange) {
+                onBuildingModalStateChange(false);
+              }
+            }}
+            onSelectProperty={(property) => {
+              onMarkerPress(property);
+            }}
+          />
+        </>
+      )}
+      </View>
+    </>
   );
 });
 
@@ -366,14 +631,15 @@ const styles = StyleSheet.create({
     height: height,
   },
   houseMarkerContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderWidth: 2.5,
+    borderColor: "#2C2C2C",
+    overflow: 'visible',
   },
   selectedMarkerStyle: {
     backgroundColor: "#333333",
@@ -397,15 +663,63 @@ const styles = StyleSheet.create({
     borderColor: "white",
   },
   clusterMarkerContainer: {
-    backgroundColor: "#30D158",
+    backgroundColor: "#4A90E2",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
     borderColor: "#ffffff",
+    overflow: 'visible',
   },
   clusterText: {
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "bold",
+    marginTop: 2,
+  },
+  buildingMarkerContainer: {
+    backgroundColor: "#FF6600",
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#ffffff",
+    minWidth: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: 'visible',
+  },
+  multiPropertyMarker: {
+    backgroundColor: "#4A90E2",
+  },
+  buildingCountText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buildingPriceText: {
+    color: "#ffffff",
+    fontSize: 10,
+    marginTop: 2,
+  },
+  singlePropertyIcon: {
+    fontSize: 16,
+  },
+  countBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#4A90E2',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  countBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
 });

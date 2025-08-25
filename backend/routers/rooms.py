@@ -81,10 +81,10 @@ async def search_rooms_on_map(
     cursor = conn.cursor()
 
     try:
-        # 기본 쿼리
+        # 기본 쿼리 - floor 필드 추가
         query = """
             SELECT room_id, address, latitude, longitude, price_deposit, price_monthly,
-                   transaction_type, area, rooms, risk_score, favorite_count
+                   transaction_type, area, rooms, risk_score, favorite_count, floor
             FROM rooms
             WHERE is_active = 1
             AND latitude BETWEEN ? AND ?
@@ -127,6 +127,7 @@ async def search_rooms_on_map(
                 rooms=row[8] or 1,  # rooms 필드 추가
                 risk_score=row[9],
                 favorite_count=row[10],
+                floor=row[11] if len(row) > 11 else None,  # floor 필드 추가
             )
             rooms.append(room)
 
