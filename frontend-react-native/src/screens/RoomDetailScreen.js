@@ -53,9 +53,9 @@ export default function RoomDetailScreen({ route, navigation }) {
   const formatPrice = () => {
     if (!room) return '';
     return formatPriceUtil(
-      room.price_deposit, 
-      room.transaction_type, 
-      room.price_monthly, 
+      room.price_deposit,
+      room.transaction_type,
+      room.price_monthly,
       room.room_id || room.id
     );
   };
@@ -67,7 +67,7 @@ export default function RoomDetailScreen({ route, navigation }) {
         setIsFavorited(!isFavorited);
         return;
       }
-      
+
       if (isFavorited) {
         await ApiService.removeFavorite(id);
       } else {
@@ -124,7 +124,7 @@ export default function RoomDetailScreen({ route, navigation }) {
           )}
           keyExtractor={(item, index) => index.toString()}
         />
-        
+
         {/* 헤더 오버레이 */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
@@ -132,10 +132,10 @@ export default function RoomDetailScreen({ route, navigation }) {
           </TouchableOpacity>
           <View style={styles.headerRightButtons}>
             <TouchableOpacity onPress={toggleFavorite} style={styles.headerButton}>
-              <Ionicons 
-                name={isFavorited ? "heart" : "heart-outline"} 
-                size={24} 
-                color={isFavorited ? "#FF6600" : "#333"} 
+              <Ionicons
+                name={isFavorited ? "heart" : "heart-outline"}
+                size={24}
+                color={isFavorited ? "#FF6600" : "#333"}
               />
             </TouchableOpacity>
             <TouchableOpacity style={styles.headerButton}>
@@ -143,18 +143,18 @@ export default function RoomDetailScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* 이미지 카운터 */}
         <View style={styles.imageCounter}>
           <Text style={styles.imageCountText}>{currentImageIndex + 1}/{images.length}</Text>
         </View>
-        
+
         {/* 재생 버튼 */}
         <TouchableOpacity style={styles.playButton}>
           <Ionicons name="play" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
-      
+
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* 매물 기본 정보 */}
         <View style={styles.basicInfoSection}>
@@ -165,10 +165,10 @@ export default function RoomDetailScreen({ route, navigation }) {
               <Text style={styles.verificationText}>집주인 인증</Text>
             </View>
           </View>
-          
+
           <Text style={styles.price}>{formatPrice()}</Text>
           <Text style={styles.description}>{room?.description || '매물 설명이 없습니다.'}</Text>
-          
+
           <View style={styles.basicDetails}>
             <View style={styles.detailRowContainer}>
               <View style={styles.detailItem}>
@@ -200,7 +200,7 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
-        
+
         {/* 기본 정보 테이블 */}
         <View style={styles.basicInfoTable}>
           <Text style={styles.sectionTitle}>기본 정보</Text>
@@ -223,7 +223,7 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
-        
+
         {/* 상세 정보 테이블 */}
         <View style={styles.detailInfoTable}>
           <Text style={styles.sectionTitle}>상세 정보</Text>
@@ -234,7 +234,7 @@ export default function RoomDetailScreen({ route, navigation }) {
                 const addressParts = room?.address?.trim().split(' ').filter(part => part !== '');
                 const lastPart = addressParts?.pop();
                 // 마지막 부분이 단순히 동/가로 끝나는지 (예: "장충동1가") vs 건물명인지 (예: "비전빌라트2동") 구분
-                if (!lastPart || 
+                if (!lastPart ||
                     (lastPart?.endsWith('동') && lastPart?.length < 6 && /\d+동$/.test(lastPart)) ||
                     (lastPart?.endsWith('가') && lastPart?.length < 6)) {
                   return room?.room_id?.split('_')[2] || '건물명 정보 없음';
@@ -276,7 +276,7 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
-        
+
         {/* 집주인 정보 섹션 */}
         <View style={styles.landlordSection}>
           <View style={styles.landlordHeader}>
@@ -299,12 +299,12 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
           </View>
         </View>
-        
+
         {/* 계약서 확인하기 섹션 */}
         <View style={styles.contractSection}>
           <Text style={styles.sectionTitle}>이 매물 계약서 확인하기</Text>
           <View style={styles.contractPreview}>
-            <Image 
+            <Image
               source={{ uri: 'https://via.placeholder.com/300x400/f0f0f0/666?text=부동산임대차계약서' }}
               style={styles.contractImage}
               resizeMode="contain"
@@ -315,7 +315,7 @@ export default function RoomDetailScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {/* 찜한 사람들 */}
         <TouchableOpacity style={styles.favoritedUsersSection} onPress={handleViewFavoritedUsers}>
           <View style={styles.favoritedUsersHeader}>
@@ -327,11 +327,11 @@ export default function RoomDetailScreen({ route, navigation }) {
             <Ionicons name="chevron-forward" size={16} color="#666" />
           </View>
         </TouchableOpacity>
-        
+
         {/* 하단 여백 */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-      
+
       {/* 하단 고정 버튼 */}
       <View style={styles.bottomButtonContainer}>
         <TouchableOpacity style={styles.bottomButton} onPress={handleContactOwner}>
@@ -421,13 +421,20 @@ const styles = StyleSheet.create({
   },
   propertyHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 22,
+    gap: 12,
   },
   propertyId: {
     fontSize: 12,
     color: '#999',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    backgroundColor: '#f5f5f5',
+    borderColor: '#eee',
   },
   verificationBadge: {
     flexDirection: 'row',
@@ -657,7 +664,7 @@ const styles = StyleSheet.create({
   },
   bottomButton: {
     flex: 1,
-    backgroundColor: '#333',
+    backgroundColor: '#13AE86',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -669,7 +676,7 @@ const styles = StyleSheet.create({
   },
   bottomCallButton: {
     flex: 1,
-    backgroundColor: '#FF6600',
+    backgroundColor: '#000000',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',

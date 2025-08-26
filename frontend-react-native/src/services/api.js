@@ -376,10 +376,10 @@ class ApiService {
     return this.request(`/policies/recommendations?limit=${limit}&offset=${offset}`);
   }
 
-  async getPopularPolicies(limit = 10) {
-    const response = await this.request(`/policies/popular?limit=${limit}`);
-    // 새로운 형식이면 data 필드만 반환, 기존 형식이면 그대로 반환
-    return response && response.data ? response.data : response;
+  async getPopularPolicies(limit = 10, offset = 0) {
+    const response = await this.request(`/policies/popular?limit=${limit}&offset=${offset}`);
+    // 새로운 형식이면 전체 응답을 반환 (페이지네이션 정보 포함)
+    return response;
   }
 
   async recordPolicyView(policyId) {
@@ -464,6 +464,105 @@ class ApiService {
     return this.request(`/chat/rooms/${roomId}`, {
       method: 'DELETE',
     });
+  }
+
+  // 정책 챗봇 API
+  async chatWithPolicyBot({ message, user_context, streaming = false }) {
+    const endpoint = streaming ? '/api/policy-chat/chat/stream' : '/api/policy-chat/chat';
+    
+    if (streaming) {
+      // 스트리밍 응답 처리
+      return this.requestStream(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({
+          message,
+          user_context,
+        }),
+      });
+    } else {
+      // 일반 응답 처리
+      return this.request(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({
+          message,
+          user_context,
+        }),
+      });
+    }
+  }
+
+  async getPolicyChatStatus() {
+    return this.request('/api/policy-chat/status');
+  }
+
+  async getPolicyRecommendations(userContext) {
+    return this.request('/api/policy-chat/recommendations', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_context: userContext,
+      }),
+    });
+  }
+
+  // 스트리밍 응답 처리를 위한 헬퍼 메소드
+  async *requestStream(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const config = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/plain',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    if (this.authToken) {
+      config.headers.Authorization = `Bearer ${this.authToken}`;
+    }
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // React Native에서는 스트리밍을 지원하지 않으므로 전체 텍스트를 받아서 처리
+      const text = await response.text();
+      const lines = text.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') {
+            return;
+          }
+          
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              yield parsed.content;
+              // 약간의 지연으로 타이핑 효과
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            if (parsed.type === 'done') {
+              return;
+            }
+          } catch (parseError) {
+            // JSON 파싱 실패시 원본 데이터 반환
+            if (data.trim().length > 0) {
+              yield data;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('Streaming request failed:', error);
+      throw error;
+    }
   }
 }
 

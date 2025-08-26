@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import init_db
-from routers import auth, users, profile, rooms, favorites, policies, admin, contract_analysis, chat
+from routers import auth, users, profile, rooms, favorites, policies, admin, contract_analysis, chat, policy_chat
 from dotenv import load_dotenv
 
 # 환경변수 로드
@@ -36,6 +36,7 @@ app.include_router(policies.router)
 app.include_router(admin.router)
 app.include_router(contract_analysis.router, prefix="/contract")
 app.include_router(chat.router)
+app.include_router(policy_chat.router)
 
 
 @app.get("/")

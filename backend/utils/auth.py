@@ -50,9 +50,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # 안전한 딕셔너리 접근으로 KeyError 방지
+    user_id = payload.get("user_id") or payload.get("id")
+    email = payload.get("email", "")
+    
     return {
-        "id": payload["user_id"],
-        "email": payload["email"]
+        "id": user_id,
+        "email": email
     }
 
 async def get_optional_user(credentials: HTTPAuthorizationCredentials = None):
@@ -66,7 +70,11 @@ async def get_optional_user(credentials: HTTPAuthorizationCredentials = None):
     if payload is None:
         return None
     
+    # 안전한 딕셔너리 접근으로 KeyError 방지
+    user_id = payload.get("user_id") or payload.get("id")
+    email = payload.get("email", "")
+    
     return {
-        "id": payload["user_id"],
-        "email": payload["email"]
+        "id": user_id,
+        "email": email
     }

@@ -11,6 +11,7 @@ import ChevronDownIcon from "../components/ChevronDownIcon";
 import LocationIcon from "../components/LocationIcon";
 import CurrentLocationIcon from "../components/CurrentLocationIcon";
 import HeartIcon from "../components/HeartIcon";
+import ChatIcon from "../components/ChatIcon";
 
 export default function MapScreen({ navigation }) {
   const [rooms, setRooms] = useState([]);
@@ -98,6 +99,8 @@ export default function MapScreen({ navigation }) {
         price_monthly: room.price_monthly,
         favorite_count: room.favorite_count,
         risk_score: room.risk_score,
+        floor: room.floor,
+        rooms: room.rooms,
       }));
 
       // 실제 API 데이터만 사용
@@ -138,26 +141,26 @@ export default function MapScreen({ navigation }) {
         '아파트': ['아파트', 'apartment', '아파', '공동주택']
       };
       const keywords = typeKeywords[selectedFilterValues.type] || [];
-      
+
       // 더 유연한 매칭: 주소, 설명, 제목에서 검색하고 부분 매칭도 허용
       filteredRooms = filteredRooms.filter(room => {
         const searchText = `${room.address || ''} ${room.description || ''} ${room.title || ''}`.toLowerCase();
-        const hasKeyword = keywords.some(keyword => 
+        const hasKeyword = keywords.some(keyword =>
           searchText.includes(keyword.toLowerCase())
         );
-        
+
         // 키워드가 없으면 면적 기반으로도 추정
         if (!hasKeyword && selectedFilterValues.type === '원룸') {
           // 25㎡ 이하면 원룸으로 추정
           return room.area && parseFloat(room.area) <= 25;
         } else if (!hasKeyword && selectedFilterValues.type === '투룸') {
-          // 25-50㎡이면 투룸으로 추정  
+          // 25-50㎡이면 투룸으로 추정
           return room.area && parseFloat(room.area) > 25 && parseFloat(room.area) <= 50;
         }
-        
+
         return hasKeyword;
       });
-      
+
       console.log('🏢 매물 종류 필터 후 매물 수:', filteredRooms.length);
     }
 
@@ -178,11 +181,11 @@ export default function MapScreen({ navigation }) {
     }
 
     console.log('✅ 최종 필터링된 매물 수:', filteredRooms.length);
-    
+
     // 강제 리렌더링을 위해 새 배열 생성
     setRooms([...filteredRooms]);
     console.log('📍 MapScreen rooms 상태 업데이트:', filteredRooms.length);
-    
+
     // MapView 강제 리렌더링
     setMapKey(prev => prev + 1);
   };
@@ -311,8 +314,8 @@ export default function MapScreen({ navigation }) {
     for (const [type, keywords] of Object.entries(roomTypeKeywords)) {
       if (keywords.some(keyword => query.toLowerCase().includes(keyword.toLowerCase()))) {
         // 매물의 주소나 설명에서 해당 타입이 있는지 확인
-        const hasTypeInRoom = keywords.some(keyword => 
-          room.address.toLowerCase().includes(keyword.toLowerCase()) || 
+        const hasTypeInRoom = keywords.some(keyword =>
+          room.address.toLowerCase().includes(keyword.toLowerCase()) ||
           room.description.toLowerCase().includes(keyword.toLowerCase()) ||
           (room.title && room.title.toLowerCase().includes(keyword.toLowerCase()))
         );
@@ -324,7 +327,7 @@ export default function MapScreen({ navigation }) {
 
   const handleSearch = async (customQuery = null) => {
     const query = customQuery || searchQuery;
-    
+
     // 검색어가 비어있으면 전체 매물 표시
     if (!query.trim()) {
       setRooms(allRooms);
@@ -375,27 +378,31 @@ export default function MapScreen({ navigation }) {
         price_monthly: room.price_monthly,
         favorite_count: room.favorite_count,
         risk_score: room.risk_score,
+        floor: room.floor,
+        rooms: room.rooms,
       }));
 
-      let combinedResults = [...formattedResults];
+      // API 결과와 전체 매물에서 검색어에 맞는 매물들을 모두 합치기
+      const matchingRoomsFromAll = allRooms.filter(room =>
+        matchPropertyType(room, query) && (
+          room.address.toLowerCase().includes(query.toLowerCase()) ||
+          room.description.toLowerCase().includes(query.toLowerCase()) ||
+          room.transaction_type.includes(query) ||
+          (room.title && room.title.toLowerCase().includes(query.toLowerCase()))
+        )
+      );
+
+      // API 결과와 전체 매물 검색 결과를 병합하고 중복 제거
+      const apiResultIds = new Set(formattedResults.map(room => room.id));
+      const uniqueRooms = matchingRoomsFromAll.filter(room => !apiResultIds.has(room.id));
+
+      let combinedResults = [...formattedResults, ...uniqueRooms];
 
       // 매물 유형별 필터링 적용
       combinedResults = combinedResults.filter(room => matchPropertyType(room, query));
 
-      // 전체 매물에서도 매물 유형 검색 적용 (API 검색 결과가 없는 경우)
-      if (combinedResults.length === 0) {
-        combinedResults = allRooms.filter(room => 
-          matchPropertyType(room, query) && (
-            room.address.toLowerCase().includes(query.toLowerCase()) ||
-            room.description.toLowerCase().includes(query.toLowerCase()) ||
-            room.transaction_type.includes(query) ||
-            (room.title && room.title.toLowerCase().includes(query.toLowerCase()))
-          )
-        );
-      }
-
       setRooms(combinedResults);
-      
+
       // 검색 결과가 없을 때 처리
       if (combinedResults.length === 0) {
         Alert.alert('검색 결과 없음', `'${query}'에 대한 검색 결과를 찾을 수 없습니다.`);
@@ -555,19 +562,20 @@ export default function MapScreen({ navigation }) {
           </View>
 
           <View style={styles.cardRightSection}>
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={() => handleFavoriteToggle(selectedProperty)}
-            >
-              <Ionicons
-                name={selectedProperty.isFavorited ? "heart" : "heart-outline"}
-                size={20}
-                color={selectedProperty.isFavorited ? "#FF6600" : "#999"}
-              />
-            </TouchableOpacity>
-
-            <View style={styles.cardLikeCount}>
-              <Text style={styles.likeCountText}>{selectedProperty.favorite_count || 13}</Text>
+            <View style={styles.favoriteSection}>
+              <TouchableOpacity
+                style={styles.favoriteButton}
+                onPress={() => handleFavoriteToggle(selectedProperty)}
+              >
+                <Ionicons
+                  name={selectedProperty.isFavorited ? "heart" : "heart-outline"}
+                  size={20}
+                  color={selectedProperty.isFavorited ? "#FF6600" : "#999"}
+                />
+              </TouchableOpacity>
+              <View style={styles.cardLikeCount}>
+                <Text style={styles.likeCountText}>{selectedProperty.favorite_count || 13}</Text>
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -613,12 +621,12 @@ export default function MapScreen({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerLeft} />
         <Text style={styles.headerTitle}>매물 둘러보기</Text>
-        <TouchableOpacity style={styles.profileButton}>
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('ChatList')}
+        >
           <View style={styles.profileCircle}>
-            <View style={styles.speechBubble}>
-              <View style={styles.longLine} />
-              <View style={styles.shortLine} />
-            </View>
+            <ChatIcon size={21} color="#464646" />
           </View>
         </TouchableOpacity>
       </View>
@@ -647,7 +655,7 @@ export default function MapScreen({ navigation }) {
         {/* 최근 검색어 드롭다운 */}
         <View style={[
           styles.recentSearchDropdown,
-          { 
+          {
             opacity: showRecentSearches ? 1 : 0,
             pointerEvents: showRecentSearches ? 'auto' : 'none'
           }
@@ -769,7 +777,7 @@ export default function MapScreen({ navigation }) {
                     };
                     setSelectedFilterValues(newFilterValues);
                     setActiveFilter(null);
-                    
+
                     // 필터 변경 후 즉시 적용 (useEffect 대기 없이)
                     setTimeout(() => {
                       console.log('🔄 필터 즉시 적용');
@@ -806,8 +814,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 3,
+    paddingBottom: 6,
   },
   headerLeft: {
     width: 40,
@@ -893,6 +901,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+    zIndex: 1,
   },
   filterScrollContent: {
     flexDirection: 'row',
@@ -909,7 +923,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   filterButtonText: {
     fontSize: 12,
@@ -955,8 +969,8 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   heartButton: {
-    width: 44,
-    height: 44,
+    width: 35,
+    height: 35,
     borderRadius: 22,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
@@ -969,8 +983,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   locationButton: {
-    width: 44,
-    height: 44,
+    width: 35,
+    height: 35,
     borderRadius: 22,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
@@ -998,19 +1012,24 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'space-between',
     padding: 12,
   },
   cardRightSection: {
     alignItems: 'center',
     justifyContent: 'flex-start',
     marginLeft: 8,
+    height: 100,
+  },
+  favoriteSection: {
+    gap: 0,
   },
   cardImageContainer: {
     marginRight: 12,
   },
   cardImagePlaceholder: {
-    width: 80,
-    height: 60,
+    width: 100,
+    height: 100,
     borderRadius: 8,
     backgroundColor: '#f5f5f5',
     alignItems: 'center',
@@ -1019,6 +1038,8 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
     paddingVertical: 2,
+    height: 100,
+    justifyContent: 'space-between',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1059,8 +1080,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   favoriteButton: {
-    padding: 4,
-    marginBottom: 8,
+    borderRadius: 50,
+    backgroundColor: '#f5f5f5',
+    padding: 5,
+    marginBottom: 3,
   },
   cardLikeCount: {
     alignItems: 'center',
