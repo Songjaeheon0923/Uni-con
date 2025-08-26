@@ -11,10 +11,32 @@ import { normalizePrice } from '../utils/priceUtils';
 const { width, height } = Dimensions.get("window");
 
 // PropertyMarker 컴포넌트를 MapView 밖으로 이동
-const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
+const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerScales }) => {
   const isSelected = selectedPropertyId === property.id;
+  const markerId = `property-${property.id}`;
+
+  // 애니메이션 스케일 초기화
+  if (!markerScales.current[markerId]) {
+    markerScales.current[markerId] = new Animated.Value(1);
+  }
 
   const handlePress = () => {
+    // 클릭 애니메이션
+    Animated.sequence([
+      Animated.spring(markerScales.current[markerId], {
+        toValue: 1.2,
+        useNativeDriver: true,
+        tension: 40,
+        friction: 7,
+      }),
+      Animated.spring(markerScales.current[markerId], {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 40,
+        friction: 7,
+      }),
+    ]).start();
+
     if (onMarkerPress) {
       onMarkerPress(property);
     }
@@ -24,7 +46,7 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
   // 좌표를 숫자로 강제 변환
   const lat = parseFloat(property.latitude);
   const lng = parseFloat(property.longitude);
-  
+
   // 변환 후 유효성 검사
   if (isNaN(lat) || isNaN(lng)) {
     return null;
@@ -40,24 +62,29 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress }) => {
       tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
     >
-      <View style={[
-        styles.houseMarkerContainer,
-        isSelected ? {
-          backgroundColor: "#FF0000",
-          borderColor: "#ffffff",
-          borderWidth: 3,
-          transform: [{ scale: 1.5 }]
-        } : {
-          backgroundColor: "#FF6600",
-          borderWidth: 2,
-          borderColor: "#000000"
-        }
-      ]}>
-        <Text style={{ 
-          color: isSelected ? "#ffffff" : "#000000",
-          fontSize: 12,
-          fontWeight: 'bold'
-        }}>📍</Text>
+      <View style={{
+        width: 70,
+        height: 70,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'visible',
+      }}>
+        <Animated.View style={[
+          styles.houseMarkerContainer,
+          {
+            transform: [{ scale: markerScales.current[markerId] }],
+            backgroundColor: isSelected ? "#FF0000" : "#FF6600",
+            borderColor: isSelected ? "#ffffff" : "#000000",
+            borderWidth: isSelected ? 2 : 1.5,
+            overflow: 'visible',
+          }
+        ]}>
+          <Text style={{
+            color: isSelected ? "#ffffff" : "#000000",
+            fontSize: 12,
+            fontWeight: 'bold'
+          }}>📍</Text>
+        </Animated.View>
       </View>
     </Marker>
   );
@@ -71,7 +98,7 @@ const PropertyMapView = forwardRef(({
   onBuildingModalStateChange, // 바텀시트 상태 변경 콜백 추가
   onMarkerSelectionChange, // 마커 선택 상태 변경 콜백 추가
 }, ref) => {
-  
+
   // 디버깅: MapView가 받는 properties 개수 확인
   console.log('🗺️ MapView 받은 properties 개수:', properties.length);
   const [region, setRegion] = useState({
@@ -85,7 +112,7 @@ const PropertyMapView = forwardRef(({
   const [buildingProperties, setBuildingProperties] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState(null);
   const mapRef = useRef(null);
-  
+
   // forwardRef로 외부 ref에도 mapRef를 연결
   useEffect(() => {
     if (ref) {
@@ -98,7 +125,7 @@ const PropertyMapView = forwardRef(({
   }, [ref, mapRef.current]);
   const markerScales = useRef({});
   const markerClickTime = useRef(0);
-  
+
   // 건물별로 그룹화
   const buildingGroups = useMemo(() => {
     const groups = {};
@@ -107,9 +134,9 @@ const PropertyMapView = forwardRef(({
       let buildingKey = property.address;
       // 호수 제거
       buildingKey = buildingKey.replace(/\d+호/g, '');
-      // 층수 정보 제거  
+      // 층수 정보 제거
       buildingKey = buildingKey.replace(/\d+층/g, '');
-      
+
       if (!groups[buildingKey]) {
         groups[buildingKey] = {
           buildingAddress: buildingKey,
@@ -121,16 +148,16 @@ const PropertyMapView = forwardRef(({
           count: 0
         };
       }
-      
+
       // 가격을 만원 단위로 정규화하여 비교
       const normalizedPrice = normalizePrice(property.price_deposit, property.room_id, property.transaction_type);
-      
+
       groups[buildingKey].properties.push(property);
       groups[buildingKey].count++;
       groups[buildingKey].minPrice = Math.min(groups[buildingKey].minPrice, normalizedPrice);
       groups[buildingKey].maxPrice = Math.max(groups[buildingKey].maxPrice, normalizedPrice);
     });
-    
+
     return groups;
   }, [properties]);
 
@@ -143,7 +170,7 @@ const PropertyMapView = forwardRef(({
       extent: 512,
       nodeSize: 64,
     });
-    
+
     // 건물 그룹을 GeoJSON 포인트로 변환
     const points = Object.values(buildingGroups)
       .filter(group => group.latitude && group.longitude)
@@ -157,15 +184,15 @@ const PropertyMapView = forwardRef(({
           coordinates: [group.longitude, group.latitude],
         },
       }));
-    
+
     cluster.load(points);
     return cluster;
   }, [buildingGroups]);
-  
+
   // 현재 줌 레벨에 따른 클러스터 계산
   const clusteredMarkers = useMemo(() => {
     if (!region || !supercluster) return [];
-    
+
     const zoom = Math.round(Math.log2(360 / region.latitudeDelta));
     const bbox = [
       region.longitude - region.longitudeDelta / 2,
@@ -173,7 +200,7 @@ const PropertyMapView = forwardRef(({
       region.longitude + region.longitudeDelta / 2,
       region.latitude + region.latitudeDelta / 2,
     ];
-    
+
     return supercluster.getClusters(bbox, Math.max(0, Math.min(16, zoom)));
   }, [region, supercluster]);
 
@@ -181,7 +208,7 @@ const PropertyMapView = forwardRef(({
   const ClusterMarker = ({ cluster }) => {
     const [longitude, latitude] = cluster.geometry.coordinates;
     const { cluster: isCluster, point_count: pointCount, buildingGroup } = cluster.properties;
-    
+
     // 실제 클러스터인지 확인 (point_count가 있거나 cluster가 true인 경우)
     const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
 
@@ -189,11 +216,11 @@ const PropertyMapView = forwardRef(({
       // 지역 클러스터 (여러 건물)
       const clusterId = `cluster-${latitude}-${longitude}`;
       const isSelected = selectedMarkerId === clusterId;
-      
+
       if (!markerScales.current[clusterId]) {
         markerScales.current[clusterId] = new Animated.Value(1);
       }
-      
+
       return (
         <Marker
           coordinate={{ latitude, longitude }}
@@ -213,7 +240,7 @@ const PropertyMapView = forwardRef(({
                 friction: 7,
               }),
             ]).start();
-            
+
             // 클러스터 확대
             handleClusterPress(cluster);
           }}
@@ -222,8 +249,8 @@ const PropertyMapView = forwardRef(({
         >
           <View style={{
             // 애니메이션을 위한 외부 컨테이너 (border 여유 공간 포함)
-            width: Math.max(56, Math.min(86, 56 + pointCount / 20)), // border 3px * 2 = 6px 추가
-            height: Math.max(56, Math.min(86, 56 + pointCount / 20)),
+            width: Math.max(62, Math.min(96, 62 + pointCount / 20)), // border 3px * 2 = 6px 추가
+            height: Math.max(62, Math.min(96, 62 + pointCount / 20)),
             alignItems: 'center',
             justifyContent: 'center',
           }}>
@@ -231,20 +258,20 @@ const PropertyMapView = forwardRef(({
               styles.clusterMarkerContainer,
               {
                 transform: [{ scale: markerScales.current[clusterId] }],
-                backgroundColor: '#4A90E2',
-                width: Math.max(50, Math.min(80, 50 + pointCount / 20)),
-                height: Math.max(50, Math.min(80, 50 + pointCount / 20)),
-                borderRadius: Math.max(25, Math.min(40, 25 + pointCount / 20))
+                backgroundColor: '#10B585',
+                width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+                height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+                borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
               }
             ]}>
-            <HomeIcon 
-              size={Math.max(24, Math.min(36, 24 + pointCount / 50))} 
+            <HomeIcon
+              size={Math.max(26, Math.min(38, 26 + pointCount / 80))}
               color="#FFFFFF"
             />
             <Text style={[
               styles.clusterText,
-              { fontSize: Math.max(14, Math.min(20, 14 + pointCount / 50)) }
-            ]}>+{pointCount}</Text>
+              { fontSize: Math.max(11, Math.min(16, 11 + pointCount / 80)) }
+            ]}>{pointCount}</Text>
             </Animated.View>
           </View>
         </Marker>
@@ -257,21 +284,21 @@ const PropertyMapView = forwardRef(({
       const hasMultiple = group.count > 1;
       const markerId = `building-${group.buildingAddress}`;
       const isSelected = selectedMarkerId === markerId;
-      
+
       // 애니메이션 스케일 초기화
       if (!markerScales.current[markerId]) {
         markerScales.current[markerId] = new Animated.Value(1);
       }
-      
+
       const handleMarkerPress = () => {
         // 마커 클릭 시간 기록
         markerClickTime.current = Date.now();
-        
+
         // 이미 선택된 마커를 다시 클릭한 경우 무시
         if (selectedMarkerId === markerId) {
           return;
         }
-        
+
         // 이전 선택 해제
         if (selectedMarkerId && markerScales.current[selectedMarkerId]) {
           Animated.spring(markerScales.current[selectedMarkerId], {
@@ -281,26 +308,26 @@ const PropertyMapView = forwardRef(({
             friction: 7,
           }).start();
         }
-        
+
         // 새 마커 선택
         setSelectedMarkerId(markerId);
-        
+
         // 선택 애니메이션
         Animated.sequence([
           Animated.spring(markerScales.current[markerId], {
-            toValue: 1.3,
+            toValue: 1.2,
             useNativeDriver: true,
             tension: 40,
             friction: 7,
           }),
           Animated.spring(markerScales.current[markerId], {
-            toValue: 1.15,
+            toValue: 1.1,
             useNativeDriver: true,
             tension: 40,
             friction: 7,
           }),
         ]).start();
-        
+
         if (hasMultiple) {
           // 여러 매물이 있는 건물 - 모달 표시
           setSelectedBuilding(group.buildingAddress);
@@ -314,7 +341,7 @@ const PropertyMapView = forwardRef(({
           onMarkerPress(group.properties[0]);
         }
       };
-      
+
       return (
         <Marker
           coordinate={{ latitude: group.latitude, longitude: group.longitude }}
@@ -322,27 +349,36 @@ const PropertyMapView = forwardRef(({
           tracksViewChanges={true}
           anchor={{ x: 0.5, y: 0.5 }}
         >
-          <Animated.View style={[
-            styles.houseMarkerContainer,
-            {
-              transform: [{ scale: markerScales.current[markerId] }],
-              backgroundColor: isSelected ? '#2C2C2C' : '#FFFFFF',
-              borderColor: isSelected ? '#FFFFFF' : '#2C2C2C',
-            }
-          ]}>
-            <HomeIcon 
-              size={24} 
-              color={isSelected ? '#FFFFFF' : '#2C2C2C'}
-            />
-            {hasMultiple && (
-              <View style={[
-                styles.countBadge,
-                { backgroundColor: isSelected ? '#FF6600' : '#4A90E2' }
-              ]}>
-                <Text style={styles.countBadgeText}>{group.count}</Text>
-              </View>
-            )}
-          </Animated.View>
+          <View style={{
+            width: 70,
+            height: 70,
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'visible',
+          }}>
+            <Animated.View style={[
+              styles.houseMarkerContainer,
+              {
+                transform: [{ scale: markerScales.current[markerId] }],
+                backgroundColor: isSelected ? '#2C2C2C' : '#FFFFFF',
+                borderColor: isSelected ? '#FFFFFF' : '#2C2C2C',
+                overflow: 'visible',
+              }
+            ]}>
+              <HomeIcon
+                size={24}
+                color={isSelected ? '#FFFFFF' : '#2C2C2C'}
+              />
+              {hasMultiple && (
+                <View style={[
+                  styles.countBadge,
+                  { backgroundColor: isSelected ? '#FF6600' : '#4A90E2' }
+                ]}>
+                  <Text style={styles.countBadgeText}>{group.count}</Text>
+                </View>
+              )}
+            </Animated.View>
+          </View>
         </Marker>
       );
     }
@@ -354,7 +390,7 @@ const PropertyMapView = forwardRef(({
   const handleClusterPress = (cluster) => {
     const { cluster: isCluster, point_count: pointCount } = cluster.properties;
     const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
-    
+
     console.log('handleClusterPress:', {
       isCluster,
       pointCount,
@@ -362,23 +398,23 @@ const PropertyMapView = forwardRef(({
       clusterId: cluster.id,
       hasMapRef: !!mapRef.current
     });
-    
+
     if (!mapRef.current || !isRealCluster || !cluster.id) {
       console.log('Early return from handleClusterPress');
       return;
     }
-    
+
     console.log('Proceeding with cluster expansion...');
-    
+
     // 현재 클러스터에 포함된 모든 포인트 가져오기
     const clusterId = cluster.id;
     const clusterChildren = supercluster.getLeaves(clusterId, Infinity);
-    
+
     if (clusterChildren && clusterChildren.length > 0) {
       // 클러스터 내 모든 포인트의 경계 계산
       let minLat = Infinity, maxLat = -Infinity;
       let minLng = Infinity, maxLng = -Infinity;
-      
+
       clusterChildren.forEach(child => {
         const [lng, lat] = child.geometry.coordinates;
         minLat = Math.min(minLat, lat);
@@ -386,22 +422,22 @@ const PropertyMapView = forwardRef(({
         minLng = Math.min(minLng, lng);
         maxLng = Math.max(maxLng, lng);
       });
-      
+
       // 경계에 여유 공간 추가 (10%)
       const latPadding = (maxLat - minLat) * 0.1;
       const lngPadding = (maxLng - minLng) * 0.1;
-      
+
       const newLatitudeDelta = (maxLat - minLat) + (latPadding * 2);
       const newLongitudeDelta = (maxLng - minLng) + (lngPadding * 2);
-      
+
       // 중심점 계산
       const centerLat = (minLat + maxLat) / 2;
       const centerLng = (minLng + maxLng) / 2;
-      
+
       // 최소/최대 줌 레벨 제한
       const finalLatDelta = Math.max(0.005, Math.min(0.5, newLatitudeDelta));
       const finalLngDelta = Math.max(0.004, Math.min(0.4, newLongitudeDelta));
-      
+
       mapRef.current.animateToRegion({
         latitude: centerLat,
         longitude: centerLng,
@@ -417,7 +453,7 @@ const PropertyMapView = forwardRef(({
 
   // useEffect(() => {
   //   if (properties.length > 0) {
-  //     
+  //
   //     setTimeout(() => fitToMarkers(), 1000); // 지도 로드 후 실행
   //   }
   // }, [properties]);
@@ -436,9 +472,9 @@ const PropertyMapView = forwardRef(({
         };
         setUserLocation(userCoords);
         // 사용자 위치가 서울 지역인지 확인
-        const isInSeoul = userCoords.latitude >= 37.4 && userCoords.latitude <= 37.7 && 
+        const isInSeoul = userCoords.latitude >= 37.4 && userCoords.latitude <= 37.7 &&
                          userCoords.longitude >= 126.8 && userCoords.longitude <= 127.2;
-        
+
         if (isInSeoul) {
           setRegion({
             ...userCoords,
@@ -512,7 +548,7 @@ const PropertyMapView = forwardRef(({
           if (now - markerClickTime.current < 100) {
             return;
           }
-          
+
           // 마커 선택 상태 해제 (애니메이션)
           if (selectedMarkerId && markerScales.current[selectedMarkerId]) {
             Animated.spring(markerScales.current[selectedMarkerId], {
@@ -523,7 +559,7 @@ const PropertyMapView = forwardRef(({
             }).start();
           }
           setSelectedMarkerId(null);
-          
+
           // 지도 배경 클릭 시 마커 선택 해제
           if (onMarkerSelectionChange) {
             onMarkerSelectionChange(null);
@@ -536,7 +572,7 @@ const PropertyMapView = forwardRef(({
         pitchEnabled={false}
         scrollEnabled={true}
         zoomEnabled={true}
-        customMapStyle={zigbangMapStyle}
+        customMapStyle={naverMapStyle}
         onRegionChangeComplete={(newRegion) => {
           setRegion(newRegion);
         }}
@@ -551,14 +587,14 @@ const PropertyMapView = forwardRef(({
 
         {clusteredMarkers.map((cluster, index) => (
           <ClusterMarker
-            key={cluster.properties.cluster 
-              ? `cluster-${cluster.id || index}` 
+            key={cluster.properties.cluster
+              ? `cluster-${cluster.id || index}`
               : `building-${index}`}
             cluster={cluster}
           />
         ))}
       </MapView>
-      
+
       {/* 건물 내 매물 리스트 모달 */}
       {selectedBuilding && buildingProperties.length > 0 && (
         <>
@@ -588,17 +624,27 @@ const PropertyMapView = forwardRef(({
 
 export default PropertyMapView;
 
-// 직방 스타일 지도 테마
-const zigbangMapStyle = [
+// 네이버 지도 스타일 테마
+const naverMapStyle = [
   {
     featureType: "all",
     elementType: "geometry",
-    stylers: [{ color: "#f5f5f5" }],
+    stylers: [{ color: "#f8f9fa" }],
   },
   {
     featureType: "all",
     elementType: "labels.text.fill",
-    stylers: [{ color: "#616161" }],
+    stylers: [{ color: "#4a4a4a" }],
+  },
+  {
+    featureType: "all",
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#ffffff" }, { weight: 3 }],
+  },
+  {
+    featureType: "administrative",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#c9c9c9" }, { weight: 0.5 }],
   },
   {
     featureType: "road",
@@ -608,17 +654,92 @@ const zigbangMapStyle = [
   {
     featureType: "road",
     elementType: "geometry.stroke",
+    stylers: [{ color: "#d1d1d1" }, { weight: 1 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#fff8f0" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#ffb380" }, { weight: 1.5 }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#ff9966" }],
+  },
+  {
+    featureType: "road.arterial",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "road.arterial",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#b8b8b8" }],
+  },
+  {
+    featureType: "road.local",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "road.local",
+    elementType: "geometry.stroke",
     stylers: [{ color: "#e0e0e0" }],
   },
   {
     featureType: "water",
     elementType: "geometry",
-    stylers: [{ color: "#e3f2fd" }],
+    stylers: [{ color: "#e6f3ff" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#4d94ff" }],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#f8faf8" }],
+  },
+  {
+    featureType: "landscape.natural",
+    elementType: "geometry",
+    stylers: [{ color: "#f0f8f0" }],
   },
   {
     featureType: "poi",
-    elementType: "all",
-    stylers: [{ visibility: "off" }],
+    elementType: "geometry",
+    stylers: [{ color: "#f8f8f8" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#e8f5e8" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "labels",
+    stylers: [{ visibility: "simplified" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#666666" }],
+  },
+  {
+    featureType: "transit",
+    elementType: "geometry",
+    stylers: [{ color: "#e6e6e6" }],
+  },
+  {
+    featureType: "transit.line",
+    elementType: "geometry",
+    stylers: [{ color: "#0066cc" }],
   },
 ];
 
@@ -637,7 +758,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2.5,
+    borderWidth: 1.5,
     borderColor: "#2C2C2C",
     overflow: 'visible',
   },
@@ -672,7 +793,7 @@ const styles = StyleSheet.create({
   },
   clusterText: {
     color: "#ffffff",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
     marginTop: 2,
   },

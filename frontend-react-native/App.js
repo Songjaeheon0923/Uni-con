@@ -35,6 +35,7 @@ import FavoriteRoomsScreen from "./src/screens/FavoriteRoomsScreen";
 import UserProfileScreen from "./src/screens/UserProfileScreen";
 import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
 import ChatListScreen from "./src/screens/ChatListScreen";
+import PolicyChatbotScreen from "./src/screens/PolicyChatbotScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -47,73 +48,80 @@ function HomeStack({ user }) {
         headerShown: false,  // 헤더 완전히 숨기기
       }}
     >
-      <Stack.Screen 
-        name="HomeMain" 
+      <Stack.Screen
+        name="HomeMain"
         options={{
           headerShown: false,
         }}
       >
         {(props) => <HomeScreen {...props} user={user} />}
       </Stack.Screen>
-      <Stack.Screen 
-        name="Chat" 
+      <Stack.Screen
+        name="Chat"
         component={ChatScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ContractVerification" 
+      <Stack.Screen
+        name="ContractVerification"
         component={ContractVerificationScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ContractCamera" 
+      <Stack.Screen
+        name="ContractCamera"
         component={ContractCameraScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ContractResult" 
+      <Stack.Screen
+        name="ContractResult"
         component={ContractResultScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="RoomDetail" 
+      <Stack.Screen
+        name="RoomDetail"
         component={RoomDetailScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="LandlordInfo" 
+      <Stack.Screen
+        name="LandlordInfo"
         component={LandlordInfoScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ContractView" 
+      <Stack.Screen
+        name="ContractView"
         component={ContractViewScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="FavoritedUsers" 
+      <Stack.Screen
+        name="FavoritedUsers"
         component={FavoritedUsersScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="UserProfile" 
+      <Stack.Screen
+        name="UserProfile"
         component={UserProfileScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="PolicyChatbot"
+        component={PolicyChatbotScreen}
         options={{
           headerShown: false,
         }}
@@ -163,7 +171,7 @@ function ProfileStack({ user, onLogout }) {
         headerShown: false,
       }}
     >
-      <Stack.Screen 
+      <Stack.Screen
         name="ProfileMain"
         options={{
           headerShown: false,
@@ -171,22 +179,22 @@ function ProfileStack({ user, onLogout }) {
       >
         {(props) => <ProfileScreen {...props} user={user} onLogout={onLogout} />}
       </Stack.Screen>
-      <Stack.Screen 
-        name="PersonalityTest" 
+      <Stack.Screen
+        name="PersonalityTest"
         component={PersonalityTestScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="PersonalityResult" 
+      <Stack.Screen
+        name="PersonalityResult"
         component={PersonalityResultScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="MatchResults" 
+      <Stack.Screen
+        name="MatchResults"
         component={MatchResultsScreen}
         options={{
           headerShown: false,
@@ -213,7 +221,7 @@ function MainTabs() {
             return <Ionicons name={iconName} size={28} color={color} />;
           }
         },
-        tabBarActiveTintColor: '#FF6600',
+        tabBarActiveTintColor: '#10B585',
         tabBarInactiveTintColor: '#C0C0C0',
         tabBarStyle: {
           height: 100,
@@ -221,8 +229,11 @@ function MainTabs() {
           paddingTop: 15,
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -255,50 +266,50 @@ function MainApp() {
       }}
     >
       <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen 
-        name="RoommateChoice" 
+      <Stack.Screen
+        name="RoommateChoice"
         component={RoommateChoiceScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="RoommateSearch" 
+      <Stack.Screen
+        name="RoommateSearch"
         component={RoommateSearchScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="PersonalityTest" 
+      <Stack.Screen
+        name="PersonalityTest"
         component={PersonalityTestScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="PersonalityResult" 
+      <Stack.Screen
+        name="PersonalityResult"
         component={PersonalityResultScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="MatchResults" 
+      <Stack.Screen
+        name="MatchResults"
         component={MatchResultsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ChatList" 
+      <Stack.Screen
+        name="ChatList"
         component={ChatListScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="Chat" 
+      <Stack.Screen
+        name="Chat"
         component={ChatScreen}
         options={{
           headerShown: false,
@@ -314,7 +325,7 @@ function AppContent() {
   useEffect(() => {
     // API 서비스에 401 에러 핸들러 등록
     api.setAuthErrorHandler(handleUnauthorized);
-    
+
     // 앱 시작 시 즉시 토큰 검증
     if (isAuthenticated && !isLoading) {
       validateToken();

@@ -26,14 +26,14 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
   useEffect(() => {
     if (visible && room) {
       console.log('🏠 Modal room data:', room); // 디버그용
-      
-      // 모달 슬라이드 업 애니메이션 
+
+      // 모달 슬라이드 업 애니메이션
       Animated.timing(slideAnim, {
         toValue: 0, // 최종 위치로 슬라이드 업
         duration: 300,
         useNativeDriver: true,
       }).start();
-      
+
       loadRoomData();
     } else {
       // 모달 슬라이드 다운 애니메이션
@@ -71,8 +71,8 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
       setFavoriteUsers(favoriteUsers.filter(u => u.user_id !== String(user.id)));
     } else {
       setIsFavorited(true);
-      const newUser = { 
-        user_id: String(user.id), 
+      const newUser = {
+        user_id: String(user.id),
         nickname: user.name || "김대학생",
         age: 22,
         gender: "Unknown",
@@ -104,7 +104,7 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
           </View>
         </View>
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.chatButton}
         onPress={() => onNavigateToChat(item)}
       >
@@ -122,7 +122,7 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
       animationType="none"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.backdrop}
         activeOpacity={1}
         onPress={handleBackdropPress}
@@ -131,7 +131,7 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             {/* 드래그 핸들 */}
             <View style={styles.dragHandle} />
-            
+
             {/* 헤더 */}
             <View style={styles.header}>
               <Text style={styles.headerTitle}>매물 정보</Text>
@@ -144,9 +144,9 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
               {/* 매물 기본 정보 */}
               <View style={styles.roomInfo}>
                 <View style={styles.roomImagePlaceholder}>
-                  <HomeIcon size={50} color="#ccc" />
+                  <HomeIcon size={80} color="#ccc" />
                 </View>
-                
+
                 <View style={styles.roomDetails}>
                   <Text style={styles.roomType}>
                     {room?.rooms === 1 ? '원룸' : room?.rooms === 2 ? '투룸' : '다가구'}
@@ -167,28 +167,28 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
               {/* 찜하기 & 찜한 사람들 */}
               <View style={styles.favoriteSection}>
                 <TouchableOpacity style={styles.favoriteButton} onPress={toggleFavorite}>
-                  <Ionicons 
-                    name={isFavorited ? "heart" : "heart-outline"} 
-                    size={24} 
-                    color={isFavorited ? "#ff4757" : "#666"} 
+                  <Ionicons
+                    name={isFavorited ? "heart" : "heart-outline"}
+                    size={24}
+                    color={isFavorited ? "#ff4757" : "#666"}
                   />
                   <Text style={styles.favoriteButtonText}>
                     찜하기 ({favoriteUsers.length})
                   </Text>
                 </TouchableOpacity>
-                
+
                 {favoriteUsers.length > 0 && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.showFavoritesButton}
                     onPress={() => setShowFavoriteUsers(!showFavoriteUsers)}
                   >
                     <Text style={styles.showFavoritesText}>
                       찜한 사람들 {showFavoriteUsers ? '숨기기' : '보기'}
                     </Text>
-                    <Ionicons 
-                      name={showFavoriteUsers ? "chevron-up" : "chevron-down"} 
-                      size={16} 
-                      color="#FF6600" 
+                    <Ionicons
+                      name={showFavoriteUsers ? "chevron-up" : "chevron-down"}
+                      size={16}
+                      color="#FF6600"
                     />
                   </TouchableOpacity>
                 )}

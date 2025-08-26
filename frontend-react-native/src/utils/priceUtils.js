@@ -42,7 +42,14 @@ export const formatPrice = (price, transactionType, monthlyPrice = 0, roomId = '
   if (isNaN(numericPrice)) return '가격 정보 없음';
   
   // 데이터 소스별 단위 정규화
-  const normalizedPrice = normalizePrice(numericPrice, roomId, transactionType);
+  let normalizedPrice = normalizePrice(numericPrice, roomId, transactionType);
+  
+  // 비정상적으로 큰 값 처리 (100만 만원 = 1조원 이상은 오류로 간주)
+  if (normalizedPrice > 1000000) {
+    console.warn('비정상적으로 큰 가격값 감지:', normalizedPrice, '원본:', numericPrice, 'roomId:', roomId);
+    // 만약 원 단위로 잘못 들어왔다면 만원 단위로 변환
+    normalizedPrice = Math.floor(numericPrice / 10000);
+  }
   
   if (transactionType === '월세') {
     const normalizedMonthly = normalizePrice(monthlyPrice, roomId, transactionType);
@@ -62,7 +69,7 @@ export const formatPrice = (price, transactionType, monthlyPrice = 0, roomId = '
         return `${man}만원`;
       }
     } else {
-      return `${normalizedPrice}만원`;
+      return `${Math.floor(normalizedPrice)}만원`;
     }
   }
 };

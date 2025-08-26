@@ -103,6 +103,7 @@ async def get_policy_recommendations(
 @router.get("/popular")
 async def get_popular_policies(
     limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
     region: Optional[str] = Query(None, description="지역 필터"),
     category: Optional[str] = Query(None, description="카테고리 필터")
 ):
@@ -127,7 +128,7 @@ async def get_popular_policies(
                    view_count, created_at
             FROM policies
             WHERE is_active = 1
-            ORDER BY view_count DESC, created_at DESC LIMIT {limit}
+            ORDER BY view_count DESC, created_at DESC LIMIT {limit} OFFSET {offset}
         """
         cursor.execute(query)
         policies = cursor.fetchall()
@@ -162,7 +163,7 @@ async def get_popular_policies(
         return {
             "data": result,
             "total_count": total_count,
-            "page": 1,  # 인기 정책은 페이지네이션 미지원이므로 항상 1
+            "page": (offset // limit) + 1,
             "total_pages": (total_count + limit - 1) // limit
         }
     except Exception as e:

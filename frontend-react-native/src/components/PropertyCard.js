@@ -20,15 +20,15 @@ const PropertyCard = ({ property, onPress, onFavorite, isFavorited = false }) =>
           <Text style={styles.priceText}>
             {formatPrice(property.price_deposit, property.transaction_type, property.price_monthly, property.room_id || property.id)}
           </Text>
-          
+
           <Text style={styles.detailText}>
             {getRoomType(property.area, property.rooms)} | {formatArea(property.area)} | {formatFloor(property.floor)}
           </Text>
-          
+
           <Text style={styles.addressText} numberOfLines={1}>
             {property.address}
           </Text>
-          
+
           {/* 집주인 인증 뱃지 */}
           <View style={styles.badgeContainer}>
             <View style={styles.verifiedBadge}>
@@ -39,14 +39,14 @@ const PropertyCard = ({ property, onPress, onFavorite, isFavorited = false }) =>
         </View>
 
         {/* 즐겨찾기 버튼 */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.favoriteButton}
           onPress={() => onFavorite && onFavorite(property)}
         >
-          <Ionicons 
-            name={isFavorited ? "heart" : "heart-outline"} 
-            size={24} 
-            color={isFavorited ? "#FF6B6B" : "#999"} 
+          <Ionicons
+            name={isFavorited ? "heart" : "heart-outline"}
+            size={24}
+            color={isFavorited ? "#FF6B6B" : "#999"}
           />
         </TouchableOpacity>
       </View>
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   placeholderImage: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
     alignItems: 'center',

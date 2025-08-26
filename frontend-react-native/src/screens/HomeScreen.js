@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "../components/HomeIcon";
+import PeopleIcon from "../components/PeopleIcon";
+import DocumentIcon from "../components/DocumentIcon";
+import ChatIcon from "../components/ChatIcon";
 import * as Location from 'expo-location';
 import ApiService from "../services/api";
 import RoomDetailModal from "../components/RoomDetailModal";
@@ -33,6 +36,9 @@ export default function HomeScreen({ navigation, user }) {
   const [policyPage, setPolicyPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const scrollViewRef = useRef(null);
+  const policyNewsRef = useRef(null);
+
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user || {
     id: "1",
@@ -40,7 +46,7 @@ export default function HomeScreen({ navigation, user }) {
     location: "성북구"
   };
 
-  const filterOptions = ['찜 많은 순', '원룸', '투룸', '오피스텔', '빌라'];
+  const filterOptions = ['찜 많은 순', '원룸', '투룸', '오피스텔', '빌라', '아파트'];
 
   useEffect(() => {
     loadData();
@@ -119,34 +125,44 @@ export default function HomeScreen({ navigation, user }) {
   const loadPolicyNews = async (page = 1) => {
     setLoadingPolicies(true);
     try {
-      const offset = (page - 1) * 5;
-      const response = await ApiService.getPolicyRecommendations(5, offset);
-      
-      // 새로운 응답 형식 처리
-      if (response && response.data) {
-        setPolicyNews(response.data || []);
-        setPolicyPage(page);
-        setTotalPages(response.total_pages || 1);
+      if (user?.token) {
+        // 로그인된 사용자 - 개인화된 추천 정책 (페이지네이션 사용)
+        const offset = (page - 1) * 5;
+        const response = await ApiService.getPolicyRecommendations(5, offset);
+
+        if (response && response.policies) {
+          setPolicyNews(response.policies);
+          setPolicyPage(page);
+          const totalPolicies = response.total_count || 0;
+          setTotalPages(Math.ceil(totalPolicies / 5));
+        } else {
+          setPolicyNews([]);
+          setPolicyPage(1);
+          setTotalPages(1);
+        }
       } else {
-        // 기존 형식 호환성
-        setPolicyNews(response || []);
-        setPolicyPage(page);
-        setTotalPages(Math.ceil((response || []).length > 0 ? 20 : 1)); // 임시
+        // 비로그인 사용자 - 인기 정책 (페이지네이션 지원)
+        const offset = (page - 1) * 5;
+        const response = await ApiService.getPopularPolicies(5, offset);
+
+        if (response && response.data) {
+          setPolicyNews(response.data || []);
+          setPolicyPage(page);
+          const totalPolicies = response.total_count || 0;
+          setTotalPages(Math.ceil(totalPolicies / 5));
+        } else {
+          // 폴백
+          setPolicyNews([]);
+          setPolicyPage(1);
+          setTotalPages(1);
+        }
       }
     } catch (error) {
       console.error('정책 뉴스 로드 실패:', error);
-      // 로그인하지 않은 경우 인기 정책으로 대체
-      try {
-        const popularPolicies = await ApiService.getPopularPolicies(5);
-        setPolicyNews(popularPolicies || []);
-        setPolicyPage(page);
-        setTotalPages(Math.ceil(205 / 5)); // 전체 정책 수 기반
-      } catch (fallbackError) {
-        console.error('인기 정책 로드도 실패:', fallbackError);
-        setPolicyNews([]);
-        setPolicyPage(1);
-        setTotalPages(1);
-      }
+      // 에러 시 빈 배열로 설정
+      setPolicyNews([]);
+      setPolicyPage(1);
+      setTotalPages(1);
     } finally {
       setLoadingPolicies(false);
     }
@@ -155,20 +171,32 @@ export default function HomeScreen({ navigation, user }) {
   const goToPage = async (page) => {
     if (loadingPolicies || page < 1 || page > totalPages || page === policyPage) return;
     await loadPolicyNews(page);
+
+    // 페이지 변경 후 정책 뉴스 섹션으로 스크롤
+    setTimeout(() => {
+      if (policyNewsRef.current && scrollViewRef.current) {
+        policyNewsRef.current.measureLayout(
+          scrollViewRef.current,
+          (x, y) => {
+            scrollViewRef.current.scrollTo({ y: y - 20, animated: true });
+          }
+        );
+      }
+    }, 100);
   };
 
   const renderPaginationNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     let startPage = Math.max(1, policyPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
+
     // 끝에서부터 계산해서 시작점 조정
     if (endPage - startPage < maxVisiblePages - 1) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
         <TouchableOpacity
@@ -189,7 +217,7 @@ export default function HomeScreen({ navigation, user }) {
         </TouchableOpacity>
       );
     }
-    
+
     return pages;
   };
 
@@ -239,7 +267,7 @@ export default function HomeScreen({ navigation, user }) {
 
   const handleSkipTest = async () => {
     const isProfileComplete = await checkProfileCompletion();
-    
+
     if (isProfileComplete) {
       // 프로필이 완성되어 있으면 바로 매칭 화면으로 이동
       navigation.navigate('MatchResults');
@@ -262,22 +290,26 @@ export default function HomeScreen({ navigation, user }) {
 
   const handleNewsDetail = async (policy) => {
     try {
-      // 정책 조회 기록
-      if (policy && policy.policy && policy.policy.id) {
-        await ApiService.recordPolicyView(policy.policy.id);
+      // 정책 조회 기록 (안전하게 접근)
+      const policyId = policy?.policy?.id || policy?.id;
+      if (policyId) {
+        await ApiService.recordPolicyView(policyId);
       }
-      
+
+      const description = policy?.policy?.description || policy?.description || policy?.content || '정책 상세 내용을 확인하세요.';
+      const url = policy?.policy?.url || policy?.url;
+
       Alert.alert(
-        '정책 뉴스', 
-        policy?.policy?.description || '정책 상세 내용을 확인하세요.',
+        '정책 뉴스',
+        description,
         [
           { text: '닫기', style: 'cancel' },
-          { 
-            text: '자세히 보기', 
+          {
+            text: '자세히 보기',
             onPress: () => {
-              if (policy?.policy?.url) {
+              if (url) {
                 // 실제로는 웹뷰나 브라우저로 열기
-                console.log('정책 URL:', policy.policy.url);
+                console.log('정책 URL:', url);
               }
             }
           }
@@ -285,7 +317,8 @@ export default function HomeScreen({ navigation, user }) {
       );
     } catch (error) {
       console.error('정책 조회 기록 실패:', error);
-      Alert.alert('정책 뉴스', policy?.policy?.description || '정책 상세 내용을 확인하세요.');
+      const fallbackDescription = policy?.policy?.description || policy?.description || policy?.content || '정책 상세 내용을 확인하세요.';
+      Alert.alert('정책 뉴스', fallbackDescription);
     }
   };
 
@@ -303,6 +336,8 @@ export default function HomeScreen({ navigation, user }) {
         return filteredRooms.filter(room => room.address.includes('오피스텔'));
       case '빌라':
         return filteredRooms.filter(room => room.address.includes('빌라'));
+      case '아파트':
+        return filteredRooms.filter(room => room.address.includes('아파트'));
       default:
         return filteredRooms;
     }
@@ -385,53 +420,50 @@ export default function HomeScreen({ navigation, user }) {
   return (
     <SafeAreaView style={styles.safeContainer}>
     <ScrollView
+      ref={scrollViewRef}
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       showsVerticalScrollIndicator={false}
     >
-      {/* 채팅 버튼 */}
+      {/* 채팅 버튼과 인사말 */}
       <View style={styles.topContainer}>
-        <TouchableOpacity 
+        <Text style={styles.greeting}>안녕하세요, {userData.name.slice(1)}님 :)</Text>
+        <TouchableOpacity
           style={styles.chatButton}
           onPress={() => navigation.navigate('ChatList')}
         >
           <View style={styles.chatButtonInner}>
-            <View style={styles.speechBubble}>
-              <View style={styles.longLine} />
-              <View style={styles.shortLine} />
-            </View>
+            <ChatIcon size={21} color="#464646" />
           </View>
         </TouchableOpacity>
       </View>
 
-      {/* 인사말 */}
-      <View style={styles.greetingContainer}>
-        <Text style={styles.greeting}>안녕하세요 {userData.name}님 :)</Text>
-      </View>
-
       {/* 나만의 룸메이트 찾기 박스 */}
       <TouchableOpacity style={styles.roommateBox} onPress={() => navigation.navigate('RoommateChoice')}>
-        <View style={styles.roommateBoxContent}>
-          <View style={styles.roommateTextContainer}>
-            <Text style={styles.roommateBoxTitle}>나만의 룸메이트 찾기</Text>
-            <Text style={styles.roommateBoxSubtitle}>내 성향을 파악하고 딱 맞는 룸메이트를 찾아보세요!</Text>
-          </View>
+        <View style={styles.cardHeader}>
+          <PeopleIcon size={24} color="#333333" />
+          <Text style={styles.whiteCardTitle}>나만의 룸메이트 찾기</Text>
         </View>
-        <View style={styles.arrowCircle}>
-          <Ionicons name="arrow-forward" size={45} color="#737373" style={styles.arrowIcon} />
+        <Text style={styles.whiteCardSubtitle}>주거성향 테스트하고, 나와 딱 맞는 룸메이트를 만나보세요!</Text>
+        <View style={styles.blackActionButton}>
+          <Text style={styles.blackActionButtonText}>
+            내 <Text style={styles.boldText}>주거 성향</Text> 확인해보기
+          </Text>
+          <View style={styles.greenArrowCircle}>
+            <Ionicons name="arrow-forward" size={40} color="#FFFFFF" />
+          </View>
         </View>
       </TouchableOpacity>
 
-      {/* 계약서 안정성 검증 박스 */}
+      {/* 계약서 안전성 검증 박스 */}
       <TouchableOpacity style={styles.contractBox} onPress={handleContractVerification}>
-        <View style={styles.contractBoxContent}>
-          <View style={styles.contractTextContainer}>
-            <Text style={styles.contractBoxTitle}>계약서 안전성 검증하기</Text>
-            <Text style={styles.contractBoxSubtitle}>내가 갖고 있는 계약서의 안전 정도를 검증해보세요</Text>
-          </View>
+        <View style={styles.cardHeader}>
+          <DocumentIcon size={24} color="#333" />
+          <Text style={styles.contractCardTitle}>계약서 안전성 검증하기</Text>
         </View>
-        <View style={styles.contractArrowCircle}>
-          <Ionicons name="arrow-forward" size={45} color="#FFFFFF" style={styles.arrowIcon} />
+        <Text style={styles.contractCardSubtitle}>내가 가진 계약서의 위험 정도를 확인해보세요.</Text>
+        <View style={styles.orangeArrowCircle}>
+          <Ionicons name="arrow-forward" size={50} color="#FFFFFF" />
         </View>
       </TouchableOpacity>
 
@@ -439,37 +471,40 @@ export default function HomeScreen({ navigation, user }) {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>{currentLocation} 인기 매물</Text>
 
-        {/* 필터 버튼들 */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-        >
-          {filterOptions.map((option) => (
-            <FilterButton
-              key={option}
-              title={option}
-              isSelected={selectedFilter === option}
-              onPress={() => setSelectedFilter(option)}
-            />
-          ))}
-        </ScrollView>
+        {/* 필터와 방 카드 컨테이너 */}
+        <View style={styles.filterAndRoomsContainer}>
+          {/* 필터 버튼들 */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterContainer}
+          >
+            {filterOptions.map((option) => (
+              <FilterButton
+                key={option}
+                title={option}
+                isSelected={selectedFilter === option}
+                onPress={() => setSelectedFilter(option)}
+              />
+            ))}
+          </ScrollView>
 
-        {/* 방 카드 리스트 - 가로 스크롤 */}
-        <FlatList
-          data={getFilteredRooms().slice(0, 10)}
-          renderItem={renderRoomCard}
-          keyExtractor={(item) => item.room_id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.roomCardContainer}
-          overScrollMode="never"
-          bounces={false}
-        />
+          {/* 방 카드 리스트 - 가로 스크롤 */}
+          <FlatList
+            data={getFilteredRooms().slice(0, 10)}
+            renderItem={renderRoomCard}
+            keyExtractor={(item) => item.room_id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.roomCardContainer}
+            overScrollMode="never"
+            bounces={false}
+          />
+        </View>
       </View>
 
       {/* 주요 정책 NEWS */}
-      <View style={styles.sectionContainer}>
+      <View ref={policyNewsRef} style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>주요 정책 NEWS</Text>
 
         {loadingPolicies ? (
@@ -480,16 +515,19 @@ export default function HomeScreen({ navigation, user }) {
           policyNews.map((policy, index) => (
             <View key={index} style={[styles.newsBox, index > 0 && { marginTop: 10 }]}>
               <View style={styles.newsContent}>
-                <Text style={styles.newsTag}>#{policy.policy.category}</Text>
+                <Text style={styles.newsTag}>#{policy?.policy?.category || policy?.category || '정책'}</Text>
                 <Text style={styles.newsTitle} numberOfLines={2}>
-                  {policy.policy.title}
+                  {policy?.policy?.title || policy?.title || '정책 정보'}
+                </Text>
+                <Text style={styles.newsDescription} numberOfLines={2}>
+                  {policy?.policy?.description || policy?.description || policy?.content || '정책 상세 내용을 확인하세요.'}
                 </Text>
                 {policy.reason && (
                   <Text style={styles.newsReason}>{policy.reason}</Text>
                 )}
               </View>
-              <TouchableOpacity 
-                style={styles.newsButton} 
+              <TouchableOpacity
+                style={styles.newsButton}
                 onPress={() => handleNewsDetail(policy)}
               >
                 <Text style={styles.newsButtonText}>자세히 보기</Text>
@@ -504,36 +542,50 @@ export default function HomeScreen({ navigation, user }) {
             </View>
           </View>
         )}
-        
+
         {/* 페이지네이션 */}
         {policyNews.length > 0 && totalPages > 1 && (
           <View style={styles.paginationContainer}>
             {/* 이전 버튼 */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.arrowButton, policyPage === 1 && styles.disabledButton]}
               onPress={() => goToPage(policyPage - 1)}
               disabled={loadingPolicies || policyPage === 1}
             >
-              <Ionicons name="chevron-back" size={16} color={policyPage === 1 ? "#ccc" : "#007AFF"} />
+              <Ionicons name="chevron-back" size={16} color={policyPage === 1 ? "#ccc" : "#000000"} />
             </TouchableOpacity>
-            
+
             {/* 페이지 번호들 */}
             <View style={styles.pageNumbersContainer}>
               {renderPaginationNumbers()}
             </View>
-            
+
             {/* 다음 버튼 */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.arrowButton, policyPage === totalPages && styles.disabledButton]}
               onPress={() => goToPage(policyPage + 1)}
               disabled={loadingPolicies || policyPage === totalPages}
             >
-              <Ionicons name="chevron-forward" size={16} color={policyPage === totalPages ? "#ccc" : "#007AFF"} />
+              <Ionicons name="chevron-forward" size={16} color={policyPage === totalPages ? "#ccc" : "#000000"} />
             </TouchableOpacity>
           </View>
         )}
       </View>
     </ScrollView>
+
+    {/* 플로팅 정책 챗봇 버튼 */}
+    <TouchableOpacity
+      style={styles.floatingChatbotButton}
+      onPress={() => navigation.navigate('PolicyChatbot')}
+      activeOpacity={0.8}
+    >
+      <View style={styles.chatbotButtonInner}>
+        <Ionicons name="chatbubbles" size={28} color="#fff" />
+      </View>
+      <View style={styles.chatbotBadge}>
+        <Ionicons name="information-circle" size={12} color="#fff" />
+      </View>
+    </TouchableOpacity>
 
     {/* Room Detail Modal */}
     <RoomDetailModal
@@ -550,11 +602,11 @@ export default function HomeScreen({ navigation, user }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F2F2F2',
   },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F2F2F2',
   },
   loadingContainer: {
     flex: 1,
@@ -563,18 +615,16 @@ const styles = StyleSheet.create({
   },
   topContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 15,
-    backgroundColor: '#fff',
-  },
-  greetingContainer: {
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F2F2F2',
+    marginBottom: 3,
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 31,
+    fontWeight: '600',
     color: '#333',
   },
   chatButton: {
@@ -584,49 +634,29 @@ const styles = StyleSheet.create({
     width: 37,
     height: 37,
     borderRadius: 18.5,
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  speechBubble: {
-    width: 17,
-    height: 17,
-    borderWidth: 2.0,
-    borderColor: '#464646',
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
-    borderBottomLeftRadius: 50,
-    borderBottomRightRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-  },
-  longLine: {
-    right: 0,
-    width: 9,
-    height: 2.0,
-    backgroundColor: '#464646',
-    borderRadius: 1,
-    marginBottom: 2,
-  },
-  shortLine: {
-    right: 0,
-    width: 6,
-    height: 2.0,
-    backgroundColor: '#464646',
-    borderRadius: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   roommateBox: {
-    backgroundColor: '#737373',
-    marginHorizontal: 20,
+    backgroundColor: '#ffffff',
+    marginHorizontal: 15,
     marginTop: 15,
-    paddingHorizontal: 19,
-    paddingTop: 23,
-    paddingBottom: 25,
-    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingTop: 22,
+    paddingBottom: 17,
+    borderRadius: 16,
     position: 'relative',
-    height: 193,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 6,
   },
   roommateBoxContent: {
     flex: 1,
@@ -648,14 +678,80 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     lineHeight: 14,
   },
-  arrowCircle: {
-    position: 'absolute',
-    right: 15,
-    bottom: 17,
-    width: 60,
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginLeft: 12,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: '#000000',
+    lineHeight: 20,
+    marginBottom: 16,
+    opacity: 0.8,
+  },
+  whiteCardTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333333',
+    marginLeft: 4,
+  },
+  whiteCardSubtitle: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
+    marginBottom: 28,
+  },
+  contractCardTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#343434',
+    marginLeft: 3,
+  },
+  contractCardSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 16,
+    marginBottom: 0,
+  },
+  blackActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000000',
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#D9D9D9',
+    position: 'relative',
+  },
+  blackActionButtonText: {
+    fontSize: 20,
+    fontWeight: '200',
+    color: '#FFFFFF',
+  },
+  greenArrowCircle: {
+    position: 'absolute',
+    right: 8,
+    width: 43,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B585',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orangeArrowCircle: {
+    position: 'absolute',
+    right: 16,
+    top: 12,
+    width: 60,
+    height: 60,
+    borderRadius: 50,
+    backgroundColor: '#FC6339',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -663,15 +759,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   contractBox: {
-    backgroundColor: '#E5E5E5',
-    marginHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 15,
     marginTop: 12,
-    paddingHorizontal: 19,
-    paddingTop: 21,
-    paddingBottom: 21,
-    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 16,
+    borderRadius: 16,
     position: 'relative',
-    height: 87,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   contractBoxContent: {
     flex: 1,
@@ -693,45 +793,37 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     lineHeight: 14,
   },
-  contractArrowCircle: {
-    position: 'absolute',
-    right: 15,
-    top: 14,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#CACACA',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   sectionContainer: {
     marginTop: 25,
-    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 15,
+    paddingHorizontal: 15,
+  },
+  filterAndRoomsContainer: {
+    gap: 5,
   },
   filterContainer: {
-    marginBottom: 15,
+    paddingHorizontal: 15,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     backgroundColor: '#f8f8f8',
     borderRadius: 20,
-    marginRight: 10,
+    marginRight: 5,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   filterButtonSelected: {
-    backgroundColor: '#FF6600',
-    borderColor: '#FF6600',
+    backgroundColor: '#353535',
+    borderColor: '#353535',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     fontWeight: '500',
   },
@@ -739,11 +831,14 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   roomCardContainer: {
-    paddingLeft: 0,
+    paddingLeft: 15,
     paddingRight: 10,
+    marginBottom: 10,
+    marginTop: 5,
   },
   roomCard: {
-    width: 160,
+    width: 181,
+    height: 191,
     backgroundColor: '#fff',
     borderRadius: 12,
     marginRight: 15,
@@ -755,7 +850,7 @@ const styles = StyleSheet.create({
   },
   roomImageContainer: {
     position: 'relative',
-    height: 120,
+    height: 111,
   },
   placeholderImage: {
     width: '100%',
@@ -800,26 +895,34 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
     elevation: 3,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginHorizontal: 15,
+    marginBottom: 5,
   },
   newsContent: {
     flex: 1,
   },
   newsTag: {
     fontSize: 12,
-    color: '#228B22',
+    color: '#FF6600',
     marginBottom: 4,
   },
   newsTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+  newsDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+    lineHeight: 16,
   },
   newsButton: {
     paddingHorizontal: 16,
@@ -845,15 +948,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   paginationContainer: {
-    marginTop: 20,
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 10,
   },
   pageNumbersContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: 15,
   },
   pageButton: {
     width: 32,
@@ -867,8 +971,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activePageButton: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#10B585',
+    borderColor: '#10B585',
   },
   pageButtonText: {
     fontSize: 14,
@@ -892,5 +996,44 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#f5f5f5',
     borderColor: '#ddd',
+  },
+  floatingChatbotButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#10B585',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  chatbotButtonInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#10B585',
+  },
+  chatbotBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF6B35',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  boldText: {
+    fontWeight: '900',
   },
 });

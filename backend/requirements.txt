@@ -11,3 +11,11 @@ playwright
 beautifulsoup4
 requests
 schedule
+
+# AI Dependencies for Policy Chatbot
+langchain
+langchain-google-genai
+openai
+faiss-cpu
+numpy
+langgraph
