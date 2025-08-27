@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { AppState } from "react-native";
+import { AppState, Text } from "react-native";
+
+// 전역 폰트 설정
+Text.defaultProps = Text.defaultProps || {};
+Text.defaultProps.style = { fontFamily: 'Pretendard' };
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";

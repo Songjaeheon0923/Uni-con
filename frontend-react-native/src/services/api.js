@@ -158,6 +158,10 @@ class ApiService {
     return this.request(`/favorites/${roomId}/users`);
   }
 
+  async getRoomMatches(roomId) {
+    return this.request(`/favorites/${roomId}/matched`);
+  }
+
   async checkFavoriteStatus(roomId, userId) {
     return this.request(`/favorites/${roomId}/check`);
   }

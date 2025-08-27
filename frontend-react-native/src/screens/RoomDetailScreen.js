@@ -27,11 +27,14 @@ const formatMaintenanceCost = (area) => {
 };
 
 export default function RoomDetailScreen({ route, navigation }) {
-  const { roomId, room: roomFromParams } = route.params || {};
+  const { roomId, room: roomFromParams, user } = route.params || {};
   const [room, setRoom] = useState(roomFromParams || null);
   const [loading, setLoading] = useState(!roomFromParams);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
+
+  // 사용자 정보 (params에서 받거나 기본값 사용)
+  const userData = user || { id: "1", name: "김대학생" };
   const [images] = useState([
     'https://via.placeholder.com/400x300/f0f0f0/666?text=매물사진1',
     'https://via.placeholder.com/400x300/f0f0f0/666?text=매물사진2',
@@ -43,6 +46,11 @@ export default function RoomDetailScreen({ route, navigation }) {
     // room 데이터가 파라미터로 전달되지 않은 경우에만 API 호출
     if (!roomFromParams && roomId) {
       loadRoomDetail();
+    }
+    
+    // 찜 상태 확인
+    if (roomId || roomFromParams?.room_id) {
+      checkFavoriteStatus();
     }
   }, [roomId, roomFromParams]);
 
@@ -56,6 +64,20 @@ export default function RoomDetailScreen({ route, navigation }) {
       // API 실패 시 에러 알림 없이 진행 (이미 room 데이터가 있을 수 있음)
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkFavoriteStatus = async () => {
+    try {
+      const id = roomId || room?.room_id;
+      if (!id) return;
+      
+      const response = await ApiService.checkFavoriteStatus(id);
+      setIsFavorited(response.is_favorited);
+    } catch (error) {
+      console.error('찜 상태 확인 실패:', error);
+      // 에러 시 기본값 false 유지
+      setIsFavorited(false);
     }
   };
 
@@ -80,7 +102,7 @@ export default function RoomDetailScreen({ route, navigation }) {
       if (isFavorited) {
         await ApiService.removeFavorite(id);
       } else {
-        await ApiService.addFavorite(id, 'user123'); // TODO: 실제 user ID 사용
+        await ApiService.addFavorite(id, String(userData.id));
       }
       setIsFavorited(!isFavorited);
     } catch (error) {

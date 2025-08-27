@@ -11,6 +11,7 @@ import {
   Dimensions,
   SafeAreaView
 } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "../components/HomeIcon";
 import PeopleIcon from "../components/PeopleIcon";
@@ -57,6 +58,13 @@ export default function HomeScreen({ navigation, user }) {
     loadPolicyNews();
     loadUserProfile();
   }, []);
+
+  // 화면이 포커스될 때마다 찜 목록 새로고침
+  useFocusEffect(
+    React.useCallback(() => {
+      loadFavorites();
+    }, [])
+  );
 
   const getCurrentLocation = async () => {
     try {

@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../services/api';
+import UserProfileIcon from '../components/UserProfileIcon';
+import SpeechBubble from '../components/SpeechBubble';
 import { formatRentPrice } from '../utils/priceFormatter';
 
 const { width } = Dimensions.get('window');
@@ -27,6 +29,7 @@ export default function FavoritedUsersScreen({ route, navigation }) {
   const [suggestModalVisible, setSuggestModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [suggestionMessage, setSuggestionMessage] = useState('');
+  const [showMatchScores, setShowMatchScores] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -38,47 +41,10 @@ export default function FavoritedUsersScreen({ route, navigation }) {
       // 방 정보 로드
       const roomData = await ApiService.getRoomDetail(roomId);
       setRoom(roomData);
-      
-      // 찜한 사용자들 로드 (실제 API 연동 시 사용)
-      // const favoritedUsers = await ApiService.getRoomFavorites(roomId);
-      // setUsers(favoritedUsers);
-      
-      // 더미 데이터
-      setUsers([
-        {
-          id: 1,
-          name: '반짝이는스케이트',
-          tags: ['청결함', '야행형', '비흡연'],
-          age: 20,
-          gender: '여성',
-          school: '성신여자대학교',
-          bio: '"깨끗한 집 약속드려요 :)"',
-          matchScore: 88,
-          profileImage: null,
-        },
-        {
-          id: 2,
-          name: '반짝이는스케이트',
-          tags: ['청결함', '야행형', '비흡연'],
-          age: 20,
-          gender: '여성',
-          school: '성신여자대학교',
-          bio: '"깨끗한 집 약속드려요 :)"',
-          matchScore: 85,
-          profileImage: null,
-        },
-        {
-          id: 3,
-          name: '반짝이는스케이트',
-          tags: ['청결함', '올빼미', '비흡연'],
-          age: 20,
-          gender: '여성',
-          school: '성신여자대학교',
-          bio: '"먼지 없는 집 선호합니다. 깨끗한 집 약속드려요 :)"',
-          matchScore: 82,
-          profileImage: null,
-        },
-      ]);
+
+      // 찜한 사용자들 로드 (궁합 점수 포함)
+      const favoritedUsers = await ApiService.getRoomMatches(roomId);
+      setUsers(favoritedUsers || []);
     } catch (error) {
       console.error('데이터 로드 실패:', error);
     } finally {
@@ -93,49 +59,93 @@ export default function FavoritedUsersScreen({ route, navigation }) {
 
   const filters = ['전체', '궁합 점수 높은 순', '고려대학교', '투룸 희망'];
 
+  const filteredAndSortedUsers = React.useMemo(() => {
+    let filtered = [...users];
+
+    switch (selectedFilter) {
+      case '궁합 점수 높은 순':
+        filtered = filtered.sort((a, b) => (b.matching_score || 0) - (a.matching_score || 0));
+        break;
+      case '고려대학교':
+        filtered = filtered.filter(user => user.school === '고려대학교');
+        break;
+      case '투룸 희망':
+        filtered = filtered.filter(user => user.roomType === '투룸');
+        break;
+      default:
+        // 전체는 기본 순서 유지
+        break;
+    }
+
+    return filtered;
+  }, [users, selectedFilter]);
+
+  const getMatchScoreLabel = (score) => {
+    if (score >= 80) return '좋음';
+    if (score >= 60) return '보통';
+    return '낮음';
+  };
+
   const UserCard = ({ user, onPress }) => (
     <TouchableOpacity style={styles.userCard} onPress={onPress}>
       <View style={styles.userCardContent}>
-        <View style={styles.userAvatar}>
-          {user.profileImage ? (
-            <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
-          ) : (
-            <Ionicons name="person" size={40} color="#999" />
+        {/* 말풍선 */}
+        <SpeechBubble
+          text="깨끗한 집 약속드려요"
+          style={styles.speechBubbleContainer}
+        />
+
+        <View style={styles.userAvatarContainer}>
+          <View style={styles.userAvatar}>
+            {user.profileImage ? (
+              <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
+            ) : (
+              <UserProfileIcon size={33} color="#595959" />
+            )}
+          </View>
+
+          {/* 궁합 점수 오버레이 */}
+          {showMatchScores && (
+            <View style={styles.matchScoreOverlay}>
+              <Text style={styles.matchScoreOverlayText}>{user.matching_score || 0}%</Text>
+              <Text style={styles.matchScoreLabel}>{getMatchScoreLabel(user.matching_score || 0)}</Text>
+            </View>
           )}
         </View>
-        
-        <Text style={styles.userName}>{user.name}</Text>
-        
-        <View style={styles.userTags}>
-          {user.tags.map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-        
+
+        <Text style={styles.userName}>{user.nickname}</Text>
+
         <Text style={styles.userInfo}>
-          {user.age}대 초반, {user.gender}, {user.school}
-          <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
+          {user.age}세, {user.gender}, {user.occupation}
         </Text>
-        
-        <Text style={styles.userBio}>{user.bio}</Text>
-        
-        <TouchableOpacity 
-          style={styles.suggestButton}
+
+        <View style={styles.userTags}>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>청결함</Text>
+          </View>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>야행형</Text>
+          </View>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>비흡연</Text>
+          </View>
+        </View>
+
+        {/* <TouchableOpacity
+          style={styles.chatButton}
           onPress={() => {
             setSelectedUser(user);
             setSuggestModalVisible(true);
           }}
         >
-          <Text style={styles.suggestButtonText}>룸메 제안하기</Text>
-        </TouchableOpacity>
+          <Text style={styles.chatButtonText}>채팅 신청하기</Text>
+        </TouchableOpacity> */}
       </View>
     </TouchableOpacity>
   );
 
   const handleUserPress = (user) => {
-    navigation.navigate('UserProfile', { userId: user.id, roomId });
+    navigation.navigate('UserProfile', { userId: user.user_id, roomId });
   };
 
   if (loading) {
@@ -149,7 +159,7 @@ export default function FavoritedUsersScreen({ route, navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeAreaContainer}>
       {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -161,17 +171,18 @@ export default function FavoritedUsersScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <View style={styles.container}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 방 정보 */}
         <View style={styles.roomInfo}>
-          <Image 
+          <Image
             source={{ uri: 'https://via.placeholder.com/100x100/f0f0f0/666?text=매물' }}
             style={styles.roomImage}
           />
           <View style={styles.roomDetails}>
             <Text style={styles.roomPrice}>{formatPrice()}</Text>
-            <Text style={styles.roomInfo1}>원룸 | 6평 | 4층</Text>
-            <Text style={styles.roomAddress}>관리비 7만원 | 안암역 10분 거리</Text>
+            <Text style={styles.roomInfo1}>{room?.property_type} | {room?.square_meter}평 | {room?.floor}층</Text>
+            <Text style={styles.roomAddress}>관리비 {room?.price_manage}만원 | {room?.location}</Text>
             <View style={styles.verificationBadge}>
               <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
               <Text style={styles.verificationText}>집주인 인증</Text>
@@ -179,19 +190,29 @@ export default function FavoritedUsersScreen({ route, navigation }) {
           </View>
           <View style={styles.favoriteCountBadge}>
             <Ionicons name="heart" size={16} color="#FF6600" />
-            <Text style={styles.favoriteCount}>{users.length || 13}</Text>
+            <Text style={styles.favoriteCount}>{users.length}</Text>
           </View>
         </View>
 
         {/* 찜한 유저 수 */}
         <View style={styles.favoritedSection}>
-          <Ionicons name="heart" size={20} color="#FF6600" />
-          <Text style={styles.favoritedText}>이 매물을 찜한 유저 {users.length || 13}명</Text>
+          <View style={styles.favoritedLeft}>
+            <Ionicons name="heart" size={16} color="#FF6600" />
+            <Text style={styles.favoritedText}>이 매물을 찜한 유저 {users.length}명</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.matchScoreToggle, showMatchScores && styles.matchScoreToggleActive]}
+            onPress={() => setShowMatchScores(!showMatchScores)}
+          >
+            <Text style={[styles.matchScoreToggleText, showMatchScores && styles.matchScoreToggleTextActive]}>
+              궁합 점수 확인하기
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 필터 */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterContainer}
         >
@@ -218,19 +239,19 @@ export default function FavoritedUsersScreen({ route, navigation }) {
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={users}
+          data={filteredAndSortedUsers}
           renderItem={({ item }) => (
             <UserCard user={item} onPress={() => handleUserPress(item)} />
           )}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => item.user_id ? item.user_id.toString() : index.toString()}
           contentContainerStyle={styles.usersList}
         />
 
         {/* 다른 유저에게 매물 추천하기 섹션 */}
         <View style={styles.recommendSection}>
           <Text style={styles.recommendTitle}>다른 유저에게 매물 추천하기</Text>
-          
-          <View style={styles.filterRow}>
+
+          {/* <View style={styles.filterRow}>
             <TouchableOpacity style={styles.filterPill}>
               <Text style={styles.filterPillText}>최근 채팅순</Text>
             </TouchableOpacity>
@@ -246,12 +267,12 @@ export default function FavoritedUsersScreen({ route, navigation }) {
             <TouchableOpacity>
               <Ionicons name="chevron-down" size={20} color="#666" />
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           {/* 추천 사용자 리스트 */}
           {users.map((user, index) => (
-            <TouchableOpacity 
-              key={index} 
+            <TouchableOpacity
+              key={index}
               style={styles.recommendUserCard}
               onPress={() => handleUserPress(user)}
             >
@@ -260,9 +281,9 @@ export default function FavoritedUsersScreen({ route, navigation }) {
               </View>
               <View style={styles.recommendUserInfo}>
                 <View style={styles.recommendUserHeader}>
-                  <Text style={styles.recommendUserName}>{user.name}</Text>
+                  <Text style={styles.recommendUserName}>{user.nickname}</Text>
                   <View style={styles.recommendUserTags}>
-                    {user.tags.slice(0, 3).map((tag, idx) => (
+                    {(user.tags || []).slice(0, 3).map((tag, idx) => (
                       <View key={idx} style={styles.smallTag}>
                         <Text style={styles.smallTagText}>{tag}</Text>
                       </View>
@@ -270,10 +291,10 @@ export default function FavoritedUsersScreen({ route, navigation }) {
                   </View>
                 </View>
                 <Text style={styles.recommendUserDetails}>
-                  {user.age}대 초반, {user.gender}, {user.school}
+                  {user.age}세, {user.gender}, {user.occupation}
                   <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
                 </Text>
-                <Text style={styles.recommendUserBio}>{user.bio}</Text>
+                {user.bio && <Text style={styles.recommendUserBio}>{user.bio}</Text>}
               </View>
             </TouchableOpacity>
           ))}
@@ -301,7 +322,7 @@ export default function FavoritedUsersScreen({ route, navigation }) {
             {/* 매물 정보 */}
             {room && (
               <View style={styles.modalRoomInfo}>
-                <Image 
+                <Image
                   source={{ uri: 'https://via.placeholder.com/80x80/f0f0f0/666?text=매물' }}
                   style={styles.modalRoomImage}
                 />
@@ -310,10 +331,10 @@ export default function FavoritedUsersScreen({ route, navigation }) {
                     월세 {room.price_deposit}만원 / {room.price_monthly}만원
                   </Text>
                   <Text style={styles.modalRoomInfo1}>
-                    원룸 | 6평 | 4층
+                    {room?.property_type} | {room?.square_meter}평 | {room?.floor}층
                   </Text>
                   <Text style={styles.modalRoomAddress}>
-                    관리비 7만원 | 안암역 10분 거리
+                    관리비 {room?.price_manage}만원 | {room?.location}
                   </Text>
                   <View style={styles.modalVerificationBadge}>
                     <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
@@ -334,15 +355,15 @@ export default function FavoritedUsersScreen({ route, navigation }) {
                   )}
                 </View>
                 <View style={styles.modalUserDetails}>
-                  <Text style={styles.modalUserName}>{selectedUser.name}</Text>
+                  <Text style={styles.modalUserName}>{selectedUser.nickname}</Text>
                   <View style={styles.modalUserTags}>
-                    {selectedUser.tags.slice(0, 3).map((tag, index) => (
+                    {(selectedUser.tags || []).slice(0, 3).map((tag, index) => (
                       <View key={index} style={styles.modalTag}>
                         <Text style={styles.modalTagText}>{tag}</Text>
                       </View>
                     ))}
                   </View>
-                  <Text style={styles.modalUserBio}>{selectedUser.bio}</Text>
+                  {selectedUser.bio && <Text style={styles.modalUserBio}>{selectedUser.bio}</Text>}
                 </View>
               </View>
             )}
@@ -361,7 +382,7 @@ export default function FavoritedUsersScreen({ route, navigation }) {
             </View>
 
             {/* 룸메 제안하기 버튼 */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalSuggestButton}
               onPress={() => {
                 // 제안 로직 구현
@@ -375,14 +396,19 @@ export default function FavoritedUsersScreen({ route, navigation }) {
           </View>
         </View>
       </Modal>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeAreaContainer: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F2F2',
   },
   loadingContainer: {
     flex: 1,
@@ -395,8 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 18,
@@ -409,6 +434,7 @@ const styles = StyleSheet.create({
   roomInfo: {
     flexDirection: 'row',
     padding: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -471,8 +497,13 @@ const styles = StyleSheet.create({
   favoritedSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff5f0',
+    justifyContent: 'space-between',
+    padding: 12,
+    paddingBottom: 7,
+  },
+  favoritedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   favoritedText: {
@@ -481,34 +512,59 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#ffffff',
     marginRight: 8,
   },
   filterButtonActive: {
     backgroundColor: '#666',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   filterTextActive: {
     color: '#fff',
   },
   usersList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 13,
+  },
+  speechBubbleContainer: {
+    width: 120,
+    height: 40,
+    marginBottom: 8,
+  },
+  speechBubble: {
+    backgroundColor: '#10B585',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginBottom: 8,
+    position: 'relative',
+  },
+  speechBubbleText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  userAvatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
+    marginTop: 6,
   },
   userCard: {
     width: width * 0.45,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
     marginRight: 12,
     borderWidth: 1,
     borderColor: '#f0f0f0',
@@ -517,13 +573,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   userAvatar: {
-    width: 80,
-    height: 80,
+    width: 53,
+    height: 53,
     borderRadius: 40,
     backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  matchScoreOverlay: {
+    position: 'absolute',
+    top: -7,
+    left: -7,
+    right: -7,
+    bottom: -7,
+    backgroundColor: 'rgba(255, 255, 255, 0.90)',
+    borderRadius: 45,
+    borderWidth: 0.699,
+    borderColor: '#10B585',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  matchScoreOverlayText: {
+    color: '#10B585',
+    fontSize: 22.369,
+    fontWeight: 'bold',
+  },
+  matchScoreLabel: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '500',
   },
   avatarImage: {
     width: 80,
@@ -538,7 +616,6 @@ const styles = StyleSheet.create({
   },
   userTags: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 4,
     marginBottom: 8,
@@ -563,23 +640,55 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#333',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  matchScoreContainer: {
+    backgroundColor: '#FF6600',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginBottom: 12,
   },
-  suggestButton: {
-    backgroundColor: '#666',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignSelf: 'center',
-  },
-  suggestButtonText: {
+  matchScore: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
   },
+  chatButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    alignSelf: 'stretch',
+  },
+  chatButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  matchScoreToggle: {
+    backgroundColor: '#FF6600',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  matchScoreToggleActive: {
+    backgroundColor: '#f5f5f5',
+  },
+  matchScoreToggleText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  matchScoreToggleTextActive: {
+    color: '#666',
+    fontWeight: '600',
+  },
   recommendSection: {
-    padding: 20,
+    paddingVertical: 40,
+    paddingHorizontal: 13,
   },
   recommendTitle: {
     fontSize: 18,
@@ -616,7 +725,8 @@ const styles = StyleSheet.create({
   },
   recommendUserCard: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },

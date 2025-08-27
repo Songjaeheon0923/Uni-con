@@ -385,46 +385,14 @@ export default function ChatListScreen({ navigation }) {
       
     } catch (error) {
       console.error('채팅방 목록 로드 실패:', error);
-      // API 실패 시 더미 데이터만 표시
-      loadDummyData();
+      // API 실패 시 빈 배열 표시
+      setChats([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const loadDummyData = () => {
-    const dummyChats = [
-      {
-        id: 'dummy1',
-        name: '반짝이는스케이트',
-        info: '20대 중반, 여성, 성신여자대학교',
-        tags: ['청결함', '올빼미', '비흡연'],
-        lastMessage: '새 메시지 2개',
-        time: '2시간',
-        hasUnread: true,
-        isIndividual: true,
-        otherUser: { name: '반짝이는스케이트' },
-        isReal: false
-      },
-      {
-        id: 'dummy2',
-        name: '독특한 타란튤라',
-        info: '20대 초반, 여성, 고려대학교',
-        tags: ['청결함', '올빼미', '비흡연'],
-        lastMessage: '새 메시지 2개',
-        time: '3시간',
-        hasUnread: true,
-        isIndividual: false,
-        otherUser: { name: '독특한 타란튤라' },
-        isReal: false
-      }
-    ];
-    
-    setChats(dummyChats);
-    setLoading(false);
-    setRefreshing(false);
-  };
 
 
   const onRefresh = () => {
@@ -436,10 +404,10 @@ export default function ChatListScreen({ navigation }) {
     try {
       console.log('🗑️ [DELETE] 채팅방 삭제 시작:', { chatId, typeof: typeof chatId });
       
-      // 실제 채팅방만 삭제 가능
-      if (typeof chatId === 'string' && chatId.startsWith('dummy')) {
-        console.log('❌ [DELETE] 더미 채팅방 삭제 시도');
-        Alert.alert('알림', '더미 채팅방은 삭제할 수 없습니다.');
+      // 유효한 채팅방 ID 확인
+      if (!chatId) {
+        console.log('❌ [DELETE] 유효하지 않은 채팅방 ID');
+        Alert.alert('알림', '유효하지 않은 채팅방입니다.');
         return;
       }
 
