@@ -187,10 +187,20 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
           }}
         >
           {/* 아바타 */}
-          <View style={styles.avatarSection}>
+          <TouchableOpacity 
+            style={styles.avatarSection}
+            onPress={() => {
+              if (item.isIndividual && item.otherUser) {
+                navigation.navigate('UserProfileView', { 
+                  userId: item.otherUser.id,
+                  userName: item.otherUser.name 
+                });
+              }
+            }}
+          >
             {item.isIndividual ? (
               <View style={styles.profileImageContainer}>
-                <View style={styles.singleProfileImage} />
+                <Ionicons name="person-circle" size={80} color="#ddd" />
                 {/* 읽지 않은 메시지 수 배지 */}
                 {item.unreadCount > 0 && (
                   <View style={styles.unreadBadge}>
@@ -203,8 +213,8 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
             ) : (
               <View style={styles.profileImageContainer}>
                 <View style={styles.groupProfileContainer}>
-                  <View style={styles.groupProfile1} />
-                  <View style={styles.groupProfile2} />
+                  <Ionicons name="person-circle" size={56} color="#ddd" style={styles.groupProfile1} />
+                  <Ionicons name="person-circle" size={56} color="#bbb" style={styles.groupProfile2} />
                 </View>
                 {/* 읽지 않은 메시지 수 배지 */}
                 {item.unreadCount > 0 && (
@@ -216,7 +226,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
                 )}
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
           {/* 채팅 내용 */}
           <View style={styles.contentSection}>
@@ -239,10 +249,14 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
             
             {/* 메시지와 시간 */}
             <View style={styles.messageTimeLine}>
-              <Text style={[
-                styles.messageText,
-                item.hasUnread ? styles.boldMessage : styles.normalMessage
-              ]}>
+              <Text 
+                style={[
+                  styles.messageText,
+                  item.hasUnread ? styles.boldMessage : styles.normalMessage
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {item.lastMessage || '메시지 없음'}
               </Text>
               <View style={styles.timeStatusContainer}>
@@ -670,52 +684,35 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     borderWidth: 1,
     borderColor: '#F0F0F0',
-    padding: 12,
-    marginBottom: 15,
-    alignItems: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+    alignItems: 'center',
   },
   
   // 아바타 섹션
   avatarSection: {
     marginRight: 12,
-    width: 68,
-    height: 68,
+    width: 80,
+    height: 80,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  singleProfileImage: {
-    width: 68,
-    height: 68,
-    backgroundColor: '#D9D9D9',
-    borderRadius: 34,
-  },
   groupProfileContainer: {
-    width: 68,
-    height: 68,
+    width: 80,
+    height: 80,
     position: 'relative',
   },
   groupProfile1: {
     position: 'absolute',
     left: 0,
     top: 10,
-    width: 48,
-    height: 48,
-    backgroundColor: '#D9D9D9',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#CFCFCF',
     zIndex: 1,
   },
   groupProfile2: {
     position: 'absolute',
     right: 0,
     top: 10,
-    width: 48,
-    height: 48,
-    backgroundColor: '#BCBCBC',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#CFCFCF',
     zIndex: 0,
   },
   
@@ -723,7 +720,8 @@ const styles = StyleSheet.create({
   contentSection: {
     flex: 1,
     flexDirection: 'column',
-    gap: 3,
+    gap: 2,
+    justifyContent: 'center',
   },
   
   // 첫 번째 줄: 사용자 정보
@@ -733,7 +731,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userInfoText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '300',
     color: '#343434',
     opacity: 0.8,
@@ -749,7 +747,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   nameText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#474747',
     fontFamily: 'Pretendard',
@@ -769,7 +767,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   tagLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '300',
     color: '#343434',
     opacity: 0.8,
@@ -784,7 +782,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   messageText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Pretendard',
     flex: 1,
     marginRight: 8,
@@ -800,7 +798,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   timeLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '300',
     color: '#929292',
     opacity: 0.8,
@@ -843,8 +841,8 @@ const styles = StyleSheet.create({
   // 프로필 이미지 컨테이너와 배지 스타일
   profileImageContainer: {
     position: 'relative',
-    width: 68,
-    height: 68,
+    width: 80,
+    height: 80,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -331,6 +331,13 @@ class ApiService {
     });
   }
 
+  // 특정 사용자 정보 조회 (다른 사용자의 프로필)
+  async getUserById(userId) {
+    return this.request(`/users/${userId}`, {
+      method: 'GET',
+    });
+  }
+
   // 새로운 회원가입 플로우 API들
   async initialSignup(email, password) {
     return this.request('/auth/signup/initial', {

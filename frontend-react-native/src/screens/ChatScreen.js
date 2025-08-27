@@ -299,7 +299,7 @@ export default function ChatScreen({ navigation, route }) {
                     <Text style={styles.botInitial}>K</Text>
                   </View>
                 ) : (
-                  <View style={[styles.avatar, styles.userAvatar]} />
+                  <Ionicons name="person-circle" size={65} color="#ddd" />
                 )
               ) : (
                 <View style={styles.avatarSpacer} />
@@ -479,13 +479,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarContainer: {
-    width: 45,
-    marginRight: 8,
+    width: 65,
+    marginRight: 4,
     alignItems: 'flex-start',
   },
   avatarSpacer: {
-    width: 50,
-    height: 50,
+    width: 65,
+    height: 65,
   },
   avatar: {
     width: 50,
@@ -501,10 +501,6 @@ const styles = StyleSheet.create({
   },
   botAvatar: {
     backgroundColor: '#45DCB1',
-  },
-  userAvatar: {
-    backgroundColor: '#9A9A9A',
-    borderRadius: 100,
   },
   botInitial: {
     color: '#FFFFFF',
