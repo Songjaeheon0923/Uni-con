@@ -11,6 +11,7 @@ import {
   FlatList,
   Dimensions,
   SafeAreaView,
+  Linking,
   Image
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -334,24 +335,21 @@ export default function HomeScreen({ navigation, user }) {
       }
 
       const description = policy?.policy?.description || policy?.description || policy?.content || '정책 상세 내용을 확인하세요.';
-      const url = policy?.policy?.url || policy?.url;
+      // URL 우선순위: application_url -> reference_url -> url
+      const url = policy?.application_url || policy?.reference_url || policy?.policy?.url || policy?.url;
 
-      Alert.alert(
-        '정책 뉴스',
-        description,
-        [
-          { text: '닫기', style: 'cancel' },
-          {
-            text: '자세히 보기',
-            onPress: () => {
-              if (url) {
-                // 실제로는 웹뷰나 브라우저로 열기
-                console.log('정책 URL:', url);
-              }
-            }
-          }
-        ]
-      );
+      if (url) {
+        // URL이 있으면 바로 브라우저에서 열기
+        try {
+          await Linking.openURL(url);
+        } catch (linkingError) {
+          console.error('URL 열기 실패:', linkingError);
+          Alert.alert('오류', 'URL을 열 수 없습니다.');
+        }
+      } else {
+        // URL이 없으면 설명만 표시
+        Alert.alert('정책 뉴스', description);
+      }
     } catch (error) {
       console.error('정책 조회 기록 실패:', error);
       const fallbackDescription = policy?.policy?.description || policy?.description || policy?.content || '정책 상세 내용을 확인하세요.';

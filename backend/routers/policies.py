@@ -174,10 +174,13 @@ async def get_popular_policies(
 @router.post("/view/{policy_id}")
 async def record_policy_view(
     policy_id: int,
-    user_id: int = Depends(verify_token)
+    token_data: dict = Depends(verify_token)
 ):
     """정책 조회 기록"""
     try:
+        user_id = token_data.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="유효하지 않은 사용자 정보입니다")
         recommender.record_policy_view(user_id, policy_id)
         return {"message": "조회 기록이 저장되었습니다"}
     except Exception as e:
@@ -213,7 +216,7 @@ async def get_policy_categories():
 async def get_policies_by_category(
     category: str,
     limit: int = Query(20, ge=1, le=50),
-    user_id: Optional[int] = Depends(verify_token)
+    token_data: Optional[dict] = Depends(verify_token)
 ):
     """카테고리별 정책 조회"""
     try:
@@ -362,7 +365,7 @@ async def get_youth_policies(
 async def search_policies(
     q: str = Query(..., min_length=1),
     limit: int = Query(20, ge=1, le=50),
-    user_id: Optional[int] = Depends(verify_token)
+    token_data: Optional[dict] = Depends(verify_token)
 ):
     """정책 검색"""
     try:

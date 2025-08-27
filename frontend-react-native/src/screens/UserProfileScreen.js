@@ -234,49 +234,30 @@ export default function UserProfileScreen({ route, navigation }) {
       const genderText = getGenderText(userGender) || '';
       const schoolText = getSchoolNameFromEmail(userSchoolEmail) || '';
       
-      // 더미 방 데이터
-      setRoom({
-        id: roomId,
-        price_deposit: 3000,
-        price_monthly: 45,
-        room_type: '원룸',
-        room_size: '6평',
-        floor: '4층',
-        address: '안암역 10분 거리',
-        management_fee: 7,
-        verification_status: 'verified',
-        images: ['https://via.placeholder.com/100x100/f0f0f0/666?text=매물']
-      });
+      // 방 데이터 설정 (roomId가 있는 경우에만)
+      if (roomId) {
+        setRoom({
+          id: roomId,
+          // 실제 방 데이터는 API에서 가져와야 함
+        });
+      }
       
-      // 더미 데이터
+      // 사용자 데이터 설정
       setUser({
         id: userId,
         name: userName,
         tags: userTags,
-        age: 20,
-        gender: '여성',
-        school: '성신여자대학교',
         ageGroupText,
         genderText,
         schoolText,
         bio: userBio,
-        matchScore: compatibilityData?.totalScore || 88,
-        compatibilityDetails: compatibilityData || {
-          sleepScore: 85,
-          cleanlinessScore: 80,
-          lifestyleScore: 90,
-          livingRangeScore: 95
-        },
+        matchScore: compatibilityData?.totalScore,
+        compatibilityDetails: compatibilityData,
         profileImage: null,
         budget: userBudget || '정보 없음',
         moveInDate: userMoveInDate || '정보 없음',
         preferredLocation: userPreferredLocation || '정보 없음',
         currentArea: userCurrentArea || '정보 없음',
-        weekdaySchedule: '오전 10시 전후',
-        weekendSchedule: '새벽 2시 전후',
-        lifeStyle: '청결도 : 물건은 제자리에, 주 1~2회 청소',
-        soundSensitivity: '음연 여부 : 비흡연',
-        petPolicy: '반려동물: 없음',
         selfIntro: userSelfIntro || '정보 없음',
         wantedRoommate: userWantedRoommate || '정보 없음'
       });
@@ -427,16 +408,18 @@ export default function UserProfileScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {/* 하단 버튼 */}
-      <View style={styles.floatingButtonContainer}>
-        <TouchableOpacity 
-          style={styles.floatingButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.floatingButtonText}>매물 추천하기</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      {/* 하단 버튼 - 채팅창에서 온 경우(roomId가 null) 숨기기 */}
+      {roomId !== null && (
+        <View style={styles.floatingButtonContainer}>
+          <TouchableOpacity 
+            style={styles.floatingButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.floatingButtonText}>매물 추천하기</Text>
+            <Ionicons name="arrow-forward" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* 매물 추천 모달 */}
       <Modal
