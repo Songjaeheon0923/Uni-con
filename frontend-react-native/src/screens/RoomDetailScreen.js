@@ -19,10 +19,10 @@ const { width } = Dimensions.get('window');
 
 const formatMaintenanceCost = (area) => {
   if (!area) return '7만';
-  
+
   const cost = Math.round(area * 1000);
   const manWon = Math.round(cost / 10000);
-  
+
   return `${manWon}만`;
 };
 
@@ -35,33 +35,50 @@ export default function RoomDetailScreen({ route, navigation }) {
 
   // 사용자 정보 (params에서 받거나 기본값 사용)
   const userData = user || { id: "1", name: "김대학생" };
-  const [images] = useState([
-    'https://via.placeholder.com/400x300/f0f0f0/666?text=매물사진1',
-    'https://via.placeholder.com/400x300/f0f0f0/666?text=매물사진2',
-    'https://via.placeholder.com/400x300/f0f0f0/666?text=매물사진3',
-    'https://via.placeholder.com/400x300/f0f0f0/666?text=매물사진4',
-  ]);
+  const getRoomImages = (roomId) => {
+    const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+    const baseImages = [
+      '1560448204-61ef83db30f1', // 모던 아파트
+      '1560449752-fdc86671adae', // 원룸
+      '1560440021-33f9b867899d', // 투룸 거실
+      '1560439514-3ce5aa6b2e9b', // 침실
+      '1574362848-ba9f3fa30e8f', // 주방
+      '1560448075-bb485b067938', // 화이트 인테리어
+      '1560184897-0c96646eb7e6', // 밝은 방
+      '1555041469-4532ad3d19d9'  // 아늑한 방
+    ];
+
+    return [
+      `https://images.unsplash.com/photo-${baseImages[imageIndex]}?auto=format&fit=crop&w=400&h=300&q=80`,
+      `https://images.unsplash.com/photo-${baseImages[(imageIndex + 1) % 8]}?auto=format&fit=crop&w=400&h=300&q=80`,
+      `https://images.unsplash.com/photo-${baseImages[(imageIndex + 2) % 8]}?auto=format&fit=crop&w=400&h=300&q=80`,
+      `https://images.unsplash.com/photo-${baseImages[(imageIndex + 3) % 8]}?auto=format&fit=crop&w=400&h=300&q=80`,
+    ];
+  };
+
+  const [images, setImages] = useState([]);
 
   useEffect(() => {
-    // room 데이터가 파라미터로 전달되지 않은 경우에만 API 호출
-    if (!roomFromParams && roomId) {
-      loadRoomDetail();
-    }
-    
-    // 찜 상태 확인
-    if (roomId || roomFromParams?.room_id) {
+    // roomId가 있으면 항상 API를 통해 최신 데이터 가져오기
+    const id = roomId || roomFromParams?.room_id;
+    if (id) {
+      loadRoomDetail(id);
       checkFavoriteStatus();
+      setImages(getRoomImages(id));
     }
   }, [roomId, roomFromParams]);
 
-  const loadRoomDetail = async () => {
+  const loadRoomDetail = async (id) => {
     try {
       setLoading(true);
-      const roomData = await ApiService.getRoomDetail(roomId);
+      const roomData = await ApiService.getRoomDetail(id || roomId);
       setRoom(roomData);
     } catch (error) {
       console.error('방 정보 로드 실패:', error);
-      // API 실패 시 에러 알림 없이 진행 (이미 room 데이터가 있을 수 있음)
+      // API 실패 시 홈에서 전달받은 room 데이터 사용
+      if (!room && roomFromParams) {
+        setRoom(roomFromParams);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,7 +88,7 @@ export default function RoomDetailScreen({ route, navigation }) {
     try {
       const id = roomId || room?.room_id;
       if (!id) return;
-      
+
       const response = await ApiService.checkFavoriteStatus(id);
       setIsFavorited(response.is_favorited);
     } catch (error) {
@@ -113,11 +130,13 @@ export default function RoomDetailScreen({ route, navigation }) {
   };
 
   const handleContactOwner = () => {
-    navigation.navigate('FavoritedUsers', { roomId });
+    const id = roomId || room?.room_id;
+    navigation.navigate('FavoritedUsers', { roomId: id });
   };
 
   const handleViewFavoritedUsers = () => {
-    navigation.navigate('FavoritedUsers', { roomId });
+    const id = roomId || room?.room_id;
+    navigation.navigate('FavoritedUsers', { roomId: id });
   };
 
   const handleViewContract = () => {
@@ -198,7 +217,7 @@ export default function RoomDetailScreen({ route, navigation }) {
           </View>
 
           <Text style={styles.price}>{formatPrice()}</Text>
-          <Text style={styles.description}>{room?.description || '매물 설명이 없습니다.'}</Text>
+          <Text style={styles.description}>{room?.description || room?.address || '매물 설명이 없습니다.'}</Text>
 
           <View style={styles.basicDetails}>
             <View style={styles.detailRowContainer}>

@@ -10,7 +10,8 @@ import {
   RefreshControl,
   FlatList,
   Dimensions,
-  SafeAreaView
+  SafeAreaView,
+  Image
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "../components/HomeIcon";
@@ -450,12 +451,30 @@ export default function HomeScreen({ navigation, user }) {
     return `${manWon}만`;
   };
 
+  const getRoomImage = (roomId) => {
+    // roomId 기반으로 부동산 이미지 선택
+    const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+    const roomImages = [
+      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
+      'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
+      'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
+      'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
+      'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
+      'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
+      'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
+      'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
+    ];
+    return roomImages[imageIndex];
+  };
+
   const renderRoomCard = ({ item }) => (
     <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
       <View style={styles.roomImageContainer}>
-        <View style={styles.placeholderImage}>
-          <HomeIcon size={30} color="#ccc" />
-        </View>
+        <Image
+          source={{ uri: getRoomImage(item.room_id) }}
+          style={styles.roomImage}
+          defaultSource={{ uri: 'https://via.placeholder.com/400x300/f0f0f0/666?text=매물' }}
+        />
         <TouchableOpacity
           style={styles.heartButton}
           onPress={(event) => {
@@ -971,6 +990,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  roomImage: {
+    width: '100%',
+    height: '100%',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    backgroundColor: '#f0f0f0',
   },
   heartButton: {
     position: 'absolute',

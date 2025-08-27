@@ -19,6 +19,22 @@ import { formatPrice, formatArea, getRoomType, formatFloor } from '../utils/pric
 
 const { width } = Dimensions.get('window');
 
+const getRoomImage = (roomId) => {
+  // roomId 기반으로 부동산 이미지 선택
+  const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+  const roomImages = [
+    'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
+    'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
+    'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
+    'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
+    'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
+    'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
+    'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
+    'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
+  ];
+  return roomImages[imageIndex];
+};
+
 const FavoriteRoomsScreen = ({ navigation, user }) => {
   const [favoriteRooms, setFavoriteRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,9 +110,11 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
   const renderRoomCard = ({ item }) => (
     <TouchableOpacity style={styles.cardContainer} onPress={() => handleRoomPress(item)}>
       <View style={styles.imageContainer}>
-        <View style={styles.imagePlaceholder}>
-          <Ionicons name="home-outline" size={24} color="#999" />
-        </View>
+        <Image 
+          source={{ uri: getRoomImage(item.room_id) }}
+          style={styles.roomImage}
+          defaultSource={{ uri: 'https://via.placeholder.com/80x80/f0f0f0/666?text=매물' }}
+        />
       </View>
 
       <View style={styles.infoContainer}>
@@ -216,13 +234,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
   },
-  imagePlaceholder: {
+  roomImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#E9ECEF',
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#E9ECEF',
   },
   loadingContainer: {
     flex: 1,
