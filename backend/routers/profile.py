@@ -94,18 +94,18 @@ async def get_profile_questions():
         "questions": [
             {
                 "id": "sleep_type",
-                "question": "보통 몇 시쯤 기상하고,\n몇 시쯤 잠자리에 드시나요?",
+                "question": "주로 몇 시쯤 기상하고,\n몇 시쯤 잠자리에 드시나요?",
                 "options": [
-                    {"value": "morning", "label": "아침형 (기상 7-9시, 취침 22-24시)"},
-                    {"value": "evening", "label": "야행형 (기상 10-12시, 취침 01-03시)"}
+                    {"value": "morning", "label": "아침형 (기상 7–9시, 취침 22–24시)"},
+                    {"value": "evening", "label": "야행형 (기상 10–12시, 취침 01–03시)"}
                 ]
             },
             {
                 "id": "home_time",
-                "question": "하루 중 집에 머무는 시간대는\n언제가 많으신가요?",
+                "question": "하루 중 집에 머무는 시간대는\n주로 언제가 많으신가요?",
                 "options": [
-                    {"value": "day", "label": "낮 시간 (08:00~18:00)"},
-                    {"value": "night", "label": "밤 시간 (18:00~02:00)"},
+                    {"value": "day", "label": "낮 시간에 집에 있어요 (08:00~18:00)"},
+                    {"value": "night", "label": "밤 시간에 집에 있어요 (18:00~02:00)"},
                     {"value": "irregular", "label": "일정하지 않아요"}
                 ]
             },
@@ -113,18 +113,18 @@ async def get_profile_questions():
                 "id": "cleaning_frequency",
                 "question": "청소는 얼마나 자주 하시나요?",
                 "options": [
-                    {"value": "daily", "label": "매일 / 이틀에 한번"},
-                    {"value": "weekly", "label": "주 1~2회"},
-                    {"value": "as_needed", "label": "필요할 때만"}
+                    {"value": "daily", "label": "매일 / 이틀에 한 번 정도 해요"},
+                    {"value": "weekly", "label": "주 1~2회 정도 해요"},
+                    {"value": "as_needed", "label": "필요할 때만 해도 돼요"}
                 ]
             },
             {
                 "id": "cleaning_sensitivity",
                 "question": "룸메이트의 청소 상태가\n신경 쓰이는 편인가요?",
                 "options": [
-                    {"value": "very_sensitive", "label": "매우 민감함 (먼지, 정리에 예민)"},
-                    {"value": "normal", "label": "보통"},
-                    {"value": "not_sensitive", "label": "크게 상관 없음"}
+                    {"value": "very_sensitive", "label": "매우 중요해요 (청결·정리 필수)"},
+                    {"value": "normal", "label": "각자의 공간만 지켜주면 돼요"},
+                    {"value": "not_sensitive", "label": "크게 상관없어요"}
                 ]
             },
             {
@@ -149,9 +149,9 @@ async def get_profile_questions():
                 "id": "noise_sensitivity",
                 "question": "생활 소음에 얼마나 민감하신가요?\n(예: 발소리, 말소리, 음악 등)",
                 "options": [
-                    {"value": "sensitive", "label": "매우 민감함 (소음에 예민)"},
-                    {"value": "normal", "label": "보통 (일상 소음은 괜찮음)"},
-                    {"value": "not_sensitive", "label": "크게 상관 없음 (소음에 둔감)"}
+                    {"value": "sensitive", "label": "매우 민감해요 (작은 소음도 신경 쓰여요)"},
+                    {"value": "normal", "label": "보통이에요 (일상 소음은 괜찮아요)"},
+                    {"value": "not_sensitive", "label": "크게 상관없어요 (웬만한 소음은 신경 안 써요)"}
                 ]
             }
         ]

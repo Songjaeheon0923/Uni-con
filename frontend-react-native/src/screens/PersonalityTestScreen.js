@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
@@ -52,6 +53,7 @@ export default function PersonalityTestScreen({ navigation, route }) {
           Animated.timing(slideAnim, {
             toValue: 0,
             duration: 300,
+            easing: Easing.out(Easing.ease),
             useNativeDriver: false,
           }).start();
         }
@@ -69,7 +71,8 @@ export default function PersonalityTestScreen({ navigation, route }) {
         // 서브 옵션 표시 애니메이션
         Animated.timing(slideAnim, {
           toValue: 1,
-          duration: 300,
+          duration: 400,
+          easing: Easing.out(Easing.back(1.1)),
           useNativeDriver: false,
         }).start();
       }
@@ -164,18 +167,18 @@ export default function PersonalityTestScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
-            <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
-          </Svg>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>나만의 룸메이트 찾기</Text>
-      </View>
+      {/* 뒤로가기 버튼 */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.goBack()}
+      >
+        <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
+          <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
+        </Svg>
+      </TouchableOpacity>
+      
+      {/* 헤더 타이틀 */}
+      <Text style={styles.headerTitle}>주거 성향 테스트</Text>
 
       {/* 진행률 바 */}
       <View style={styles.progressContainer}>
@@ -223,7 +226,7 @@ export default function PersonalityTestScreen({ navigation, route }) {
                 })}
               </View>
               
-              {/* 2단계: 서브 옵션들 (애니메이션) */}
+              {/* 2단계: 서브 옵션들 (슬라이딩 애니메이션) */}
               {(answers[currentQuestion.id] === 'non_smoker' || answers[currentQuestion.id] === 'smoker' || smokingSubSelection) && (
                 <Animated.View 
                   style={[
@@ -231,32 +234,50 @@ export default function PersonalityTestScreen({ navigation, route }) {
                     {
                       maxHeight: slideAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [0, 200],
+                        outputRange: [0, 180],
                       }),
                       opacity: slideAnim,
+                      transform: [{
+                        translateY: slideAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-30, 0],
+                        })
+                      }],
                     }
                   ]}
                 >
                   {(currentQuestion.sub_options[answers[currentQuestion.id]] || 
-                    (smokingSubSelection && currentQuestion.sub_options[smokingSubSelection.startsWith('non_smoker') ? 'non_smoker' : 'smoker']))?.map((subOption) => {
+                    (smokingSubSelection && currentQuestion.sub_options[smokingSubSelection.startsWith('non_smoker') ? 'non_smoker' : 'smoker']))?.map((subOption, index) => {
                     const isSubSelected = smokingSubSelection === subOption.value;
                     
                     return (
-                      <TouchableOpacity
+                      <Animated.View
                         key={subOption.value}
-                        style={[
-                          styles.smokingSubButton,
-                          isSubSelected && styles.smokingSubButtonSelected
-                        ]}
-                        onPress={() => handleSubAnswer(subOption.value)}
+                        style={{
+                          opacity: slideAnim,
+                          transform: [{
+                            translateY: slideAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [20, 0],
+                            })
+                          }],
+                        }}
                       >
-                        <Text style={[
-                          styles.smokingSubButtonText,
-                          isSubSelected && styles.smokingSubButtonTextSelected
-                        ]}>
-                          {subOption.label}
-                        </Text>
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.smokingSubButton,
+                            isSubSelected && styles.smokingSubButtonSelected
+                          ]}
+                          onPress={() => handleSubAnswer(subOption.value)}
+                        >
+                          <Text style={[
+                            styles.smokingSubButtonText,
+                            isSubSelected && styles.smokingSubButtonTextSelected
+                          ]}>
+                            {subOption.label}
+                          </Text>
+                        </TouchableOpacity>
+                      </Animated.View>
                     );
                   })}
                 </Animated.View>
@@ -266,16 +287,6 @@ export default function PersonalityTestScreen({ navigation, route }) {
             // 기본 옵션 UI
             currentQuestion.options.map((option, index) => {
               const isSelected = answers[currentQuestion.id] === option.value;
-              const getOptionIcon = () => {
-                if (currentQuestion.id === 'sleep_type') {
-                  if (option.value === 'morning') {
-                    return 'sunny-outline';
-                  } else if (option.value === 'night') {
-                    return 'moon-outline';
-                  }
-                }
-                return 'time-outline';
-              };
               
               return (
                 <TouchableOpacity
@@ -287,29 +298,20 @@ export default function PersonalityTestScreen({ navigation, route }) {
                   onPress={() => handleAnswer(currentQuestion.id, option.value)}
                 >
                   <View style={styles.optionContent}>
-                    <View style={styles.optionIcon}>
-                      <Ionicons 
-                        name={getOptionIcon()} 
-                        size={28} 
-                        color={isSelected ? '#ffffff' : '#8D8D8D'} 
-                      />
-                    </View>
-                    <View style={styles.optionTextContainer}>
+                    <Text style={[
+                      styles.optionMainText,
+                      isSelected && styles.optionMainTextSelected
+                    ]}>
+                      {option.label.split('(')[0].trim()}
+                    </Text>
+                    {option.label.includes('(') && (
                       <Text style={[
-                        styles.optionMainText,
-                        isSelected && styles.optionMainTextSelected
+                        styles.optionSubText,
+                        isSelected && styles.optionSubTextSelected
                       ]}>
-                        {option.label.split('(')[0].trim()}
+                        {' (' + option.label.split('(')[1]}
                       </Text>
-                      {option.label.includes('(') && (
-                        <Text style={[
-                          styles.optionSubText,
-                          isSelected && styles.optionSubTextSelected
-                        ]}>
-                          {' (' + option.label.split('(')[1]}
-                        </Text>
-                      )}
-                    </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               );
@@ -319,18 +321,9 @@ export default function PersonalityTestScreen({ navigation, route }) {
 
         {/* 버튼들 */}
         <View style={styles.navigationContainer}>
-          {currentQuestionIndex > 0 && (
-            <TouchableOpacity
-              style={styles.prevButton}
-              onPress={() => setCurrentQuestionIndex(currentQuestionIndex - 1)}
-            >
-              <Text style={styles.prevButtonText}>이전</Text>
-            </TouchableOpacity>
-          )}
           <TouchableOpacity
             style={[
               styles.nextButton,
-              currentQuestionIndex === 0 && styles.nextButtonFullWidth,
               ((currentQuestion.id === 'smoking_status' && smokingSubSelection) || 
                (currentQuestion.id !== 'smoking_status' && answers[currentQuestion.id])) && styles.nextButtonEnabled
             ]}
@@ -341,18 +334,37 @@ export default function PersonalityTestScreen({ navigation, route }) {
               isSubmitting
             }
           >
-            <Text style={styles.nextButtonText}>
+            <Text style={[
+              styles.nextButtonText,
+              ((currentQuestion.id === 'smoking_status' && smokingSubSelection) || 
+               (currentQuestion.id !== 'smoking_status' && answers[currentQuestion.id])) && styles.nextButtonTextEnabled
+            ]}>
               NEXT
             </Text>
-            <View style={styles.nextButtonIcon}>
+            <View style={[
+              styles.nextButtonArrow,
+              ((currentQuestion.id === 'smoking_status' && smokingSubSelection) || 
+               (currentQuestion.id !== 'smoking_status' && answers[currentQuestion.id])) && styles.nextButtonArrowEnabled
+            ]}>
               <Ionicons 
                 name="arrow-forward" 
-                size={16} 
-                color="#404040" 
+                size={20} 
+                color={((currentQuestion.id === 'smoking_status' && smokingSubSelection) || 
+                       (currentQuestion.id !== 'smoking_status' && answers[currentQuestion.id])) ? "#FFFFFF" : "#ACACAC"}
               />
             </View>
           </TouchableOpacity>
           
+          <View style={styles.bottomNavigation}>
+            {currentQuestionIndex > 0 && (
+              <TouchableOpacity
+                style={styles.prevButton}
+                onPress={() => setCurrentQuestionIndex(currentQuestionIndex - 1)}
+              >
+                <Text style={styles.prevButtonText}>이전</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -361,8 +373,12 @@ export default function PersonalityTestScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    backgroundColor: '#F2F2F2',
+    overflow: 'hidden',
+    borderRadius: 40,
   },
   loadingContainer: {
     flex: 1,
@@ -380,50 +396,40 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  header: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 63,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 63,
+    top: 50,
+    padding: 10,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    textAlign: 'center',
-  },
-  progressText: {
+    left: 147,
+    top: 63,
     position: 'absolute',
-    right: 20,
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    textAlign: 'center',
+    color: 'black',
+    fontSize: 18,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
   },
   progressContainer: {
-    paddingHorizontal: 19,
-    paddingTop: 10,
-    paddingBottom: 30,
-    backgroundColor: '#fff',
+    width: 373,
+    height: 7,
+    left: 19,
+    top: 123,
+    position: 'absolute',
   },
   progressBar: {
-    height: 7,
-    backgroundColor: '#EAEAEA',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#DADADA',
     borderRadius: 10,
-    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#404040',
+    backgroundColor: '#595959',
     borderRadius: 10,
+    position: 'absolute',
   },
   content: {
     flex: 1,
@@ -431,171 +437,227 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   questionArea: {
-    height: 120,
-    justifyContent: 'flex-end',
+    left: 20,
+    right: 20,
+    top: 213,
+    position: 'absolute',
     alignItems: 'center',
   },
   questionText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1C1C1C',
-    lineHeight: 33.6,
     textAlign: 'center',
-    paddingHorizontal: 40,
+    color: '#1C1C1C',
+    fontSize: 24,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 33.6,
   },
   optionsContainer: {
-    paddingHorizontal: 19,
-    marginBottom: 40,
+    position: 'absolute',
+    top: 338,
+    left: 19,
+    width: 373,
   },
   optionButton: {
-    backgroundColor: '#E0E0E0',
-    borderRadius: 9,
-    marginBottom: 15,
-    paddingHorizontal: 22,
-    paddingVertical: 20,
+    width: 373,
+    height: 75,
+    paddingLeft: 40,
+    paddingRight: 40,
+    paddingTop: 18,
+    paddingBottom: 18,
+    backgroundColor: 'white',
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    shadowColor: 'rgba(0, 0, 0, 0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 3,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
   },
   optionButtonSelected: {
-    backgroundColor: '#404040',
+    backgroundColor: '#10B585',
+    borderColor: '#555555',
   },
   optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  optionIcon: {
-    width: 34,
-    height: 33,
-    marginRight: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  optionTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    gap: 2,
   },
   optionMainText: {
-    fontSize: 21,
-    fontWeight: '600',
     color: '#474747',
-    lineHeight: 38,
+    fontSize: 21,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '600',
+    lineHeight: 38.01,
   },
   optionMainTextSelected: {
-    color: '#ffffff',
+    color: 'white',
   },
   optionSubText: {
-    fontSize: 16,
-    fontWeight: '400',
     color: '#474747',
-    lineHeight: 29,
-    marginLeft: 5,
+    fontSize: 16,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '400',
+    lineHeight: 28.96,
+    marginLeft: 0,
   },
   optionSubTextSelected: {
-    color: '#ffffff',
+    color: 'white',
   },
   navigationContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 19,
-    paddingBottom: 80,
-    backgroundColor: '#fff',
+    position: 'absolute',
+    left: 55,
+    top: 648,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
-  prevButton: {
-    width: 77,
-    height: 56,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-  prevButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6F6F6F',
-    textAlign: 'center',
   },
   nextButton: {
-    width: 289,
-    height: 56,
-    backgroundColor: '#696969',
-    borderRadius: 9,
-    flexDirection: 'row',
+    width: 302,
+    height: 60,
+    paddingLeft: 87,
+    paddingRight: 87,
+    paddingVertical: 0,
+    backgroundColor: '#EFEFEF',
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#ACACAC',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-  nextButtonFullWidth: {
-    width: 373,
+    flexDirection: 'row',
+    position: 'relative',
   },
   nextButtonEnabled: {
-    backgroundColor: '#000000',
+    backgroundColor: 'black',
+    borderColor: 'black',
   },
   nextButtonText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#ffffff',
     textAlign: 'center',
-    marginRight: 8,
+    color: '#ACACAC',
+    fontSize: 20,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '600',
+    includeFontPadding: false,
+    lineHeight: 24,
   },
-  nextButtonIcon: {
-    width: 26,
-    height: 26,
-    backgroundColor: '#D9D9D9',
-    borderRadius: 13,
+  nextButtonTextEnabled: {
+    color: 'white',
+  },
+  nextButtonArrow: {
+    position: 'absolute',
+    right: 8,
+    width: 42.62,
+    height: 41.53,
+    backgroundColor: 'white',
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: '#ACACAC',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  nextButtonArrowEnabled: {
+    backgroundColor: '#FC6339',
+    borderColor: '#FC6339',
+  },
+  bottomNavigation: {
+    width: 282.62,
+    left: 10,
+    top: 9,
+    position: 'absolute',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+  },
+  prevButton: {
+    height: 42.62,
+    paddingHorizontal: 8.88,
+    backgroundColor: '#F1F1F1',
+    borderRadius: 88.79,
+    borderWidth: 1,
+    borderColor: '#ACACAC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8.88,
+  },
+  prevButtonText: {
+    textAlign: 'center',
+    color: '#343434',
+    fontSize: 14.21,
+    fontFamily: 'Pretendard',
+    fontWeight: '500',
   },
   // 흡연 질문 스타일
   smokingMainOptions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 15,
     gap: 10,
   },
   smokingMainButton: {
     flex: 1,
     height: 75,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 9,
+    backgroundColor: 'white',
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    shadowColor: 'rgba(0, 0, 0, 0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 3,
     justifyContent: 'center',
     alignItems: 'center',
   },
   smokingMainButtonSelected: {
-    backgroundColor: '#7E7E7E',
+    backgroundColor: '#10B585',
+    borderColor: '#555555',
   },
   smokingMainButtonText: {
     fontSize: 21,
     fontWeight: '600',
     color: '#474747',
+    fontFamily: 'Pretendard Variable',
   },
   smokingMainButtonTextSelected: {
-    color: '#ffffff',
+    color: 'white',
   },
   smokingSubOptions: {
     marginTop: 5,
     overflow: 'hidden',
   },
   smokingSubButton: {
-    backgroundColor: '#E0E0E0',
-    borderRadius: 9,
-    paddingHorizontal: 22,
-    paddingVertical: 20,
+    width: 373,
+    height: 75,
+    paddingHorizontal: 40,
+    paddingVertical: 18,
+    backgroundColor: 'white',
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    shadowColor: 'rgba(0, 0, 0, 0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 3,
     marginBottom: 10,
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   smokingSubButtonSelected: {
-    backgroundColor: '#404040',
+    backgroundColor: '#10B585',
+    borderColor: '#555555',
   },
   smokingSubButtonText: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 21,
+    fontWeight: '600',
     color: '#474747',
-    flex: 1,
+    fontFamily: 'Pretendard Variable',
+    textAlign: 'center',
   },
   smokingSubButtonTextSelected: {
-    color: '#ffffff',
+    color: 'white',
   },
 });
