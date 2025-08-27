@@ -13,7 +13,7 @@ import CurrentLocationIcon from "../components/CurrentLocationIcon";
 import HeartIcon from "../components/HeartIcon";
 import ChatIcon from "../components/ChatIcon";
 
-export default function MapScreen({ navigation }) {
+export default function MapScreen({ navigation, user }) {
   const [rooms, setRooms] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
   const [selectedFilters, setSelectedFilters] = useState([]);
@@ -23,13 +23,14 @@ export default function MapScreen({ navigation }) {
   const [recentSearches, setRecentSearches] = useState(['안암동 2가', '안암동 1가', '보문역', '성신여대입구역']);
   const [showRecentSearches, setShowRecentSearches] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
+  const [favorites, setFavorites] = useState([]);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const locationButtonAnim = useRef(new Animated.Value(0)).current;
   const mapViewRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Mock user data
-  const userData = {
+  // 사용자 정보
+  const userData = user || {
     id: "1",
     name: "김대학생",
   };
@@ -69,7 +70,17 @@ export default function MapScreen({ navigation }) {
 
   useEffect(() => {
     loadRooms();
+    loadFavorites();
   }, []);
+  
+  const loadFavorites = async () => {
+    try {
+      const favoriteData = await ApiService.getUserFavorites(String(userData.id));
+      setFavorites(favoriteData.map(room => room.room_id));
+    } catch (error) {
+      console.error('찜 목록 로드 실패:', error);
+    }
+  };
 
   const loadRooms = async () => {
     try {
@@ -253,25 +264,43 @@ export default function MapScreen({ navigation }) {
   const handleFavoriteToggle = async (property) => {
     try {
       // Mock 데이터는 찜 기능 건너뛰기
-      if (property.id && property.id.startsWith('mock_')) {
+      const roomId = property.room_id || property.id;
+      if (roomId && roomId.startsWith('mock_')) {
         Alert.alert('알림', '샘플 데이터는 찜할 수 없습니다.');
         return;
       }
 
-      if (property.isFavorited) {
-        await ApiService.removeFavorite(property.id);
+      const isFavorited = favorites.includes(roomId);
+      
+      if (isFavorited) {
+        await ApiService.removeFavorite(roomId);
+        setFavorites(favorites.filter(id => id !== roomId));
       } else {
-        await ApiService.addFavorite(property.id, userData.id);
+        await ApiService.addFavorite(roomId, String(userData.id));
+        setFavorites([...favorites, roomId]);
       }
 
       // 상태 업데이트
+      const currentFavoriteCount = property.favorite_count || 0;
+      const newFavoriteCount = isFavorited 
+        ? Math.max(0, currentFavoriteCount - 1) 
+        : currentFavoriteCount + 1;
+
       const updatedRooms = rooms.map(room =>
         room.id === property.id
-          ? { ...room, isFavorited: !room.isFavorited }
+          ? { ...room, isFavorited: !room.isFavorited, favorite_count: newFavoriteCount }
           : room
       );
       setRooms(updatedRooms);
-      setSelectedProperty({ ...property, isFavorited: !property.isFavorited });
+      
+      // selectedProperty의 favorite_count도 업데이트
+      setSelectedProperty({ 
+        ...property, 
+        isFavorited: !property.isFavorited,
+        favorite_count: newFavoriteCount
+      });
+      
+      console.log('❤️ 좋아요 수 업데이트:', currentFavoriteCount, '->', newFavoriteCount);
     } catch (error) {
       console.error('찜 상태 변경 실패:', error);
       // 404 에러는 무시
@@ -568,13 +597,13 @@ export default function MapScreen({ navigation }) {
                 onPress={() => handleFavoriteToggle(selectedProperty)}
               >
                 <Ionicons
-                  name={selectedProperty.isFavorited ? "heart" : "heart-outline"}
+                  name={favorites.includes(selectedProperty.room_id || selectedProperty.id) ? "heart" : "heart-outline"}
                   size={20}
-                  color={selectedProperty.isFavorited ? "#FF6600" : "#999"}
+                  color={favorites.includes(selectedProperty.room_id || selectedProperty.id) ? "#FF6600" : "#999"}
                 />
               </TouchableOpacity>
               <View style={styles.cardLikeCount}>
-                <Text style={styles.likeCountText}>{selectedProperty.favorite_count || 13}</Text>
+                <Text style={styles.likeCountText}>{selectedProperty.favorite_count || 0}</Text>
               </View>
             </View>
           </View>
@@ -721,6 +750,8 @@ export default function MapScreen({ navigation }) {
           navigation={navigation}
           onBuildingModalStateChange={setShowBuildingModal}
           onMarkerSelectionChange={handleMarkerSelectionChange}
+          favorites={favorites}
+          onToggleFavorite={handleFavoriteToggle}
         />
 
         {/* 오른쪽 상단 버튼들 */}

@@ -17,6 +17,15 @@ import { formatPrice as formatPriceUtil, formatArea, getRoomType, formatFloor } 
 
 const { width } = Dimensions.get('window');
 
+const formatMaintenanceCost = (area) => {
+  if (!area) return '7만';
+  
+  const cost = Math.round(area * 1000);
+  const manWon = Math.round(cost / 10000);
+  
+  return `${manWon}만`;
+};
+
 export default function RoomDetailScreen({ route, navigation }) {
   const { roomId, room: roomFromParams } = route.params || {};
   const [room, setRoom] = useState(roomFromParams || null);
@@ -195,7 +204,7 @@ export default function RoomDetailScreen({ route, navigation }) {
                 <View style={styles.detailIcon}>
                   <Ionicons name="card-outline" size={16} color="#666" />
                 </View>
-                <Text style={styles.detailText}>관리비 {room?.area ? Math.round(room.area * 1000) : '5만'}원 (수도 포함)</Text>
+                <Text style={styles.detailText}>관리비 {formatMaintenanceCost(room?.area)}원 (수도 포함)</Text>
               </View>
             </View>
           </View>
@@ -219,7 +228,7 @@ export default function RoomDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.tableRow}>
               <Text style={styles.tableLabel}>관리비</Text>
-              <Text style={styles.tableValue}>{room?.area ? Math.round(room.area * 1000) : '5만'}원 (수도세 포함)</Text>
+              <Text style={styles.tableValue}>{formatMaintenanceCost(room?.area)}원 (수도세 포함)</Text>
             </View>
           </View>
         </View>

@@ -154,7 +154,28 @@ function MapStack({ user }) {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="MapMain" component={MapScreen} />
+      <Stack.Screen name="MapMain">
+        {(props) => <MapScreen {...props} user={user} />}
+      </Stack.Screen>
+      <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
+      <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
+      <Stack.Screen name="ContractView" component={ContractViewScreen} />
+      <Stack.Screen name="FavoritedUsers" component={FavoritedUsersScreen} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function FavoriteStack({ user }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="FavoriteMain">
+        {(props) => <FavoriteRoomsScreen {...props} user={user} />}
+      </Stack.Screen>
       <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
       <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
       <Stack.Screen name="ContractView" component={ContractViewScreen} />
@@ -249,7 +270,9 @@ function MainTabs() {
       <Tab.Screen name="지도">
         {(props) => <MapStack {...props} user={user} />}
       </Tab.Screen>
-      <Tab.Screen name="관심목록" component={FavoriteRoomsScreen} />
+      <Tab.Screen name="관심목록">
+        {(props) => <FavoriteStack {...props} user={user} />}
+      </Tab.Screen>
       <Tab.Screen name="내 정보">
         {(props) => <ProfileStack {...props} user={user} onLogout={logout} />}
       </Tab.Screen>

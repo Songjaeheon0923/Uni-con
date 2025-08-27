@@ -8,66 +8,108 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
+  RefreshControl,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../services/api';
+import { formatPrice, formatArea, getRoomType, formatFloor } from '../utils/priceUtils';
 
 const { width } = Dimensions.get('window');
 
-const FavoriteRoomsScreen = ({ navigation }) => {
-  const [favoriteRooms, setFavoriteRooms] = useState([
-    {
-      id: 1,
-      image: null,
-      price: '월세 3,000 / 35만원',
-      type: '원룸',
-      size: '6평',
-      floor: '4층',
-      maintenance: '관리비 7만원',
-      location: '안암역 10분 거리',
-      verified: true,
-      likes: 13,
-    },
-    {
-      id: 2,
-      image: null,
-      price: '월세 5,000 / 40만원',
-      type: '투룸',
-      size: '8평',
-      floor: '2층',
-      maintenance: '관리비 5만원',
-      location: '고려대역 5분 거리',
-      verified: true,
-      likes: 21,
-    },
-    {
-      id: 3,
-      image: null,
-      price: '월세 2,000 / 30만원',
-      type: '원룸',
-      size: '5평',
-      floor: '3층',
-      maintenance: '관리비 8만원',
-      location: '안암역 15분 거리',
-      verified: false,
-      likes: 8,
-    },
-  ]);
+const FavoriteRoomsScreen = ({ navigation, user }) => {
+  const [favoriteRooms, setFavoriteRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // 사용자 정보
+  const userData = user || { id: "1" };
+
+  useEffect(() => {
+    loadFavorites();
+    
+    // 탭이 포커스될 때마다 찜 목록 새로고침
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadFavorites();
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
+  
+  const loadFavorites = async () => {
+    try {
+      setLoading(true);
+      const favorites = await ApiService.getUserFavorites(String(userData.id));
+      
+      console.log('API 응답 샘플:', favorites[0]); // 첫 번째 아이템의 구조 확인
+      
+      // API 응답 구조에 맞게 데이터 변환
+      const formattedFavorites = favorites.map(item => ({
+        id: item.room_id,
+        room_id: item.room_id,
+        price_deposit: item.price_deposit,
+        price_monthly: item.price_monthly || 0,
+        transaction_type: item.transaction_type,
+        area: item.area,
+        floor: item.floor,
+        rooms: item.rooms,
+        address: item.address,
+        favorite_count: item.favorite_count || 0, // 실제 백엔드 데이터 사용
+        verified: true, // 실제 인증 여부는 백엔드에서 받아와야 함
+      }));
+      
+      setFavoriteRooms(formattedFavorites);
+    } catch (error) {
+      console.error('찜 목록 로드 실패:', error);
+      setFavoriteRooms([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+  
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadFavorites();
+  };
+  
+  const removeFavorite = async (roomId) => {
+    try {
+      await ApiService.removeFavorite(roomId);
+      setFavoriteRooms(favoriteRooms.filter(room => room.room_id !== roomId));
+      
+      // 찜 상태 변경을 저장하여 다른 화면에서 감지할 수 있도록 함
+      await AsyncStorage.setItem('favoriteChanged', Date.now().toString());
+    } catch (error) {
+      Alert.alert('오류', '찜 삭제에 실패했습니다.');
+    }
+  };
+  
+  const handleRoomPress = (room) => {
+    navigation.navigate('RoomDetail', { roomId: room.room_id });
+  };
 
   const renderRoomCard = ({ item }) => (
-    <TouchableOpacity style={styles.cardContainer}>
+    <TouchableOpacity style={styles.cardContainer} onPress={() => handleRoomPress(item)}>
       <View style={styles.imageContainer}>
-        <View style={styles.imagePlaceholder} />
+        <View style={styles.imagePlaceholder}>
+          <Ionicons name="home-outline" size={24} color="#999" />
+        </View>
       </View>
 
       <View style={styles.infoContainer}>
         <View style={styles.contentHeader}>
           <View style={styles.contentLeft}>
-            <Text style={styles.price}>{item.price}</Text>
+            <Text style={styles.price}>
+              {formatPrice(item.price_deposit, item.transaction_type, item.price_monthly, item.room_id)}
+            </Text>
             <Text style={styles.roomInfo}>
-              {item.type} | {item.size} | {item.floor}
+              {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} | {formatFloor(item.floor)}
             </Text>
             <Text style={styles.additionalInfo}>
-              {item.maintenance} | {item.location}
+              {item.address}
             </Text>
             {item.verified && (
               <View style={styles.verificationBadge}>
@@ -76,14 +118,34 @@ const FavoriteRoomsScreen = ({ navigation }) => {
               </View>
             )}
           </View>
-          <TouchableOpacity style={styles.heartContainer}>
+          <TouchableOpacity 
+            style={styles.heartContainer}
+            onPress={(e) => {
+              e.stopPropagation();
+              removeFavorite(item.room_id);
+            }}
+          >
             <Ionicons name="heart" size={20} color="#FF6B6B" />
-            <Text style={styles.heartCount}>{item.likes}</Text>
+            <Text style={styles.heartCount}>{item.favorite_count}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
   );
+
+  if (loading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>관심 목록</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF6600" />
+          <Text style={styles.loadingText}>찜 목록을 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,13 +153,28 @@ const FavoriteRoomsScreen = ({ navigation }) => {
         <Text style={styles.headerTitle}>관심 목록</Text>
       </View>
 
-      <FlatList
-        data={favoriteRooms}
-        renderItem={renderRoomCard}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {favoriteRooms.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="heart-outline" size={48} color="#999" />
+          <Text style={styles.emptyText}>아직 찜한 매물이 없습니다</Text>
+          <Text style={styles.emptySubtext}>마음에 드는 매물을 찜해보세요!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={favoriteRooms}
+          renderItem={renderRoomCard}
+          keyExtractor={(item) => item.room_id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#FF6600"
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -144,6 +221,35 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#E9ECEF',
     borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 100,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
   },
   infoContainer: {
     flex: 1,

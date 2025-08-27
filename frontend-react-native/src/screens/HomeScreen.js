@@ -19,6 +19,7 @@ import ChatIcon from "../components/ChatIcon";
 import * as Location from 'expo-location';
 import ApiService from "../services/api";
 import RoomDetailModal from "../components/RoomDetailModal";
+import { formatPrice, formatArea, getRoomType, formatFloor } from "../utils/priceUtils";
 
 const { width } = Dimensions.get('window');
 
@@ -362,6 +363,58 @@ export default function HomeScreen({ navigation, user }) {
     });
   };
 
+  // 주소를 기반으로 가장 가까운 역과 거리 계산
+  const getNearestStation = (address) => {
+    if (!address) return '역 정보 없음';
+    
+    // 서울 주요 역 리스트 (간단한 매칭용)
+    const stations = {
+      '성북': '안암역 10분',
+      '안암': '안암역 5분',
+      '보문': '보문역 8분',
+      '종로': '종각역 12분',
+      '중구': '을지로입구역 10분',
+      '강남': '강남역 7분',
+      '서초': '강남역 15분',
+      '송파': '잠실역 10분',
+      '강동': '천호역 8분',
+      '마포': '홍대입구역 12분',
+      '서대문': '신촌역 10분',
+      '은평': '연신내역 15분',
+      '용산': '용산역 8분',
+      '영등포': '영등포구청역 10분',
+      '구로': '구로역 8분',
+      '관악': '신림역 12분',
+      '동작': '사당역 10분',
+      '성동': '왕십리역 8분',
+      '광진': '건대입구역 10분',
+      '동대문': '동대문역 7분',
+      '중랑': '상봉역 12분',
+      '노원': '노원역 8분',
+      '도봉': '도봉산역 10분',
+      '강북': '미아역 12분'
+    };
+    
+    // 주소에서 구 이름 추출
+    for (const [district, station] of Object.entries(stations)) {
+      if (address.includes(district)) {
+        return station + ' 거리';
+      }
+    }
+    
+    return '안암역 10분 거리'; // 기본값
+  };
+
+  // 관리비를 만원 단위로 반올림하여 포맷팅
+  const formatMaintenanceCost = (area) => {
+    if (!area) return '7만';
+    
+    const cost = Math.round(area * 1000);
+    const manWon = Math.round(cost / 10000);
+    
+    return `${manWon}만`;
+  };
+
   const renderRoomCard = ({ item }) => (
     <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
       <View style={styles.roomImageContainer}>
@@ -384,16 +437,20 @@ export default function HomeScreen({ navigation, user }) {
       </View>
 
       <View style={styles.roomCardInfo}>
-        <Text style={styles.roomType}>
-          {item.rooms === 1 ? '원룸' : item.rooms === 2 ? '투룸' : '다가구'}, {item.transaction_type} {item.price_deposit}
-          {item.price_monthly > 0 && `/${item.price_monthly}`}
+        {/* 가격 */}
+        <Text style={styles.priceText}>
+          {item.transaction_type} {formatPrice(item.price_deposit, item.transaction_type, item.price_monthly, item.room_id)}
         </Text>
-        <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={12} color="#666" />
-          <Text style={styles.locationText}>
-            {item.address.split(' ').slice(-3).join(' ')}
-          </Text>
-        </View>
+        
+        {/* 방 정보 */}
+        <Text style={styles.roomInfoText}>
+          {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} | {formatFloor(item.floor)}
+        </Text>
+        
+        {/* 관리비와 거리 정보 */}
+        <Text style={styles.additionalInfoText}>
+          관리비 {formatMaintenanceCost(item.area)}원 | {getNearestStation(item.address)}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -875,20 +932,21 @@ const styles = StyleSheet.create({
   roomCardInfo: {
     padding: 12,
   },
-  roomType: {
-    fontSize: 13,
-    fontWeight: '600',
+  priceText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#333',
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationText: {
-    fontSize: 12,
+  roomInfoText: {
+    fontSize: 13,
+    fontWeight: '500',
     color: '#666',
-    marginLeft: 4,
+    marginBottom: 3,
+  },
+  additionalInfoText: {
+    fontSize: 11,
+    color: '#999',
   },
   newsBox: {
     backgroundColor: '#fff',

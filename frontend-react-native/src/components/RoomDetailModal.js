@@ -21,6 +21,7 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.75));
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteUsers, setFavoriteUsers] = useState([]);
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const [showFavoriteUsers, setShowFavoriteUsers] = useState(false);
 
   useEffect(() => {
@@ -49,36 +50,92 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
     if (!room || !user) return;
 
     try {
+      console.log('🏠 Room data favorite_count:', room.favorite_count); // 디버깅
+      
+      // 초기 찜 개수 설정
+      setFavoriteCount(room.favorite_count || 0);
+      
       // 찜 상태는 일단 false로 설정 (세션 인증 문제로 임시)
       setIsFavorited(false);
 
       // 이 방을 찜한 사용자들 조회 (궁합점수 기반 정렬)
       const favoriteUsersData = await ApiService.getMatchedRoommates(room.room_id);
       setFavoriteUsers(favoriteUsersData);
+      
+      // API에서 가져온 사용자 수와 비교 (디버깅)
+      console.log('👥 Favorite users count:', favoriteUsersData.length);
+      console.log('❤️  Current favorite_count:', room.favorite_count || 0);
     } catch (error) {
       console.error('방 데이터 로드 실패:', error);
       // 에러 시 빈 배열로 설정
       setFavoriteUsers([]);
+      setFavoriteCount(room?.favorite_count || 0);
     }
   };
 
   const toggleFavorite = async () => {
     if (!user || !room) return;
 
-    // 임시로 로컬 상태만 변경 (세션 인증 문제로)
-    if (isFavorited) {
-      setIsFavorited(false);
-      setFavoriteUsers(favoriteUsers.filter(u => u.user_id !== String(user.id)));
-    } else {
-      setIsFavorited(true);
-      const newUser = {
-        user_id: String(user.id),
-        nickname: user.name || "김대학생",
-        age: 22,
-        gender: "Unknown",
-        occupation: "대학생"
-      };
-      setFavoriteUsers([...favoriteUsers, newUser]);
+    console.log('🔄 Toggle favorite - 현재 상태:', { isFavorited, favoriteCount });
+
+    try {
+      if (isFavorited) {
+        console.log('➖ 찜 해제 시도');
+        // 찜 해제
+        await ApiService.removeFavorite(room.room_id);
+        setIsFavorited(false);
+        setFavoriteCount(prev => {
+          const newCount = Math.max(0, prev - 1);
+          console.log('📉 찜 개수 감소:', prev, '->', newCount);
+          return newCount;
+        });
+        setFavoriteUsers(favoriteUsers.filter(u => u.user_id !== String(user.id)));
+      } else {
+        console.log('➕ 찜 추가 시도');
+        // 찜 추가
+        await ApiService.addFavorite(room.room_id, String(user.id));
+        setIsFavorited(true);
+        setFavoriteCount(prev => {
+          const newCount = prev + 1;
+          console.log('📈 찜 개수 증가:', prev, '->', newCount);
+          return newCount;
+        });
+        const newUser = {
+          user_id: String(user.id),
+          nickname: user.name || "김대학생",
+          age: 22,
+          gender: "Unknown",
+          occupation: "대학생"
+        };
+        setFavoriteUsers([...favoriteUsers, newUser]);
+      }
+    } catch (error) {
+      console.error('❌ 찜 상태 변경 실패:', error);
+      // API 실패 시 로컬 상태만 변경 (임시)
+      if (isFavorited) {
+        setIsFavorited(false);
+        setFavoriteCount(prev => {
+          const newCount = Math.max(0, prev - 1);
+          console.log('📉 (에러 시) 찜 개수 감소:', prev, '->', newCount);
+          return newCount;
+        });
+        setFavoriteUsers(favoriteUsers.filter(u => u.user_id !== String(user.id)));
+      } else {
+        setIsFavorited(true);
+        setFavoriteCount(prev => {
+          const newCount = prev + 1;
+          console.log('📈 (에러 시) 찜 개수 증가:', prev, '->', newCount);
+          return newCount;
+        });
+        const newUser = {
+          user_id: String(user.id),
+          nickname: user.name || "김대학생",
+          age: 22,
+          gender: "Unknown",
+          occupation: "대학생"
+        };
+        setFavoriteUsers([...favoriteUsers, newUser]);
+      }
     }
   };
 
@@ -173,7 +230,7 @@ export default function RoomDetailModal({ visible, room, onClose, user, onNaviga
                     color={isFavorited ? "#ff4757" : "#666"}
                   />
                   <Text style={styles.favoriteButtonText}>
-                    찜하기 ({favoriteUsers.length})
+                    찜하기 ({favoriteCount})
                   </Text>
                 </TouchableOpacity>
 

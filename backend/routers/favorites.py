@@ -225,7 +225,7 @@ async def get_user_favorites(user_id: str):
         cursor.execute(
             """
             SELECT r.room_id, r.address, r.price_deposit, r.price_monthly,
-                   r.transaction_type, r.area, r.risk_score
+                   r.transaction_type, r.area, r.risk_score, r.favorite_count, r.floor, r.rooms
             FROM favorites f
             JOIN rooms r ON f.room_id = r.room_id
             WHERE f.user_id = ? AND r.is_active = 1
@@ -247,6 +247,9 @@ async def get_user_favorites(user_id: str):
                 transaction_type=row[4],
                 area=row[5],
                 risk_score=row[6],
+                favorite_count=row[7] if len(row) > 7 else 0,
+                floor=row[8] if len(row) > 8 else None,
+                rooms=row[9] if len(row) > 9 else None,
                 thumbnail_image=None,  # 나중에 이미지 기능 구현
             )
             favorite_rooms.append(room)

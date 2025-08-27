@@ -60,6 +60,8 @@ class ApiService {
         headers['Authorization'] = `Bearer ${this.authToken}`;
       }
 
+      console.log(`API Request: ${options.method || 'GET'} ${endpoint}`);
+      
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
