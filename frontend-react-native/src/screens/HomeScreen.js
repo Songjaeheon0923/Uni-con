@@ -12,7 +12,6 @@ import {
   Dimensions,
   SafeAreaView
 } from "react-native";
-import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "../components/HomeIcon";
 import PeopleIcon from "../components/PeopleIcon";
