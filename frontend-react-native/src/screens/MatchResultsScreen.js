@@ -43,8 +43,45 @@ export default function MatchResultsScreen({ navigation }) {
     navigation.navigate('RoommateChoice');
   };
 
-  const handleContactUser = (user) => {
-    Alert.alert('채팅 신청', `${user.name}님에게 채팅을 신청하시겠습니까?`);
+  const handleContactUser = async (user) => {
+    try {
+      // 기존 채팅방이 있는지 확인
+      const response = await ApiService.getChatRooms();
+      const chatRooms = Array.isArray(response) ? response : (response?.rooms || []);
+      
+      const existingRoom = chatRooms.find(room => 
+        room.participants && room.participants.some(participant => participant.user_id === user.user_id)
+      );
+
+      let roomId;
+      if (existingRoom) {
+        // 기존 채팅방이 있으면 해당 채팅방 사용
+        roomId = existingRoom.room_id;
+      } else {
+        // 새 채팅방 생성
+        const newRoom = await ApiService.createChatRoom(
+          'individual', 
+          [user.user_id], 
+          `${user.name}님과의 채팅`
+        );
+        roomId = newRoom.room_id;
+      }
+
+      // 채팅 화면으로 이동
+      navigation.navigate('Chat', {
+        roomId: roomId,
+        otherUser: {
+          user_id: user.user_id,
+          name: user.name,
+          university: user.university,
+          age: user.age,
+          gender: user.gender
+        }
+      });
+    } catch (error) {
+      console.error('채팅방 생성/찾기 실패:', error);
+      Alert.alert('오류', '채팅방을 만드는데 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   const getCompatibilityText = (score) => {
@@ -169,7 +206,10 @@ export default function MatchResultsScreen({ navigation }) {
 
       {/* 매칭률 */}
       <View style={styles.matchingSection}>
-        <Text style={styles.scorePercentage}>{Math.round(user.compatibility_score * 100)}%</Text>
+        <Text style={[
+          styles.scorePercentage,
+          Math.round(user.compatibility_score * 100) === 100 && styles.scorePercentage100
+        ]}>{Math.round(user.compatibility_score * 100)}%</Text>
         <Text style={styles.scoreLabel}>{getCompatibilityText(user.compatibility_score)}</Text>
       </View>
 
@@ -728,6 +768,9 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     flexShrink: 1,
     flexWrap: 'wrap',
+  },
+  scorePercentage100: {
+    fontSize: 29,
   },
   scoreLabel: {
     textAlign: 'center',

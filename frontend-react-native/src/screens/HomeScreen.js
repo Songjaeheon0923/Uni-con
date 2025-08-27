@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -56,6 +57,13 @@ export default function HomeScreen({ navigation, user }) {
     loadPolicyNews();
     loadUserProfile();
   }, []);
+
+  // 화면이 포커스될 때마다 사용자 프로필 다시 로드
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUserProfile();
+    }, [])
+  );
 
   const getCurrentLocation = async () => {
     try {

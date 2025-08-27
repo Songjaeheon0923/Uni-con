@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AppState } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -68,6 +68,7 @@ function HomeStack({ user }) {
         component={ChatScreen}
         options={{
           headerShown: false,
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Stack.Screen
@@ -206,9 +207,10 @@ function ProfileStack({ user, onLogout }) {
 
 function MainTabs() {
   const { user, logout } = useAuth();
+
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({ route, navigation }) => ({
         tabBarIcon: ({ focused, color }) => {
           if (route.name === '홈') {
             return <HomeIcon size={28} color={color} focused={focused} />;
@@ -242,8 +244,41 @@ function MainTabs() {
         },
         headerShown: false,
       })}
+      screenListeners={({ navigation, route }) => ({
+        tabPress: (e) => {
+          // 홈 탭을 눌렀을 때만 스택 초기화, 이미 홈 화면에 있으면 무시
+          if (e.target.includes('홈')) {
+            const currentRoute = navigation.getState()?.routes?.find(r => r.name === '홈')?.state?.routes?.slice(-1)?.[0]?.name;
+            if (currentRoute !== 'HomeMain') {
+              navigation.navigate('홈', { screen: 'HomeMain' });
+            }
+          }
+        },
+      })}
     >
-      <Tab.Screen name="홈">
+      <Tab.Screen 
+        name="홈"
+        options={({ route }) => ({
+          tabBarStyle: (() => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeMain';
+            if (routeName === 'Chat') {
+              return { display: 'none' };
+            }
+            return {
+              height: 100,
+              paddingBottom: 30,
+              paddingTop: 15,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 8,
+            };
+          })(),
+        })}
+      >
         {(props) => <HomeStack {...props} user={user} />}
       </Tab.Screen>
       <Tab.Screen name="지도">

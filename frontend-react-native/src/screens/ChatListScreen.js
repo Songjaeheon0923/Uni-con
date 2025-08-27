@@ -32,7 +32,7 @@ const FILTER_OPTIONS = [
 const { width: screenWidth } = Dimensions.get('window');
 
 // 스와이프 가능한 채팅 아이템 컴포넌트
-const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwiping, updateUnreadCount }) => {
+const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwiping, formatUserStatus }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const [isSwipeOpen, setIsSwipeOpen] = useState(false);
   const SWIPE_THRESHOLD = 80; // 스와이프 임계값
@@ -163,26 +163,26 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
       >
         <TouchableOpacity 
           style={[
-            styles.chatRow,
-            item.isReal && styles.realChatRow
+            styles.chatRow
           ]}
           onPress={async () => {
             if (isSwipeOpen) {
               closeSwipe();
               return;
             }
-            if (item.isReal) {
-              try {
-                // 채팅방 입장 시 읽지 않은 메시지 수 초기화
-                await updateUnreadCount(item.id, 0);
-                
-                navigation.navigate('Chat', { 
-                  roomId: item.id,
-                  otherUser: item.otherUser
-                });
-              } catch (error) {
-                console.error('Error during chat navigation:', error);
-              }
+            try {
+              navigation.navigate('MainTabs', {
+                screen: '홈',
+                params: {
+                  screen: 'Chat',
+                  params: {
+                    roomId: item.id,
+                    otherUser: item.otherUser
+                  }
+                }
+              });
+            } catch (error) {
+              console.error('Error during chat navigation:', error);
             }
           }}
         >
@@ -245,16 +245,21 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
               ]}>
                 {item.lastMessage || '메시지 없음'}
               </Text>
-              <Text style={styles.timeLabel}>{item.time || ''}</Text>
+              <View style={styles.timeStatusContainer}>
+                {item.userStatus ? (
+                  <Text style={[
+                    styles.timeLabel, 
+                    item.userStatus.minutes_ago < 5 && styles.onlineTimeLabel
+                  ]}>
+                    {formatUserStatus(item.userStatus)}
+                  </Text>
+                ) : (
+                  <Text style={styles.timeLabel}>{item.time || ''}</Text>
+                )}
+              </View>
             </View>
           </View>
           
-          {/* 실제 채팅방 표시 */}
-          {item.isReal && (
-            <View style={styles.realIndicator}>
-              <Ionicons name="checkmark-circle" size={16} color="#FF6600" />
-            </View>
-          )}
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -268,50 +273,18 @@ export default function ChatListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAnyItemSwiping, setIsAnyItemSwiping] = useState(false); // 아이템 스와이프 상태
-  const [unreadCounts, setUnreadCounts] = useState({}); // AsyncStorage에서 가져온 읽지 않은 메시지 수
 
-  // AsyncStorage에서 읽지 않은 메시지 수 로드
-  const loadUnreadCounts = async () => {
-    try {
-      const storedUnreadData = await AsyncStorage.getItem('unreadMessages');
-      const unreadData = storedUnreadData ? JSON.parse(storedUnreadData) : {};
-      setUnreadCounts(unreadData);
-    } catch (error) {
-      console.error('Error loading unread counts:', error);
-    }
-  };
-
-  // 특정 채팅방의 읽지 않은 메시지 수 업데이트
-  const updateUnreadCount = async (roomId, count) => {
-    try {
-      const storedUnreadData = await AsyncStorage.getItem('unreadMessages');
-      const unreadData = storedUnreadData ? JSON.parse(storedUnreadData) : {};
-      
-      if (count > 0) {
-        unreadData[roomId] = count;
-      } else {
-        delete unreadData[roomId]; // 0이면 삭제
-      }
-      
-      await AsyncStorage.setItem('unreadMessages', JSON.stringify(unreadData));
-      setUnreadCounts(unreadData);
-    } catch (error) {
-      console.error('Error updating unread count:', error);
-      throw error;
-    }
-  };
 
   useEffect(() => {
-    // 실제 채팅방과 더미 데이터 함께 로드
+    // 실제 채팅방 로드
     loadChatRooms();
-    loadUnreadCounts();
   }, []);
 
-  // 화면에 포커스될 때마다 채팅방 목록 새로고침 + 읽지 않은 메시지 수 새로고침
+  // 화면에 포커스될 때마다 채팅방 목록 새로고침 (채팅방에서 돌아왔을 때 포함)
   useFocusEffect(
     React.useCallback(() => {
+      console.log('📱 ChatListScreen focused - 채팅방 목록 새로고침');
       loadChatRooms();
-      loadUnreadCounts();
     }, [])
   );
 
@@ -325,12 +298,20 @@ export default function ChatListScreen({ navigation }) {
       let realChats = [];
       
       if (response && response.rooms) {
-        realChats = response.rooms.map(room => {
-          // AsyncStorage의 읽지 않은 메시지 수와 서버의 데이터를 결합
-          const asyncUnreadCount = unreadCounts[room.id] || 0;
-          const serverUnreadCount = room.unread_count || 0;
-          const totalUnreadCount = Math.max(asyncUnreadCount, serverUnreadCount);
+        realChats = await Promise.all(response.rooms.map(async (room) => {
+          // 서버에서 받은 읽지 않은 메시지 수만 사용
+          const totalUnreadCount = room.unread_count || 0;
           const otherUser = getOtherUser(room.participants);
+          
+          // 상대방의 접속 상태 조회
+          let userStatus = null;
+          if (otherUser) {
+            try {
+              userStatus = await ApiService.getUserStatus(otherUser.id);
+            } catch (error) {
+              // 조용히 처리 - 에러 로그 없음
+            }
+          }
           
           return {
             id: room.id,
@@ -339,109 +320,38 @@ export default function ChatListScreen({ navigation }) {
             tags: getOtherUserTags(room.participants),
             lastMessage: room.last_message || '대화를 시작해보세요',
             time: formatTime(room.last_message_time),
+            userStatus: userStatus, // 사용자 상태 추가
             hasUnread: totalUnreadCount > 0,
             unreadCount: totalUnreadCount,
             isIndividual: room.room_type === 'individual',
             otherUser: otherUser,
             roomType: room.room_type,
             participants: room.participants,
-            isReal: true // 실제 채팅방 표시
           };
-        });
+        }));
       }
       
-      // 더미 데이터 (2개만 남김)
-      const dummyChats = [
-        {
-          id: 'dummy1',
-          name: '반짝이는스케이트',
-          info: '20대 중반, 여성, 성신여자대학교',
-          tags: ['청결함', '올빼미', '비흡연'],
-          lastMessage: '새 메시지 2개',
-          time: '2시간',
-          hasUnread: true,
-          unreadCount: 2,
-          isIndividual: true,
-          otherUser: { name: '반짝이는스케이트' },
-          isReal: false
-        },
-        {
-          id: 'dummy2',
-          name: '독특한 타란튤라',
-          info: '20대 초반, 여성, 고려대학교',
-          tags: ['청결함', '올빼미', '비흡연'],
-          lastMessage: '새 메시지 2개',
-          time: '3시간',
-          hasUnread: true,
-          isIndividual: false,
-          otherUser: { name: '독특한 타란튤라' },
-          isReal: false
-        }
-      ];
-      
-      // 실제 채팅방을 맨 위에, 더미 데이터를 아래에 배치
-      const allChats = [...realChats, ...dummyChats];
-      setChats(allChats);
+      // 실제 채팅방만 표시
+      setChats(realChats);
       
     } catch (error) {
       console.error('채팅방 목록 로드 실패:', error);
-      // API 실패 시 더미 데이터만 표시
-      loadDummyData();
+      // API 실패 시 빈 배열 설정
+      setChats([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const loadDummyData = () => {
-    const dummyChats = [
-      {
-        id: 'dummy1',
-        name: '반짝이는스케이트',
-        info: '20대 중반, 여성, 성신여자대학교',
-        tags: ['청결함', '올빼미', '비흡연'],
-        lastMessage: '새 메시지 2개',
-        time: '2시간',
-        hasUnread: true,
-        isIndividual: true,
-        otherUser: { name: '반짝이는스케이트' },
-        isReal: false
-      },
-      {
-        id: 'dummy2',
-        name: '독특한 타란튤라',
-        info: '20대 초반, 여성, 고려대학교',
-        tags: ['청결함', '올빼미', '비흡연'],
-        lastMessage: '새 메시지 2개',
-        time: '3시간',
-        hasUnread: true,
-        isIndividual: false,
-        otherUser: { name: '독특한 타란튤라' },
-        isReal: false
-      }
-    ];
-    
-    setChats(dummyChats);
-    setLoading(false);
-    setRefreshing(false);
-  };
-
-
   const onRefresh = () => {
     setRefreshing(true);
-    loadChatRooms(); // 새로고침 시 실제 데이터와 더미 데이터 함께 로드
+    loadChatRooms(); // 새로고침 시 실제 데이터 로드
   };
 
   const handleDeleteChat = async (chatId) => {
     try {
       console.log('🗑️ [DELETE] 채팅방 삭제 시작:', { chatId, typeof: typeof chatId });
-      
-      // 실제 채팅방만 삭제 가능
-      if (typeof chatId === 'string' && chatId.startsWith('dummy')) {
-        console.log('❌ [DELETE] 더미 채팅방 삭제 시도');
-        Alert.alert('알림', '더미 채팅방은 삭제할 수 없습니다.');
-        return;
-      }
 
       console.log('📡 [DELETE] API 호출 시작:', ApiService.getCurrentApiUrl());
       const response = await ApiService.deleteChatRoom(chatId);
@@ -553,6 +463,29 @@ export default function ChatListScreen({ navigation }) {
     return `${days}일`;
   };
 
+  const formatUserStatus = (userStatus) => {
+    if (!userStatus) return '';
+    
+    const minutes = userStatus.minutes_ago;
+    
+    // 5분 이내로 접속 - 방금 전(초록색)
+    if (minutes < 5) {
+      return '방금 전';
+    }
+    // 1시간 이내로 접속 - x분 전(회색)  
+    else if (minutes < 60) {
+      return `${minutes}분 전`;
+    }
+    // 24시간 이내로 접속 - x시간 전(회색)
+    else if (minutes < 1440) {
+      return `${Math.floor(minutes / 60)}시간 전`;
+    }
+    // 이후로는 - x일 전(회색)
+    else {
+      return `${Math.floor(minutes / 1440)}일 전`;
+    }
+  };
+
   const renderChatItem = ({ item }) => {
     return (
       <SwipeableChatItem
@@ -561,7 +494,7 @@ export default function ChatListScreen({ navigation }) {
         onDelete={handleDeleteChat}
         user={user}
         setIsAnyItemSwiping={setIsAnyItemSwiping}
-        updateUnreadCount={updateUnreadCount}
+        formatUserStatus={formatUserStatus}
       />
     );
   };
@@ -873,19 +806,12 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     fontFamily: 'Pretendard',
   },
-  
-  // 실제 채팅방 표시 스타일
-  realChatRow: {
-    borderColor: '#FF6600',
-    borderWidth: 1.5,
+  onlineTimeLabel: {
+    color: '#10B585',
+    opacity: 1,
   },
-  realIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 2,
+  timeStatusContainer: {
+    alignItems: 'flex-end',
   },
 
   // 스와이프 관련 스타일
