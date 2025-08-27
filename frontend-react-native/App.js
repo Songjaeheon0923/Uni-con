@@ -262,7 +262,10 @@ function MainTabs() {
         options={({ route }) => ({
           tabBarStyle: (() => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeMain';
-            if (routeName === 'Chat') {
+            // 네비게이션 바를 숨겨야 하는 화면들 (ContractResult는 제외 - 동적으로 처리)
+            if (routeName === 'Chat' || 
+                routeName === 'ContractVerification' || 
+                routeName === 'ContractCamera') {
               return { display: 'none' };
             }
             return {

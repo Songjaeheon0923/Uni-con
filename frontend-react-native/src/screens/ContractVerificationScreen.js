@@ -8,9 +8,49 @@ import {
   SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import Svg, { Path } from 'react-native-svg';
 
 export default function ContractVerificationScreen({ navigation }) {
+  const [isLeavingToContract, setIsLeavingToContract] = React.useState(false);
+
+  // 탭 바 숨김 (계약서 검증 플로우 전체에서 숨김)
+  useFocusEffect(
+    React.useCallback(() => {
+      const parent = navigation.getParent();
+      if (parent) {
+        parent.setOptions({
+          tabBarStyle: { display: 'none' }
+        });
+      }
+      return () => {
+        // 계약서 플로우로 이동하는 경우가 아닐 때만 네비게이션 바 복원
+        if (parent && !isLeavingToContract) {
+          parent.setOptions({
+            tabBarStyle: {
+              height: 100,
+              paddingBottom: 30,
+              paddingTop: 15,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 8,
+              tabBarActiveTintColor: '#10B585',
+              tabBarInactiveTintColor: '#C0C0C0',
+            }
+          });
+        }
+        // 상태 리셋
+        setIsLeavingToContract(false);
+      };
+    }, [navigation, isLeavingToContract])
+  );
+
   const handleTakePhoto = () => {
+    setIsLeavingToContract(true);
     navigation.navigate('ContractCamera');
   };
 
@@ -20,16 +60,16 @@ export default function ContractVerificationScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>계약서 안전성 검증</Text>
-        <View style={styles.placeholder} />
-      </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* 통합된 헤더 */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
+              <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
+            </Svg>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>계약서 안전성 검증</Text>
+        </View>
         {/* 메인 아이콘 */}
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
@@ -93,15 +133,15 @@ export default function ContractVerificationScreen({ navigation }) {
             • 검증 결과는 참고용이며, 법적 효력은 없습니다
           </Text>
         </View>
-      </ScrollView>
 
-      {/* 하단 버튼 */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.cameraButton} onPress={handleTakePhoto}>
-          <Ionicons name="camera" size={24} color="#FFFFFF" />
-          <Text style={styles.cameraButtonText}>계약서 사진 촬영하기</Text>
-        </TouchableOpacity>
-      </View>
+        {/* 사진 촬영하기 버튼 */}
+        <View style={styles.cameraButtonContainer}>
+          <TouchableOpacity style={styles.cameraButton} onPress={handleTakePhoto}>
+            <Ionicons name="camera" size={24} color="#FFFFFF" />
+            <Text style={styles.cameraButtonText}>계약서 사진 촬영하기</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -113,32 +153,34 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 20,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    justifyContent: 'center',
+    position: 'relative',
   },
   backButton: {
-    padding: 4,
+    position: 'absolute',
+    left: 20,
+    top: 20,
+    padding: 10,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-  },
-  placeholder: {
-    width: 32,
+    color: '#000000',
+    textAlign: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   iconContainer: {
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 20,
     marginBottom: 30,
+    paddingHorizontal: 20,
   },
   iconCircle: {
     width: 120,
@@ -164,6 +206,7 @@ const styles = StyleSheet.create({
   },
   featuresContainer: {
     marginBottom: 30,
+    paddingHorizontal: 20,
   },
   featureItem: {
     flexDirection: 'row',
@@ -198,6 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    marginHorizontal: 20,
   },
   noticeHeader: {
     flexDirection: 'row',
@@ -215,9 +259,9 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 18,
   },
-  bottomContainer: {
-    padding: 20,
-    paddingBottom: 30,
+  cameraButtonContainer: {
+    paddingHorizontal: 40,
+    paddingVertical: 30,
   },
   cameraButton: {
     backgroundColor: '#FF6600',
@@ -225,7 +269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 24,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

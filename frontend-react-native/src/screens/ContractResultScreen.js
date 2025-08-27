@@ -12,6 +12,7 @@ import {
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -30,6 +31,74 @@ export default function ContractResultScreen({ navigation, route }) {
   const [progress, setProgress] = useState(0);
   const [stages, setStages] = useState([]);
   const [isTransitioning, setIsTransitioning] = useState(false); // 화면 전환 상태
+
+  // 네비게이션 바 제어
+  React.useLayoutEffect(() => {
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.setOptions({
+        tabBarStyle: { display: 'none' }
+      });
+    }
+  }, [navigation]);
+
+  // 분석 상태에 따른 네비게이션 바 동적 제어
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (parent) {
+      if (isAnalyzing) {
+        // 분석 중일 때는 네비게이션 바 숨김
+        parent.setOptions({
+          tabBarStyle: { display: 'none' }
+        });
+      } else if (analysisResult || analysisError) {
+        // 분석 완료 또는 에러 시 네비게이션 바 복원
+        parent.setOptions({
+          tabBarStyle: {
+            height: 100,
+            paddingBottom: 30,
+            paddingTop: 15,
+            backgroundColor: '#FFFFFF',
+            borderTopWidth: 0,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 8,
+            tabBarActiveTintColor: '#10B585',
+            tabBarInactiveTintColor: '#C0C0C0',
+          }
+        });
+      }
+    }
+  }, [isAnalyzing, analysisResult, analysisError, navigation]);
+
+  // 화면을 떠날 때 네비게이션 바 복원
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        const parent = navigation.getParent();
+        if (parent && !isAnalyzing) {
+          parent.setOptions({
+            tabBarStyle: {
+              height: 100,
+              paddingBottom: 30,
+              paddingTop: 15,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 8,
+              tabBarActiveTintColor: '#10B585',
+              tabBarInactiveTintColor: '#C0C0C0',
+            }
+          });
+        }
+      };
+    }, [navigation, isAnalyzing])
+  );
 
   // 실시간 분석 상태 폴링
   useEffect(() => {
@@ -524,15 +593,6 @@ export default function ContractResultScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
-      {/* 하단 버튼 */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.retakeButton} onPress={handleRetake}>
-          <Text style={styles.retakeButtonText}>다시 촬영</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
-          <Text style={styles.completeButtonText}>완료</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* 전체화면 이미지 모달 */}
       <Modal
@@ -840,38 +900,6 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 16,
     textAlign: 'center',
-  },
-  bottomContainer: {
-    flexDirection: 'row',
-    padding: 20,
-    paddingBottom: 30,
-    gap: 12,
-  },
-  retakeButton: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  retakeButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  completeButton: {
-    flex: 1,
-    backgroundColor: '#FF6600',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  completeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
   modalContainer: {
     flex: 1,

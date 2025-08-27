@@ -22,6 +22,7 @@ export default function ContractCameraScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
   const { isAuthenticated } = useAuth();
+  const [isLeavingToResult, setIsLeavingToResult] = React.useState(false);
 
   React.useEffect(() => {
     if (!permission) {
@@ -39,16 +40,29 @@ export default function ContractCameraScreen({ navigation }) {
         });
       }
       return () => {
-        if (parent) {
+        // ContractResult로 이동하는 경우가 아닐 때만 네비게이션 바 복원
+        if (parent && !isLeavingToResult) {
           parent.setOptions({
             tabBarStyle: {
-              tabBarActiveTintColor: '#FF6600',
-              tabBarInactiveTintColor: 'gray',
+              height: 100,
+              paddingBottom: 30,
+              paddingTop: 15,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 8,
+              tabBarActiveTintColor: '#10B585',
+              tabBarInactiveTintColor: '#C0C0C0',
             }
           });
         }
+        // 상태 리셋
+        setIsLeavingToResult(false);
       };
-    }, [navigation])
+    }, [navigation, isLeavingToResult])
   );
 
   // 계약서 분석 시작 함수 (비동기 방식)
@@ -151,6 +165,7 @@ export default function ContractCameraScreen({ navigation }) {
         
         if (taskId) {
           // 분석 중 상태로 이동 (task_id 전달)
+          setIsLeavingToResult(true);
           navigation.navigate('ContractResult', { 
             photoUri: croppedImage.uri,
             originalUri: photo.uri,
@@ -199,6 +214,7 @@ export default function ContractCameraScreen({ navigation }) {
         
         if (taskId) {
           // 분석 중 상태로 이동 (task_id 전달)
+          setIsLeavingToResult(true);
           navigation.navigate('ContractResult', { 
             photoUri: selectedImage.uri,
             originalUri: selectedImage.uri,
