@@ -48,8 +48,8 @@ export default function MatchResultsScreen({ navigation }) {
       // 기존 채팅방이 있는지 확인
       const response = await ApiService.getChatRooms();
       const chatRooms = Array.isArray(response) ? response : (response?.rooms || []);
-      
-      const existingRoom = chatRooms.find(room => 
+
+      const existingRoom = chatRooms.find(room =>
         room.participants && room.participants.some(participant => participant.user_id === user.user_id)
       );
 
@@ -60,8 +60,8 @@ export default function MatchResultsScreen({ navigation }) {
       } else {
         // 새 채팅방 생성
         const newRoom = await ApiService.createChatRoom(
-          'individual', 
-          [user.user_id], 
+          'individual',
+          [user.user_id],
           `${user.name}님과의 채팅`
         );
         roomId = newRoom.room_id;
@@ -100,7 +100,7 @@ export default function MatchResultsScreen({ navigation }) {
     if (age >= 36 && age <= 39) return '30대 후반';
     return `${Math.floor(age / 10)}0대`;
   };
-  
+
   // 성별 변환 함수 (ProfileScreen.js와 동일)
   const getGenderText = (gender) => {
     if (gender === 'male') return '남성';
@@ -111,15 +111,15 @@ export default function MatchResultsScreen({ navigation }) {
   // 학교 이메일에서 학교명 추출 함수 (ProfileScreen.js와 동일)
   const getSchoolNameFromEmail = (schoolEmail) => {
     if (!schoolEmail) return '';
-    
+
     // @를 기준으로 도메인 추출
     const domain = schoolEmail.split('@')[1];
     if (!domain) return '';
-    
+
     // 일반적인 학교 도메인 패턴 매칭
     const schoolPatterns = {
       'snu.ac.kr': '서울대학교',
-      'korea.ac.kr': '고려대학교', 
+      'korea.ac.kr': '고려대학교',
       'yonsei.ac.kr': '연세대학교',
       'kaist.ac.kr': '카이스트',
       'postech.ac.kr': '포스텍',
@@ -129,12 +129,12 @@ export default function MatchResultsScreen({ navigation }) {
       'konkuk.ac.kr': '건국대학교',
       'dankook.ac.kr': '단국대학교',
     };
-    
+
     // 정확한 매칭이 있으면 사용
     if (schoolPatterns[domain]) {
       return schoolPatterns[domain];
     }
-    
+
     // 없으면 도메인에서 학교명 추출 시도 (university, univ 등 제거)
     let schoolName = domain
       .replace('.ac.kr', '')
@@ -142,12 +142,12 @@ export default function MatchResultsScreen({ navigation }) {
       .replace('university', '')
       .replace('univ', '')
       .replace('.', '');
-    
+
     // 첫글자 대문자로 변환하고 '대학교' 추가
     if (schoolName && schoolName.length > 0) {
       return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
     }
-    
+
     return '';
   };
 
@@ -229,25 +229,25 @@ export default function MatchResultsScreen({ navigation }) {
           const compatibility = getLifestyleCompatibility(user.matching_details || {});
           const firstRow = compatibility.slice(0, 2);
           const secondRow = compatibility.slice(2, 4);
-          
+
           return (
             <>
               <View style={styles.categoryRow}>
                 {firstRow.map((category, idx) => (
                   <View key={category.key} style={styles.categoryItem}>
-                    <Ionicons 
-                      name={category.icon} 
-                      size={16} 
-                      color={category.isCompatible ? "#10B585" : "#FC6339"} 
+                    <Ionicons
+                      name={category.icon}
+                      size={16}
+                      color={category.isCompatible ? "#10B585" : "#FC6339"}
                     />
                     <Text style={styles.categoryText}>{category.label}</Text>
                     <View style={[styles.statusDot, {
                       backgroundColor: category.isCompatible ? '#10B585' : '#FC6339'
                     }]}>
-                      <Ionicons 
-                        name={category.isCompatible ? "checkmark" : "close"} 
-                        size={10} 
-                        color="white" 
+                      <Ionicons
+                        name={category.isCompatible ? "checkmark" : "close"}
+                        size={10}
+                        color="white"
                       />
                     </View>
                   </View>
@@ -256,19 +256,19 @@ export default function MatchResultsScreen({ navigation }) {
               <View style={styles.categoryRow}>
                 {secondRow.map((category, idx) => (
                   <View key={category.key} style={styles.categoryItem}>
-                    <Ionicons 
-                      name={category.icon} 
-                      size={16} 
-                      color={category.isCompatible ? "#10B585" : "#FC6339"} 
+                    <Ionicons
+                      name={category.icon}
+                      size={16}
+                      color={category.isCompatible ? "#10B585" : "#FC6339"}
                     />
                     <Text style={styles.categoryText}>{category.label}</Text>
                     <View style={[styles.statusDot, {
                       backgroundColor: category.isCompatible ? '#10B585' : '#FC6339'
                     }]}>
-                      <Ionicons 
-                        name={category.isCompatible ? "checkmark" : "close"} 
-                        size={10} 
-                        color="white" 
+                      <Ionicons
+                        name={category.isCompatible ? "checkmark" : "close"}
+                        size={10}
+                        color="white"
                       />
                     </View>
                   </View>
@@ -280,7 +280,7 @@ export default function MatchResultsScreen({ navigation }) {
       </View>
 
       {/* 채팅 신청하기 버튼 */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.chatButton}
         onPress={() => handleContactUser(user)}
       >
@@ -320,22 +320,22 @@ export default function MatchResultsScreen({ navigation }) {
         <View style={styles.headerTopLine}>
           {/* 뒤로가기 버튼 + 제목 + 정보 아이콘 */}
           <View style={styles.leftSection}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
               <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
                 <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
               </Svg>
             </TouchableOpacity>
-            
+
             <Text style={styles.headerTitle}>룸메이트 매칭</Text>
             <TouchableOpacity onPress={() => setShowInfoModal(true)}>
-              <Ionicons 
-                name="information-circle-outline" 
-                size={24} 
-                color="#494949" 
-                style={styles.infoIcon} 
+              <Ionicons
+                name="information-circle-outline"
+                size={24}
+                color="#494949"
+                style={styles.infoIcon}
               />
             </TouchableOpacity>
           </View>
@@ -356,7 +356,7 @@ export default function MatchResultsScreen({ navigation }) {
           성격 유형과 생활 패턴을 분석하여{"\n"}{user?.name ? user.name.slice(1) : '사용자'}님에게 가장 잘 맞는 순서로 정렬했습니다.
         </Text>
       </View>
-      
+
       {/* 헤더와 카드들 사이 그라데이션 그림자 */}
       <LinearGradient
         colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0)']}
@@ -364,8 +364,8 @@ export default function MatchResultsScreen({ navigation }) {
         style={styles.shadowGradient}
         pointerEvents="none"
       />
-      
-      <ScrollView 
+
+      <ScrollView
         style={{ marginTop: 243 }}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
@@ -383,18 +383,18 @@ export default function MatchResultsScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.infoModalContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setShowInfoModal(false)}
             >
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
-            
+
             <Text style={styles.modalTitle}>룸메이트 매칭 규칙</Text>
-            
+
             {/* 제목 아래 구분선 */}
             <View style={styles.modalTitleSeparator} />
-            
+
             <View style={styles.matchingRulesContainer}>
               <View style={styles.ruleItem}>
                 <View style={styles.ruleIconContainer}>
@@ -405,7 +405,7 @@ export default function MatchResultsScreen({ navigation }) {
                   <Text style={styles.ruleDescription}>집에 머무는 시간이 다를 때 더 높은 점수 부여</Text>
                 </View>
               </View>
-              
+
               <View style={styles.ruleItem}>
                 <View style={styles.ruleIconContainer}>
                   <Ionicons name="sparkles-outline" size={20} color="black" />
@@ -415,7 +415,7 @@ export default function MatchResultsScreen({ navigation }) {
                   <Text style={styles.ruleDescription}>청소 빈도와 민감도를 모두 고려한 세밀한 매칭</Text>
                 </View>
               </View>
-              
+
               <View style={styles.ruleItem}>
                 <View style={styles.ruleIconContainer}>
                   <Ionicons name="warning-outline" size={20} color="black" />
@@ -426,10 +426,10 @@ export default function MatchResultsScreen({ navigation }) {
                 </View>
               </View>
             </View>
-            
+
             {/* 3가지 기준 아래 구분선 */}
             <View style={styles.modalRulesSeparator} />
-            
+
             <Text style={styles.modalFooterText}>
               <Text style={styles.footerNormalText}>이룸만의 </Text>
               <Text style={styles.footerOrangeText}>종합 매칭 알고리즘</Text>
@@ -440,7 +440,7 @@ export default function MatchResultsScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-      
+
     </View>
   );
 }
