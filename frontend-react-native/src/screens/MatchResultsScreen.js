@@ -67,15 +67,21 @@ export default function MatchResultsScreen({ navigation }) {
         roomId = newRoom.room_id;
       }
 
-      // 채팅 화면으로 이동
-      navigation.navigate('Chat', {
-        roomId: roomId,
-        otherUser: {
-          user_id: user.user_id,
-          name: user.name,
-          university: user.university,
-          age: user.age,
-          gender: user.gender
+      // 채팅 화면으로 이동 (MainTabs를 통해 네비게이션해서 TabBar 숨김)
+      navigation.navigate('MainTabs', {
+        screen: '홈',
+        params: {
+          screen: 'Chat',
+          params: {
+            roomId: roomId,
+            otherUser: {
+              user_id: user.user_id,
+              name: user.name,
+              university: user.university,
+              age: user.age,
+              gender: user.gender
+            }
+          }
         }
       });
     } catch (error) {

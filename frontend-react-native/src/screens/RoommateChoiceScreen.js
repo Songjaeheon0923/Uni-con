@@ -82,7 +82,6 @@ export default function RoommateChoiceScreen({ navigation, user }) {
 
       {/* 일러스트레이션 영역 */}
       <View style={styles.illustrationContainer}>
-        <View style={styles.shadowBase} />
         <Image 
           source={require('../../assets/roommate-character.png')}
           style={styles.illustration}
@@ -138,25 +137,16 @@ const styles = StyleSheet.create({
     lineHeight: 33.6,
   },
   illustrationContainer: {
-    width: 215.42,
-    height: 291,
-    left: 93.47,
-    top: 299,
+    width: 280,
+    height: 380,
+    left: 60,
+    top: 280,
     position: 'absolute',
-  },
-  shadowBase: {
-    width: 215.42,
-    height: 7.24,
-    left: 0,
-    top: 261.71,
-    position: 'absolute',
-    backgroundColor: 'rgba(252, 99, 57, 0.15)',
-    borderRadius: 9999,
   },
   illustration: {
-    width: 186.36,
-    height: 291,
-    left: 22.99,
+    width: 240,
+    height: 380,
+    left: 20,
     top: 0,
     position: 'absolute',
   },
