@@ -14,11 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.unicon.weroom",
       "config": {
         "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
+      "package": "com.unicon.weroom",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

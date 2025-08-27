@@ -27,6 +27,9 @@ class RealAPIDataCrawler:
         self.service_key = os.getenv('MOLIT_API_KEY_DECODED')
         self.service_key_encoded = os.getenv('MOLIT_API_KEY_ENCODED')
         self.kakao_api_key = os.getenv('KAKAO_REST_API_KEY')
+        self.naver_client_id = os.getenv('NAVER_MAP_CLIENT_ID')
+        self.naver_client_secret = os.getenv('NAVER_MAP_CLIENT_SECRET')
+        self.google_api_key = os.getenv('GOOGLE_GEOCODING_API_KEY')
         
         if not self.service_key:
             raise ValueError("""
@@ -184,23 +187,140 @@ MOLIT_API_KEY_DECODED가 .env 파일에 설정되지 않았습니다.
         except ValueError:
             return 0.0
     
+    
     def get_coordinates_by_geocoding(self, address):
-        """카카오 지오코딩 API로 주소를 위도/경도로 변환"""
+        """네이버/카카오 지오코딩 API로 주소를 위도/경도로 변환"""
         # 캐시 확인
         if address in self.geocoding_cache:
             return self.geocoding_cache[address]
         
-        # OpenStreetMap Nominatim API 사용 (API 키 불필요)
         
+        # 1차 시도: 구글 지오코딩 API (가장 정확함)
+        if self.google_api_key and self.google_api_key != 'YOUR_GOOGLE_API_KEY_HERE':
+            try:
+                url = "https://maps.googleapis.com/maps/api/geocode/json"
+                params = {
+                    'address': address,
+                    'key': self.google_api_key,
+                    'region': 'kr',  # 한국 우선
+                    'language': 'ko'  # 한국어 결과
+                }
+                
+                response = requests.get(url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if data.get('status') == 'OK' and data.get('results'):
+                        # 첫 번째 결과 사용
+                        location = data['results'][0]['geometry']['location']
+                        lat = float(location['lat'])
+                        lng = float(location['lng'])
+                        coords = (lat, lng)
+                        
+                        # 캐시에 저장
+                        self.geocoding_cache[address] = coords
+                        print(f"📍 구글 지오코딩 성공: {address} → ({lat:.6f}, {lng:.6f})")
+                        return coords
+                    else:
+                        status = data.get('status', 'UNKNOWN_ERROR')
+                        print(f"⚠️ 구글 지오코딩 결과 없음: {address} (상태: {status})")
+                else:
+                    print(f"⚠️ 구글 지오코딩 API 오류: {response.status_code}")
+                    
+            except Exception as e:
+                print(f"⚠️ 구글 지오코딩 오류: {e}")
+        
+        # 2차 시도: 네이버 지오코딩 API
+        if self.naver_client_id and self.naver_client_secret:
+            try:
+                url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+                headers = {
+                    'X-NCP-APIGW-API-KEY-ID': self.naver_client_id,
+                    'X-NCP-APIGW-API-KEY': self.naver_client_secret
+                }
+                params = {
+                    'query': address,
+                    'coordinate': '127.1054221,37.3595963'  # 서울 중심 좌표 (검색 우선순위)
+                }
+                
+                response = requests.get(url, headers=headers, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if data.get('addresses') and len(data['addresses']) > 0:
+                        # 첫 번째 결과 사용
+                        location = data['addresses'][0]
+                        lat = float(location.get('y'))
+                        lng = float(location.get('x'))
+                        coords = (lat, lng)
+                        
+                        # 캐시에 저장
+                        self.geocoding_cache[address] = coords
+                        print(f"📍 네이버 지오코딩 성공: {address} → ({lat:.6f}, {lng:.6f})")
+                        return coords
+                    else:
+                        print(f"⚠️ 네이버 지오코딩 결과 없음: {address}")
+                else:
+                    print(f"⚠️ 네이버 지오코딩 API 오류: {response.status_code}")
+                    
+            except Exception as e:
+                print(f"⚠️ 네이버 지오코딩 오류: {e}")
+        
+        # 2차 시도: 카카오 지오코딩 API
+        if self.kakao_api_key:
+            try:
+                url = "https://dapi.kakao.com/v2/local/search/address.json"
+                headers = {
+                    'Authorization': f'KakaoAK {self.kakao_api_key}'
+                }
+                params = {
+                    'query': address
+                }
+                
+                response = requests.get(url, headers=headers, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if data.get('documents'):
+                        location = data['documents'][0]
+                        if 'road_address' in location and location['road_address']:
+                            lat = float(location['road_address']['y'])
+                            lng = float(location['road_address']['x'])
+                        else:
+                            lat = float(location['address']['y'])
+                            lng = float(location['address']['x'])
+                        
+                        coords = (lat, lng)
+                        self.geocoding_cache[address] = coords
+                        print(f"📍 카카오 지오코딩 성공: {address} → ({lat:.6f}, {lng:.6f})")
+                        return coords
+                    else:
+                        print(f"⚠️ 카카오 지오코딩 결과 없음: {address}")
+                else:
+                    print(f"⚠️ 카카오 지오코딩 API 오류: {response.status_code}")
+                    
+            except Exception as e:
+                print(f"⚠️ 카카오 지오코딩 오류: {e}")
+        
+        # 3차 시도: OpenStreetMap Nominatim API (백업)
         try:
-            # OpenStreetMap Nominatim API 사용 (무료, API 키 불필요)
             url = "https://nominatim.openstreetmap.org/search"
-            headers = {"User-Agent": "Uni-con-Real-Estate-App/1.0"}
+            headers = {
+                "User-Agent": "Uni-con-Real-Estate-App/1.0 (contact@unicon.com)",
+                "Accept": "application/json",
+                "Accept-Language": "ko,en"
+            }
             params = {
-                "q": address,
+                "q": address + " 대한민국",  # 더 구체적인 검색
                 "format": "json",
                 "limit": 1,
-                "countrycodes": "kr"
+                "countrycodes": "kr",
+                "bounded": 1,
+                "viewbox": "124.5,33.0,131.0,38.9",  # 한국 경계박스
+                "addressdetails": 1
             }
             
             response = requests.get(url, headers=headers, params=params, timeout=10)
@@ -209,13 +329,10 @@ MOLIT_API_KEY_DECODED가 .env 파일에 설정되지 않았습니다.
                 data = response.json()
                 
                 if data:
-                    # 첫 번째 결과 사용
                     location = data[0]
                     lat = float(location.get('lat', 37.5665))
                     lng = float(location.get('lon', 126.9780))
                     coords = (lat, lng)
-                    
-                    # 캐시에 저장
                     self.geocoding_cache[address] = coords
                     print(f"📍 OSM 지오코딩 성공: {address} → ({lat:.6f}, {lng:.6f})")
                     return coords

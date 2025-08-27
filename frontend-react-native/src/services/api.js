@@ -60,6 +60,8 @@ class ApiService {
         headers['Authorization'] = `Bearer ${this.authToken}`;
       }
 
+      console.log(`API Request: ${options.method || 'GET'} ${endpoint}`);
+      
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
@@ -159,6 +161,10 @@ class ApiService {
 
   async getRoomFavorites(roomId) {
     return this.request(`/favorites/${roomId}/users`);
+  }
+
+  async getRoomMatches(roomId) {
+    return this.request(`/favorites/${roomId}/matched`);
   }
 
   async checkFavoriteStatus(roomId, userId) {

@@ -63,10 +63,10 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
     },
     onPanResponderRelease: (evt, gestureState) => {
       const { dx, vx } = gestureState;
-      
+
       // 스와이프 끝 - FlatList 스크롤 재활성화
       setIsAnyItemSwiping(false);
-      
+
       // 휴지통이 열린 상태에서 왼쪽으로 추가 스와이프하면 삭제 실행
       if (isSwipeOpen && ((dx < -SWIPE_THRESHOLD || (vx < -0.5 && dx < 0)))) {
         // 채팅창을 왼쪽으로 날려보내며 삭제
@@ -76,7 +76,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
       else if ((dx < -SWIPE_THRESHOLD || (vx < -0.5 && dx < 0)) && !isSwipeOpen) {
         // 삭제 버튼 보이기
         openSwipe();
-      } 
+      }
       // 오른쪽으로 스와이프 (양수 dx, 양수 vx) - 휴지통이 열린 상태일 때만
       else if ((dx > SWIPE_THRESHOLD || (vx > 0.5 && dx > 0)) && isSwipeOpen) {
         // 삭제 버튼 숨기기
@@ -115,7 +115,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
   const executeDeleteWithAnimation = () => {
     // 휴지통 즉시 숨기기
     setIsSwipeOpen(false);
-    
+
     // 채팅창을 왼쪽으로 날려보내는 애니메이션
     Animated.timing(translateX, {
       toValue: -screenWidth, // 화면 너비만큼 왼쪽으로 이동
@@ -133,9 +133,9 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
       '이 채팅방을 삭제하시겠습니까?\n삭제된 채팅방은 상대방에게도 보이지 않게 됩니다.',
       [
         { text: '취소', style: 'cancel', onPress: closeSwipe },
-        { 
-          text: '삭제', 
-          style: 'destructive', 
+        {
+          text: '삭제',
+          style: 'destructive',
           onPress: executeDeleteWithAnimation
         }
       ]
@@ -147,7 +147,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
       {/* 배경의 휴지통 버튼 - 스와이프가 열린 상태일 때만 렌더링 */}
       {isSwipeOpen && (
         <View style={styles.deleteBackground}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.deleteButton}
             onPress={handleDelete}
           >
@@ -161,7 +161,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
         style={[styles.chatRowContainer, { transform: [{ translateX }] }]}
         {...panResponder.panHandlers}
       >
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.chatRow
           ]}
@@ -187,13 +187,13 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
           }}
         >
           {/* 아바타 */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.avatarSection}
             onPress={() => {
               if (item.isIndividual && item.otherUser) {
-                navigation.navigate('UserProfileView', { 
+                navigation.navigate('UserProfileView', {
                   userId: item.otherUser.id,
-                  userName: item.otherUser.name 
+                  userName: item.otherUser.name
                 });
               }
             }}
@@ -234,7 +234,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
             <View style={styles.userInfoLine}>
               <Text style={styles.userInfoText}>{item.info || '정보 없음'}</Text>
             </View>
-            
+
             {/* 이름과 태그 */}
             <View style={styles.nameTagLine}>
               <Text style={styles.nameText}>{item.name || '이름 없음'}</Text>
@@ -246,10 +246,10 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
                 ))}
               </View>
             </View>
-            
+
             {/* 메시지와 시간 */}
             <View style={styles.messageTimeLine}>
-              <Text 
+              <Text
                 style={[
                   styles.messageText,
                   item.hasUnread ? styles.boldMessage : styles.normalMessage
@@ -262,7 +262,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
               <View style={styles.timeStatusContainer}>
                 {item.userStatus ? (
                   <Text style={[
-                    styles.timeLabel, 
+                    styles.timeLabel,
                     item.userStatus.minutes_ago < 5 && styles.onlineTimeLabel
                   ]}>
                     {formatUserStatus(item.userStatus)}
@@ -273,7 +273,7 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
               </View>
             </View>
           </View>
-          
+
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -306,17 +306,17 @@ export default function ChatListScreen({ navigation }) {
   const loadChatRooms = async () => {
     try {
       setLoading(true);
-      
+
       // 실제 API에서 채팅방 데이터 가져오기
       const response = await ApiService.getChatRooms();
       let realChats = [];
-      
+
       if (response && response.rooms) {
         realChats = await Promise.all(response.rooms.map(async (room) => {
           // 서버에서 받은 읽지 않은 메시지 수만 사용
           const totalUnreadCount = room.unread_count || 0;
           const otherUser = getOtherUser(room.participants);
-          
+
           // 상대방의 접속 상태 조회
           let userStatus = null;
           if (otherUser) {
@@ -326,7 +326,7 @@ export default function ChatListScreen({ navigation }) {
               // 조용히 처리 - 에러 로그 없음
             }
           }
-          
+
           return {
             id: room.id,
             name: getOtherUserName(room.participants),
@@ -344,10 +344,10 @@ export default function ChatListScreen({ navigation }) {
           };
         }));
       }
-      
+
       // 실제 채팅방만 표시
       setChats(realChats);
-      
+
     } catch (error) {
       console.error('채팅방 목록 로드 실패:', error);
       // API 실패 시 빈 배열 설정
@@ -358,6 +358,40 @@ export default function ChatListScreen({ navigation }) {
     }
   };
 
+  const loadDummyData = () => {
+    const dummyChats = [
+      {
+        id: 'dummy1',
+        name: '반짝이는스케이트',
+        info: '20대 중반, 여성, 성신여자대학교',
+        tags: ['청결함', '올빼미', '비흡연'],
+        lastMessage: '새 메시지 2개',
+        time: '2시간',
+        hasUnread: true,
+        isIndividual: true,
+        otherUser: { name: '반짝이는스케이트' },
+        isReal: false
+      },
+      {
+        id: 'dummy2',
+        name: '독특한 타란튤라',
+        info: '20대 초반, 여성, 고려대학교',
+        tags: ['청결함', '올빼미', '비흡연'],
+        lastMessage: '새 메시지 2개',
+        time: '3시간',
+        hasUnread: true,
+        isIndividual: false,
+        otherUser: { name: '독특한 타란튤라' },
+        isReal: false
+      }
+    ];
+
+    setChats(dummyChats);
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+
   const onRefresh = () => {
     setRefreshing(true);
     loadChatRooms(); // 새로고침 시 실제 데이터 로드
@@ -367,10 +401,17 @@ export default function ChatListScreen({ navigation }) {
     try {
       console.log('🗑️ [DELETE] 채팅방 삭제 시작:', { chatId, typeof: typeof chatId });
 
+      // 실제 채팅방만 삭제 가능
+      if (typeof chatId === 'string' && chatId.startsWith('dummy')) {
+        console.log('❌ [DELETE] 더미 채팅방 삭제 시도');
+        Alert.alert('알림', '더미 채팅방은 삭제할 수 없습니다.');
+        return;
+      }
+
       console.log('📡 [DELETE] API 호출 시작:', ApiService.getCurrentApiUrl());
       const response = await ApiService.deleteChatRoom(chatId);
       console.log('📡 [DELETE] API 응답:', response);
-      
+
       if (response) {
         console.log('✅ [DELETE] 삭제 성공, 채팅방 목록 새로고침 시작');
         // 삭제 성공 시 서버에서 최신 채팅방 목록 다시 불러오기
@@ -402,10 +443,10 @@ export default function ChatListScreen({ navigation }) {
   const getOtherUserInfo = (participants) => {
     const otherUser = getOtherUser(participants);
     if (!otherUser) return '';
-    
+
     // 나이, 성별, 학교 정보 조합 (프로필에서 가져오기)
     const parts = [];
-    
+
     // 나이 정보 (age 또는 birth_year로부터 계산)
     if (otherUser.age) {
       const ageGroup = otherUser.age < 25 ? '20대 초반' : '20대 중반';
@@ -416,62 +457,62 @@ export default function ChatListScreen({ navigation }) {
       const ageGroup = age < 25 ? '20대 초반' : '20대 중반';
       parts.push(ageGroup);
     }
-    
+
     // 성별 정보
     if (otherUser.gender) {
       parts.push(otherUser.gender === 'male' ? '남성' : '여성');
     }
-    
+
     // 학교 정보
     if (otherUser.school) {
       parts.push(otherUser.school);
     } else if (otherUser.university) {
       parts.push(otherUser.university);
     }
-    
+
     return parts.join(', ');
   };
 
   const getOtherUserTags = (participants) => {
     const otherUser = getOtherUser(participants);
     console.log('🏷️ getOtherUserTags - otherUser:', otherUser);
-    
+
     if (!otherUser || !otherUser.profile) {
       console.log('❌ 프로필 정보 없음:', { hasUser: !!otherUser, hasProfile: !!otherUser?.profile });
       return [];
     }
-    
+
     const tags = [];
     const profile = otherUser.profile;
     console.log('🔍 프로필 데이터:', profile);
-    
+
     // 수면 패턴: 종달새/올빼미
     if (profile.sleep_type === 'morning' || profile.sleep_type === 'early') {
       tags.push('종달새');
     } else if (profile.sleep_type === 'night' || profile.sleep_type === 'late' || profile.sleep_type === 'evening') {
       tags.push('올빼미');
     }
-    
+
     // 흡연 여부: 비흡연/흡연
     if (profile.smoking_status === 'non_smoker' || profile.smoking_status === 'non_smoker_ok' || profile.smoking_status === 'non_smoker_strict' || profile.smoking_status === false) {
       tags.push('비흡연');
     } else if (profile.smoking_status === 'smoker' || profile.smoking_status === 'smoker_indoor_yes' || profile.smoking_status === 'smoker_indoor_no' || profile.smoking_status === true) {
       tags.push('흡연');
     }
-    
+
     console.log('🏷️ 생성된 태그들:', tags);
     return tags;
   };
 
   const formatTime = (timeString) => {
     if (!timeString) return '';
-    
+
     const messageTime = new Date(timeString);
     const now = new Date();
     const diff = now - messageTime;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (hours < 1) return '방금';
     if (hours < 24) return `${hours}시간`;
     return `${days}일`;
@@ -479,14 +520,14 @@ export default function ChatListScreen({ navigation }) {
 
   const formatUserStatus = (userStatus) => {
     if (!userStatus) return '';
-    
+
     const minutes = userStatus.minutes_ago;
-    
+
     // 5분 이내로 접속 - 방금 전(초록색)
     if (minutes < 5) {
       return '방금 전';
     }
-    // 1시간 이내로 접속 - x분 전(회색)  
+    // 1시간 이내로 접속 - x분 전(회색)
     else if (minutes < 60) {
       return `${minutes}분 전`;
     }
@@ -535,8 +576,8 @@ export default function ChatListScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
@@ -548,8 +589,8 @@ export default function ChatListScreen({ navigation }) {
 
       {/* 필터 탭 */}
       <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScrollContent}
         >
@@ -689,7 +730,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: 'center',
   },
-  
+
   // 아바타 섹션
   avatarSection: {
     marginRight: 12,
@@ -715,7 +756,7 @@ const styles = StyleSheet.create({
     top: 10,
     zIndex: 0,
   },
-  
+
   // 콘텐츠 섹션
   contentSection: {
     flex: 1,
@@ -723,7 +764,7 @@ const styles = StyleSheet.create({
     gap: 2,
     justifyContent: 'center',
   },
-  
+
   // 첫 번째 줄: 사용자 정보
   userInfoLine: {
     flexDirection: 'row',
@@ -737,7 +778,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     fontFamily: 'Pretendard',
   },
-  
+
   // 두 번째 줄: 이름과 태그
   nameTagLine: {
     flexDirection: 'row',
@@ -773,7 +814,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     fontFamily: 'Pretendard',
   },
-  
+
   // 세 번째 줄: 메시지와 시간
   messageTimeLine: {
     flexDirection: 'row',

@@ -17,8 +17,20 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
 
   // 애니메이션 스케일 초기화
   if (!markerScales.current[markerId]) {
-    markerScales.current[markerId] = new Animated.Value(1);
+    markerScales.current[markerId] = new Animated.Value(isSelected ? 1.1 : 1);
   }
+
+  // 선택 상태가 변경될 때 크기 조정
+  React.useEffect(() => {
+    if (markerScales.current[markerId]) {
+      Animated.spring(markerScales.current[markerId], {
+        toValue: isSelected ? 1.1 : 1,
+        useNativeDriver: true,
+        tension: 40,
+        friction: 7,
+      }).start();
+    }
+  }, [isSelected, markerId]);
 
   const handlePress = () => {
     // 클릭 애니메이션
@@ -62,13 +74,15 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
       tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
     >
-      <View style={{
-        width: 70,
-        height: 70,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'visible',
-      }}>
+      <View
+        collapsable={false}
+        style={{
+          width: 100,  // 44px * 1.2 scale + padding for animation
+          height: 100,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'visible',
+        }}>
         <Animated.View style={[
           styles.houseMarkerContainer,
           {
@@ -97,6 +111,8 @@ const PropertyMapView = forwardRef(({
   navigation,
   onBuildingModalStateChange, // 바텀시트 상태 변경 콜백 추가
   onMarkerSelectionChange, // 마커 선택 상태 변경 콜백 추가
+  favorites = [],
+  onToggleFavorite,
 }, ref) => {
 
   // 디버깅: MapView가 받는 properties 개수 확인
@@ -245,15 +261,18 @@ const PropertyMapView = forwardRef(({
             handleClusterPress(cluster);
           }}
           tracksViewChanges={true}
-          anchor={{ x: 0.5, y: 1 }}
+          anchor={{ x: 0.5, y: 0.5 }}
         >
-          <View style={{
-            // 애니메이션을 위한 외부 컨테이너 (border 여유 공간 포함)
-            width: Math.max(62, Math.min(96, 62 + pointCount / 20)), // border 3px * 2 = 6px 추가
-            height: Math.max(62, Math.min(96, 62 + pointCount / 20)),
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+          <View
+            collapsable={false}
+            style={{
+              // 애니메이션을 위한 외부 컨테이너 (충분한 여유 공간 확보)
+              width: Math.max(100, Math.min(130, 100 + pointCount / 20)), // scale 1.2 + border 3px*2 + 충분한 여유
+              height: Math.max(100, Math.min(130, 100 + pointCount / 20)),
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'visible',
+            }}>
             <Animated.View style={[
               styles.clusterMarkerContainer,
               {
@@ -265,12 +284,12 @@ const PropertyMapView = forwardRef(({
               }
             ]}>
             <HomeIcon
-              size={Math.max(26, Math.min(38, 26 + pointCount / 80))}
+              size={Math.max(26, Math.min(45, Math.round((56 + pointCount / 20) * 0.5)))} // 핀 크기의 50%
               color="#FFFFFF"
             />
             <Text style={[
               styles.clusterText,
-              { fontSize: Math.max(11, Math.min(16, 11 + pointCount / 80)) }
+              { fontSize: Math.max(11, Math.min(20, Math.round((56 + pointCount / 20) * 0.22))) } // 핀 크기의 22%
             ]}>{pointCount}</Text>
             </Animated.View>
           </View>
@@ -349,13 +368,15 @@ const PropertyMapView = forwardRef(({
           tracksViewChanges={true}
           anchor={{ x: 0.5, y: 0.5 }}
         >
-          <View style={{
-            width: 70,
-            height: 70,
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'visible',
-          }}>
+          <View
+            collapsable={false}
+            style={{
+              width: 100,  // 44px * 1.2 = 52.8px + badge overflow(10px) + padding
+              height: 100,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'visible',
+            }}>
             <Animated.View style={[
               styles.houseMarkerContainer,
               {
@@ -602,6 +623,8 @@ const PropertyMapView = forwardRef(({
             building={selectedBuilding}
             properties={buildingProperties}
             navigation={navigation}
+            favorites={favorites}
+            onToggleFavorite={onToggleFavorite}
             onClose={() => {
               setSelectedBuilding(null);
               setBuildingProperties([]);
@@ -761,6 +784,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#2C2C2C",
     overflow: 'visible',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3, // Android shadow
   },
   selectedMarkerStyle: {
     backgroundColor: "#333333",
@@ -787,9 +818,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#4A90E2",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: "#ffffff",
     overflow: 'visible',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3, // Android shadow
   },
   clusterText: {
     color: "#ffffff",

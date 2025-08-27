@@ -25,4 +25,7 @@ class RoomSummary(BaseModel):
     transaction_type: str
     area: float
     risk_score: int
+    favorite_count: Optional[int] = 0
+    floor: Optional[int]
+    rooms: Optional[int]
     thumbnail_image: Optional[str]

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import PropertyCard from './PropertyCard';
 
-const BuildingClusterView = ({ building, properties, navigation, onClose, onSelectProperty }) => {
+const BuildingClusterView = ({ building, properties, navigation, onClose, onSelectProperty, favorites = [], onToggleFavorite }) => {
 
   // 같은 건물 내 매물들을 층수와 호수로 정렬
   const sortedProperties = properties.sort((a, b) => {
@@ -36,7 +36,9 @@ const BuildingClusterView = ({ building, properties, navigation, onClose, onSele
   };
 
   const handleFavorite = (property) => {
-    // TODO: 즐겨찾기 기능 구현
+    if (onToggleFavorite) {
+      onToggleFavorite(property);
+    }
   };
 
   return (
@@ -69,7 +71,7 @@ const BuildingClusterView = ({ building, properties, navigation, onClose, onSele
             property={property}
             onPress={() => handlePropertySelect(property)}
             onFavorite={handleFavorite}
-            isFavorited={false} // TODO: 실제 즐겨찾기 상태 연동
+            isFavorited={favorites.includes(property.room_id || property.id)}
           />
         ))}
       </ScrollView>
