@@ -18,8 +18,8 @@ import ApiService from '../services/api';
 import UserProfileIcon from '../components/UserProfileIcon';
 import SpeechBubble from '../components/SpeechBubble';
 import UserMatchCard from '../components/UserMatchCard';
-import FavoritedSection from '../components/FavoritedSection';
 import { formatRentPrice } from '../utils/priceFormatter';
+import { getRoomType, formatArea, formatFloor } from '../utils/priceUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -74,7 +74,75 @@ export default function FavoritedUsersScreen() {
     return formatRentPrice(room.price_deposit, room.price_monthly);
   };
 
-  const filters = ['전체', '궁합 점수 높은 순', '고려대학교', '투룸 희망'];
+  // 주소를 기반으로 가장 가까운 역과 거리 계산
+  const getNearestStation = (address) => {
+    if (!address) return '역 정보 없음';
+
+    // 서울 주요 역 리스트 (간단한 매칭용)
+    const stations = {
+      '성북': '안암역 10분',
+      '안암': '안암역 5분',
+      '보문': '보문역 8분',
+      '종로': '종각역 12분',
+      '중구': '을지로입구역 10분',
+      '강남': '강남역 7분',
+      '서초': '강남역 15분',
+      '송파': '잠실역 10분',
+      '강동': '천호역 8분',
+      '마포': '홍대입구역 12분',
+      '서대문': '신촌역 10분',
+      '은평': '연신내역 15분',
+      '용산': '용산역 8분',
+      '영등포': '영등포구청역 10분',
+      '구로': '구로역 8분',
+      '관악': '신림역 12분',
+      '동작': '사당역 10분',
+      '성동': '왕십리역 8분',
+      '광진': '건대입구역 10분',
+      '동대문': '동대문역 7분',
+      '중랑': '상봉역 12분',
+      '노원': '노원역 8분',
+      '도봉': '도봉산역 10분',
+      '강북': '미아역 12분'
+    };
+
+    // 주소에서 구 이름 추출
+    for (const [district, station] of Object.entries(stations)) {
+      if (address.includes(district)) {
+        return station + ' 거리';
+      }
+    }
+
+    return '안암역 10분 거리'; // 기본값
+  };
+
+  // 관리비를 만원 단위로 반올림하여 포맷팅
+  const formatMaintenanceCost = (area) => {
+    if (!area) return '7만';
+
+    const cost = Math.round(area * 1000);
+    const manWon = Math.round(cost / 10000);
+
+    return `${manWon}만`;
+  };
+
+  const getRoomImage = (roomId) => {
+    // roomId 기반으로 부동산 이미지 선택
+    const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+    const roomImages = [
+      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
+      'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
+      'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
+      'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
+      'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
+      'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
+      'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
+      'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
+    ];
+    return roomImages[imageIndex];
+  };
+
+  const filters = ['전체', '궁합 점수 높은 순', '고려대학교', '투룸 희망', '아파트 희망', '오피스텔 희망', '빌라 희망'];
 
   const filteredAndSortedUsers = React.useMemo(() => {
     let filtered = [...users];
@@ -88,6 +156,15 @@ export default function FavoritedUsersScreen() {
         break;
       case '투룸 희망':
         filtered = filtered.filter(user => user.roomType === '투룸');
+        break;
+      case '아파트 희망':
+        filtered = filtered.filter(user => user.preferred_building_type === '아파트' || user.building_preference === '아파트');
+        break;
+      case '오피스텔 희망':
+        filtered = filtered.filter(user => user.preferred_building_type === '오피스텔' || user.building_preference === '오피스텔');
+        break;
+      case '빌라 희망':
+        filtered = filtered.filter(user => user.preferred_building_type === '빌라' || user.building_preference === '빌라');
         break;
       default:
         // 전체는 기본 순서 유지
@@ -193,13 +270,14 @@ export default function FavoritedUsersScreen() {
         {/* 방 정보 - 고정 */}
         <View style={styles.roomInfo}>
           <Image
-            source={{ uri: 'https://via.placeholder.com/100x100/f0f0f0/666?text=매물' }}
+            source={{ uri: getRoomImage(roomId) }}
             style={styles.roomImage}
+            defaultSource={{ uri: 'https://via.placeholder.com/100x100/f0f0f0/666?text=매물' }}
           />
           <View style={styles.roomDetails}>
             <Text style={styles.roomPrice}>{formatPrice()}</Text>
-            <Text style={styles.roomInfo1}>{room?.property_type} | {room?.square_meter}평 | {room?.floor}층</Text>
-            <Text style={styles.roomAddress}>관리비 {room?.price_manage}만원 | {room?.location}</Text>
+            <Text style={styles.roomInfo1}>{getRoomType(room?.area, room?.rooms)} | {formatArea(room?.area)} | {formatFloor(room?.floor)}</Text>
+            <Text style={styles.roomAddress}>관리비 {formatMaintenanceCost(room?.area)}원 | {getNearestStation(room?.address)}</Text>
             <View style={styles.verificationBadge}>
               <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
               <Text style={styles.verificationText}>집주인 인증</Text>
@@ -214,11 +292,24 @@ export default function FavoritedUsersScreen() {
         {/* 스크롤 가능한 콘텐츠 영역 */}
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* 찜한 유저 수 */}
-          <FavoritedSection
-            userCount={users.length}
-            showMatchScores={showMatchScores}
-            onToggleMatchScores={() => setShowMatchScores(!showMatchScores)}
-          />
+          <View style={styles.favoritedSection}>
+            <View style={styles.favoritedLeft}>
+              <Text style={styles.favoritedText}>이 매물을 찜한 유저 {users.length}명</Text>
+              <View style={styles.heartIcon}>
+                <Ionicons name="heart" size={16} color="#FC6339" />
+              </View>
+            </View>
+            <View style={styles.favoritedRight}>
+              <TouchableOpacity
+                style={[styles.matchScoreToggle, showMatchScores && styles.matchScoreToggleActive]}
+                onPress={() => setShowMatchScores(!showMatchScores)}
+              >
+                <Text style={[styles.matchScoreToggleText, showMatchScores && styles.matchScoreToggleTextActive]}>
+                  궁합 점수 확인하기
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* 필터 */}
           <ScrollView
@@ -304,10 +395,10 @@ export default function FavoritedUsersScreen() {
                     월세 {room.price_deposit}만원 / {room.price_monthly}만원
                   </Text>
                   <Text style={styles.modalRoomInfo1}>
-                    {room?.property_type} | {room?.square_meter}평 | {room?.floor}층
+                    {getRoomType(room?.area, room?.rooms)} | {formatArea(room?.area)} | {formatFloor(room?.floor)}
                   </Text>
                   <Text style={styles.modalRoomAddress}>
-                    관리비 {room?.price_manage}만원 | {room?.location}
+                    관리비 {formatMaintenanceCost(room?.area)}원 | {getNearestStation(room?.address)}
                   </Text>
                   <View style={styles.modalVerificationBadge}>
                     <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
@@ -816,5 +907,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  favoritedSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  favoritedLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  favoritedText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  favoritedRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  matchScoreToggle: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#FC6339',
+  },
+  matchScoreToggleActive: {
+    backgroundColor: '#f5f5f5',
+  },
+  matchScoreToggleText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  matchScoreToggleTextActive: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  heartIcon: {
+    width: 21,
+    height: 21,
+    borderRadius: 10.5,
+    backgroundColor: 'white',
+    borderWidth: 0.5,
+    borderColor: '#D9D9D9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

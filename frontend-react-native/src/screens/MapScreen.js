@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Text, TextInput, SafeAreaView, Animated, Modal } from "react-native";
+import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Text, TextInput, SafeAreaView, Animated, Modal, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
@@ -12,6 +12,22 @@ import LocationIcon from "../components/LocationIcon";
 import CurrentLocationIcon from "../components/CurrentLocationIcon";
 import HeartIcon from "../components/HeartIcon";
 import ChatIcon from "../components/ChatIcon";
+
+const getRoomImage = (roomId) => {
+  // roomId 기반으로 부동산 이미지 선택
+  const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+  const roomImages = [
+    'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
+    'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
+    'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
+    'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
+    'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
+    'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
+    'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
+    'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
+  ];
+  return roomImages[imageIndex];
+};
 
 export default function MapScreen({ navigation, user }) {
   const [rooms, setRooms] = useState([]);
@@ -569,9 +585,11 @@ export default function MapScreen({ navigation, user }) {
           activeOpacity={0.9}
         >
           <View style={styles.cardImageContainer}>
-            <View style={styles.cardImagePlaceholder}>
-              <Ionicons name="image-outline" size={24} color="#ccc" />
-            </View>
+            <Image 
+              source={{ uri: getRoomImage(selectedProperty?.room_id) }}
+              style={styles.cardImage}
+              defaultSource={{ uri: 'https://via.placeholder.com/80x80/f0f0f0/666?text=매물' }}
+            />
           </View>
 
           <View style={styles.cardInfo}>
@@ -1058,13 +1076,11 @@ const styles = StyleSheet.create({
   cardImageContainer: {
     marginRight: 12,
   },
-  cardImagePlaceholder: {
+  cardImage: {
     width: 100,
     height: 100,
     borderRadius: 8,
     backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cardInfo: {
     flex: 1,
