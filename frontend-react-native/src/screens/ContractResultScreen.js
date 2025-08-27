@@ -489,7 +489,9 @@ export default function ContractResultScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>의심 조항</Text>
           {analysisResult.suspicious_clauses.map((clause, index) => (
             <View key={index} style={styles.resultItem}>
-              <Text style={styles.warningEmoji}>⚠️</Text>
+              <View style={styles.warningCircle}>
+                <Ionicons name="warning" size={20} color="#FF6600" />
+              </View>
               <Text style={styles.resultText}>{clause.text}</Text>
             </View>
           ))}
@@ -734,7 +736,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   resultMainText: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     color: '#1C1C1C',
     textAlign: 'center',
@@ -742,6 +744,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontWeight: '700',
+    color: '#10B585',
   },
   contractImageContainer: {
     alignItems: 'center',
@@ -766,7 +769,7 @@ const styles = StyleSheet.create({
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
     gap: 10,
   },
   resultText: {
@@ -780,7 +783,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#D5D5D5',
+    backgroundColor: '#10B585',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -792,9 +795,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  warningEmoji: {
-    fontSize: 18,
-    color: 'rgba(0, 0, 0, 0.8)',
+  warningCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   divider: {
     height: 8,

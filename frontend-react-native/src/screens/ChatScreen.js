@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import ApiService from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -217,9 +218,10 @@ export default function ChatScreen({ navigation, route }) {
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
+    // 한국 시간으로 변환
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
   const sendMessage = async () => {
@@ -297,7 +299,7 @@ export default function ChatScreen({ navigation, route }) {
                     <Text style={styles.botInitial}>K</Text>
                   </View>
                 ) : (
-                  <View style={[styles.avatar, styles.userAvatar]} />
+                  <Ionicons name="person-circle" size={65} color="#ddd" />
                 )
               ) : (
                 <View style={styles.avatarSpacer} />
@@ -358,7 +360,9 @@ export default function ChatScreen({ navigation, route }) {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
+            <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
+          </Svg>
         </TouchableOpacity>
         
         <View style={styles.userInfo}>
@@ -475,13 +479,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarContainer: {
-    width: 45,
-    marginRight: 8,
+    width: 65,
+    marginRight: 4,
     alignItems: 'flex-start',
   },
   avatarSpacer: {
-    width: 50,
-    height: 50,
+    width: 65,
+    height: 65,
   },
   avatar: {
     width: 50,
@@ -497,10 +501,6 @@ const styles = StyleSheet.create({
   },
   botAvatar: {
     backgroundColor: '#45DCB1',
-  },
-  userAvatar: {
-    backgroundColor: '#9A9A9A',
-    borderRadius: 100,
   },
   botInitial: {
     color: '#FFFFFF',

@@ -68,10 +68,15 @@ class ApiService {
       });
 
       if (!response.ok) {
-        // 401 Unauthorized 에러 처리 (조용히 처리)
-        if (response.status === 401 && this.authErrorHandler) {
+        // 401, 403 Unauthorized 에러 처리 (조용히 처리)
+        if ((response.status === 401 || response.status === 403) && this.authErrorHandler) {
           this.authErrorHandler();
-          // 401 에러는 조용히 처리하고 에러를 던지지 않음
+          // 인증 에러는 조용히 처리하고 에러를 던지지 않음
+          return null;
+        }
+        
+        // 404, 500 에러도 조용히 처리 (사용자 상태 조회 등에서 발생)
+        if (response.status === 404 || response.status === 500) {
           return null;
         }
         
@@ -91,8 +96,8 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      // 401 에러는 이미 위에서 처리되었으므로 조용히 넘어감
-      if (error.message && error.message.includes('401')) {
+      // 인증 에러와 404, 500 에러는 이미 위에서 처리되었으므로 조용히 넘어감
+      if (error.message && (error.message.includes('401') || error.message.includes('403') || error.message.includes('404') || error.message.includes('500'))) {
         return null;
       }
       console.error('API request failed:', error);
@@ -332,6 +337,13 @@ class ApiService {
     });
   }
 
+  // 특정 사용자 정보 조회 (다른 사용자의 프로필)
+  async getUserById(userId) {
+    return this.request(`/users/${userId}`, {
+      method: 'GET',
+    });
+  }
+
   // 새로운 회원가입 플로우 API들
   async initialSignup(email, password) {
     return this.request('/auth/signup/initial', {
@@ -460,12 +472,6 @@ class ApiService {
     });
   }
 
-  async createDummyChatData() {
-    return this.request('/chat/rooms/dummy', {
-      method: 'POST',
-    });
-  }
-
   async deleteChatRoom(roomId) {
     return this.request(`/chat/rooms/${roomId}`, {
       method: 'DELETE',
@@ -507,6 +513,19 @@ class ApiService {
       body: JSON.stringify({
         user_context: userContext,
       }),
+    });
+  }
+
+  // 사용자 활동 관련 API
+  async updateUserActivity() {
+    return this.request('/activity/heartbeat', {
+      method: 'POST',
+    });
+  }
+
+  async getUserStatus(userId) {
+    return this.request(`/activity/status/${userId}`, {
+      method: 'GET',
     });
   }
 

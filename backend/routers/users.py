@@ -163,3 +163,85 @@ async def update_my_bio(bio_data: dict, current_user: User = Depends(get_current
     except Exception as e:
         print(f"Error updating bio: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{user_id}")
+async def get_user_by_id(user_id: int, current_user: User = Depends(get_current_user)):
+    """특정 사용자의 기본 정보 조회"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 사용자 기본 정보 조회
+        cursor.execute("""
+            SELECT id, email, name, phone_number, gender, school_email, created_at
+            FROM users WHERE id = ?
+        """, (user_id,))
+        user_data = cursor.fetchone()
+        
+        if not user_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # 사용자 프로필 정보 조회
+        cursor.execute("""
+            SELECT age, sleep_type, home_time, cleaning_frequency, cleaning_sensitivity, 
+                   smoking_status, noise_sensitivity, personality_type, lifestyle_type, 
+                   budget_range, is_complete
+            FROM user_profiles WHERE user_id = ?
+        """, (user_id,))
+        profile_data = cursor.fetchone()
+        
+        # 사용자 추가 정보 조회 (bio, 거주지 등)
+        user_info = get_user_info(user_id)
+        if user_info is None:
+            user_info = {
+                "bio": "",
+                "current_location": "", 
+                "desired_location": "",
+                "budget": "",
+                "move_in_date": "",
+                "lifestyle": "",
+                "roommate_preference": "",
+                "introduction": ""
+            }
+        
+        # 응답 데이터 구성
+        result = {
+            "id": user_data[0],
+            "email": user_data[1], 
+            "name": user_data[2],
+            "phone_number": user_data[3],
+            "gender": user_data[4],
+            "school_email": user_data[5],
+            "created_at": user_data[6],
+            "profile": None,
+            "user_info": user_info
+        }
+        
+        if profile_data:
+            result["profile"] = {
+                "age": profile_data[0],
+                "sleep_type": profile_data[1],
+                "home_time": profile_data[2], 
+                "cleaning_frequency": profile_data[3],
+                "cleaning_sensitivity": profile_data[4],
+                "smoking_status": profile_data[5],
+                "noise_sensitivity": profile_data[6],
+                "personality_type": profile_data[7],
+                "lifestyle_type": profile_data[8],
+                "budget_range": profile_data[9],
+                "is_complete": profile_data[10]
+            }
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()

@@ -25,7 +25,8 @@ def init_db():
             phone_number TEXT,
             gender TEXT,
             school_email TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_seen_at TIMESTAMP DEFAULT NULL
         )
     ''')
     
@@ -42,6 +43,11 @@ def init_db():
     
     try:
         cursor.execute('ALTER TABLE users ADD COLUMN school_email TEXT')
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN last_seen_at TIMESTAMP DEFAULT NULL')
     except sqlite3.OperationalError:
         pass
     
@@ -1144,13 +1150,28 @@ def get_user_chat_rooms(user_id: int):
                 }
                 participants.append(participant_info)
             
-            # 읽지 않은 메시지 수 계산
+            # 읽지 않은 메시지 수 계산 (해당 사용자의 last_read_at만 사용)
             cursor.execute("""
-                SELECT COUNT(*) FROM chat_messages cm
-                JOIN chat_participants cp ON cm.room_id = cp.room_id
-                WHERE cm.room_id = ? AND cm.created_at > cp.last_read_at 
-                AND cm.sender_id != ? AND cm.is_deleted = FALSE
+                SELECT last_read_at FROM chat_participants 
+                WHERE room_id = ? AND user_id = ?
             """, (room_id, user_id))
+            
+            last_read_result = cursor.fetchone()
+            last_read_at = last_read_result[0] if last_read_result else None
+            
+            if last_read_at:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM chat_messages 
+                    WHERE room_id = ? AND created_at > ? 
+                    AND sender_id != ? AND is_deleted = FALSE
+                """, (room_id, last_read_at, user_id))
+            else:
+                # last_read_at이 NULL이면 모든 메시지가 읽지 않은 것으로 간주
+                cursor.execute("""
+                    SELECT COUNT(*) FROM chat_messages 
+                    WHERE room_id = ? AND sender_id != ? AND is_deleted = FALSE
+                """, (room_id, user_id))
+            
             unread_count = cursor.fetchone()[0]
             
             result.append({
@@ -1177,16 +1198,17 @@ def send_message(room_id: int, sender_id: int, content: str, message_type: str =
     
     try:
         # 메시지 생성 (기본 상태: sent=true, delivered=false, read=false)
+        # 한국 시간으로 저장
         cursor.execute("""
-            INSERT INTO chat_messages (room_id, sender_id, message_type, content, file_url, reply_to_id, sent, delivered, read_status)
-            VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0)
+            INSERT INTO chat_messages (room_id, sender_id, message_type, content, file_url, reply_to_id, sent, delivered, read_status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0, datetime('now', '+9 hours'))
         """, (room_id, sender_id, message_type, content, file_url, reply_to_id))
         
         message_id = cursor.lastrowid
         
         # 채팅방 업데이트 시간 갱신
         cursor.execute("""
-            UPDATE chat_rooms SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
+            UPDATE chat_rooms SET updated_at = datetime('now', '+9 hours') WHERE id = ?
         """, (room_id,))
         
         # 메시지 전송 직후 delivered 상태로 업데이트 (실시간 시뮬레이션)
@@ -1238,7 +1260,7 @@ def get_chat_messages(room_id: int, user_id: int, limit: int = 50, offset: int =
         if mark_as_read:
             cursor.execute("""
                 UPDATE chat_participants 
-                SET last_read_at = CURRENT_TIMESTAMP
+                SET last_read_at = datetime('now', '+9 hours')
                 WHERE room_id = ? AND user_id = ?
             """, (room_id, user_id))
             
@@ -1326,7 +1348,7 @@ def update_last_read_time(room_id: int, user_id: int):
     try:
         cursor.execute("""
             UPDATE chat_participants 
-            SET last_read_at = CURRENT_TIMESTAMP
+            SET last_read_at = datetime('now', '+9 hours')
             WHERE room_id = ? AND user_id = ?
         """, (room_id, user_id))
         conn.commit()

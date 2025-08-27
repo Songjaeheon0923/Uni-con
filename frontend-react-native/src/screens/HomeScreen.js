@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -58,10 +59,10 @@ export default function HomeScreen({ navigation, user }) {
     loadPolicyNews();
     loadUserProfile();
   }, []);
-
-  // 화면이 포커스될 때마다 찜 목록 새로고침
+  // 화면이 포커스될 때마다 사용자 프로필 다시 로드 & 즐겨찾기 목록 새로고침
   useFocusEffect(
     React.useCallback(() => {
+      loadUserProfile();
       loadFavorites();
     }, [])
   );
@@ -184,7 +185,7 @@ export default function HomeScreen({ navigation, user }) {
     try {
       const profile = await ApiService.getUserProfile();
       setUserProfile(profile);
-      
+
       // 프로필이 완성되어 있는지 확인 (한번이라도 테스트를 했는지)
       const isComplete = profile && profile.is_complete;
       setHasCompletedTest(isComplete);
@@ -401,7 +402,7 @@ export default function HomeScreen({ navigation, user }) {
   // 주소를 기반으로 가장 가까운 역과 거리 계산
   const getNearestStation = (address) => {
     if (!address) return '역 정보 없음';
-    
+
     // 서울 주요 역 리스트 (간단한 매칭용)
     const stations = {
       '성북': '안암역 10분',
@@ -429,24 +430,24 @@ export default function HomeScreen({ navigation, user }) {
       '도봉': '도봉산역 10분',
       '강북': '미아역 12분'
     };
-    
+
     // 주소에서 구 이름 추출
     for (const [district, station] of Object.entries(stations)) {
       if (address.includes(district)) {
         return station + ' 거리';
       }
     }
-    
+
     return '안암역 10분 거리'; // 기본값
   };
 
   // 관리비를 만원 단위로 반올림하여 포맷팅
   const formatMaintenanceCost = (area) => {
     if (!area) return '7만';
-    
+
     const cost = Math.round(area * 1000);
     const manWon = Math.round(cost / 10000);
-    
+
     return `${manWon}만`;
   };
 
@@ -476,12 +477,12 @@ export default function HomeScreen({ navigation, user }) {
         <Text style={styles.priceText}>
           {item.transaction_type} {formatPrice(item.price_deposit, item.transaction_type, item.price_monthly, item.room_id)}
         </Text>
-        
+
         {/* 방 정보 */}
         <Text style={styles.roomInfoText}>
           {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} | {formatFloor(item.floor)}
         </Text>
-        
+
         {/* 관리비와 거리 정보 */}
         <Text style={styles.additionalInfoText}>
           관리비 {formatMaintenanceCost(item.area)}원 | {getNearestStation(item.address)}
@@ -543,7 +544,7 @@ export default function HomeScreen({ navigation, user }) {
           </Text>
         </View>
         <Text style={styles.whiteCardSubtitle}>
-          {hasCompletedTest 
+          {hasCompletedTest
             ? '저장된 성향을 바탕으로 나와 딱 맞는 룸메이트를 추천해드려요!'
             : '주거성향 테스트하고, 나와 딱 맞는 룸메이트를 만나보세요!'
           }

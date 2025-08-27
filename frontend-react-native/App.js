@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { AppState, Text } from "react-native";
+import { NavigationContainer, getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
 // 전역 폰트 설정
 Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.style = { fontFamily: 'Pretendard' };
-import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,6 +37,7 @@ import ContractViewScreen from "./src/screens/ContractViewScreen";
 import FavoritedUsersScreen from "./src/screens/FavoritedUsersScreen";
 import FavoriteRoomsScreen from "./src/screens/FavoriteRoomsScreen";
 import UserProfileScreen from "./src/screens/UserProfileScreen";
+import UserProfileViewScreen from "./src/screens/UserProfileViewScreen";
 import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
 import ChatListScreen from "./src/screens/ChatListScreen";
 import PolicyChatbotScreen from "./src/screens/PolicyChatbotScreen";
@@ -72,6 +73,7 @@ function HomeStack({ user }) {
         component={ChatScreen}
         options={{
           headerShown: false,
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Stack.Screen
@@ -231,9 +233,10 @@ function ProfileStack({ user, onLogout }) {
 
 function MainTabs() {
   const { user, logout } = useAuth();
+
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({ route, navigation }) => ({
         tabBarIcon: ({ focused, color }) => {
           if (route.name === '홈') {
             return <HomeIcon size={28} color={color} focused={focused} />;
@@ -267,8 +270,41 @@ function MainTabs() {
         },
         headerShown: false,
       })}
+      screenListeners={({ navigation, route }) => ({
+        tabPress: (e) => {
+          // 홈 탭을 눌렀을 때만 스택 초기화, 이미 홈 화면에 있으면 무시
+          if (e.target.includes('홈')) {
+            const currentRoute = navigation.getState()?.routes?.find(r => r.name === '홈')?.state?.routes?.slice(-1)?.[0]?.name;
+            if (currentRoute !== 'HomeMain') {
+              navigation.navigate('홈', { screen: 'HomeMain' });
+            }
+          }
+        },
+      })}
     >
-      <Tab.Screen name="홈">
+      <Tab.Screen 
+        name="홈"
+        options={({ route }) => ({
+          tabBarStyle: (() => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeMain';
+            if (routeName === 'Chat') {
+              return { display: 'none' };
+            }
+            return {
+              height: 100,
+              paddingBottom: 30,
+              paddingTop: 15,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 8,
+            };
+          })(),
+        })}
+      >
         {(props) => <HomeStack {...props} user={user} />}
       </Tab.Screen>
       <Tab.Screen name="지도">
@@ -324,6 +360,13 @@ function MainApp() {
       <Stack.Screen
         name="ChatList"
         component={ChatListScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="UserProfileView"
+        component={UserProfileViewScreen}
         options={{
           headerShown: false,
         }}
