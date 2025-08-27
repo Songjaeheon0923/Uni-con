@@ -19,6 +19,37 @@ import { formatPrice, formatArea, getRoomType, formatFloor } from '../utils/pric
 
 const { width } = Dimensions.get('window');
 
+// 주소 포맷팅 함수 - 시구 제외하고 동부터 표시
+const formatAddress = (address) => {
+  if (!address) return '';
+  
+  // 주소를 공백으로 분리
+  const parts = address.split(' ');
+  
+  // 서울특별시, 경기도 등과 구를 제거하고 동부터 시작
+  const filteredParts = parts.filter((part, index) => {
+    // 특별시, 광역시, 도, 시, 구 등을 제거
+    if (part.includes('특별시') || part.includes('광역시') || part.includes('도') || 
+        part.endsWith('시') || part.endsWith('구')) {
+      return false;
+    }
+    return true;
+  });
+  
+  // 처음 2-3개 부분만 사용 (동, 번지 등)
+  return filteredParts.slice(0, 2).join(' ');
+};
+
+// 관리비를 만원 단위로 반올림하여 포맷팅 (HomeScreen과 동일한 로직)
+const formatMaintenanceCost = (area) => {
+  if (!area) return '7만';
+
+  const cost = Math.round(area * 1000);
+  const manWon = Math.round(cost / 10000);
+
+  return `${manWon}만`;
+};
+
 const FavoriteRoomsScreen = ({ navigation, user }) => {
   const [favoriteRooms, setFavoriteRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,52 +123,74 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
   };
 
   const renderRoomCard = ({ item }) => (
-    <TouchableOpacity style={styles.cardContainer} onPress={() => handleRoomPress(item)}>
-      <View style={styles.imageContainer}>
-        <View style={styles.imagePlaceholder}>
-          <Ionicons name="home-outline" size={24} color="#999" />
-        </View>
-      </View>
-
-      <View style={styles.infoContainer}>
-        <View style={styles.contentHeader}>
-          <View style={styles.contentLeft}>
-            <Text style={styles.price}>
-              {formatPrice(item.price_deposit, item.transaction_type, item.price_monthly, item.room_id)}
-            </Text>
-            <Text style={styles.roomInfo}>
-              {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} | {formatFloor(item.floor)}
-            </Text>
-            <Text style={styles.additionalInfo}>
-              {item.address}
-            </Text>
-            {item.verified && (
-              <View style={styles.verificationBadge}>
-                <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
-                <Text style={styles.verificationText}>집주인 인증</Text>
-              </View>
-            )}
+    <View style={styles.cardContainer}>
+      <View style={styles.roomCard}>
+        <TouchableOpacity onPress={() => handleRoomPress(item)}>
+          <View style={styles.imageContainer}>
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="home-outline" size={32} color="#999" />
+            </View>
           </View>
-          <TouchableOpacity 
-            style={styles.heartContainer}
-            onPress={(e) => {
-              e.stopPropagation();
-              removeFavorite(item.room_id);
-            }}
-          >
-            <Ionicons name="heart" size={20} color="#FF6B6B" />
-            <Text style={styles.heartCount}>{item.favorite_count}</Text>
-          </TouchableOpacity>
+        </TouchableOpacity>
+
+        <View style={styles.infoContainer}>
+          <View style={styles.contentHeader}>
+            <View style={styles.contentLeft}>
+              <View style={styles.priceAndDetailsContainer}>
+                <View style={styles.priceContainer}>
+                  <Text style={styles.price}>
+                    {formatPrice(item.price_deposit, item.transaction_type, item.price_monthly, item.room_id)}
+                  </Text>
+                </View>
+                <View style={styles.roomDetailsContainer}>
+                  <View style={styles.roomInfoRow}>
+                    <Text style={styles.roomInfo}>
+                      {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} | {formatFloor(item.floor)}
+                    </Text>
+                  </View>
+                  <View style={styles.additionalInfoRow}>
+                    <Text 
+                      style={styles.additionalInfo}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      관리비 {formatMaintenanceCost(item.area)}원 | {formatAddress(item.address)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+            <View style={styles.heartContainer}>
+              <TouchableOpacity 
+                style={styles.heartButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  removeFavorite(item.room_id);
+                }}
+              >
+                <Ionicons name="heart" size={12} color="#FC6339" />
+              </TouchableOpacity>
+              <Text style={styles.heartCount}>{item.favorite_count}</Text>
+            </View>
+          </View>
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity style={styles.shareButton}>
+              <Text style={styles.shareButtonText}>공유하기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.roommateButton}>
+              <Text style={styles.roommateButtonText}>룸메이트 찾기</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>관심 목록</Text>
+          <Text style={styles.headerTitle}>관심 매물</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FF6600" />
@@ -182,45 +235,61 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F2F2',
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    paddingVertical: 5,
+    backgroundColor: '#F2F2F2',
+    height: 55,
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212529',
+    color: '#000000',
     textAlign: 'center',
+    fontFamily: 'Pretendard',
   },
   listContainer: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 14,
     paddingVertical: 0,
+    gap: 10,
   },
   cardContainer: {
+    width: 384,
+    height: 158,
     backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    marginBottom: 0,
-    flexDirection: 'row',
-    minHeight: 120,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    borderRadius: 18,
+    marginBottom: 10,
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingLeft: 19,
+    paddingRight: 23,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: 10,
   },
   imageContainer: {
-    width: 100,
-    height: 100,
+    width: 116,
+    height: 116,
+    overflow: 'hidden',
+    borderRadius: 9,
   },
   imagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#E9ECEF',
-    borderRadius: 8,
+    backgroundColor: '#D9D9D9',
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -251,75 +320,165 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  roomCard: {
+    width: 365,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: 18,
+  },
   infoContainer: {
-    flex: 1,
-    paddingLeft: 15,
-    justifyContent: 'center',
+    height: 116,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: 7,
   },
   contentHeader: {
+    width: 213,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   contentLeft: {
-    flex: 1,
-    paddingRight: 12,
+    width: 178,
+    height: 80,
+    paddingTop: 3,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    gap: 11,
+  },
+  priceAndDetailsContainer: {
+    alignSelf: 'stretch',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: 5,
   },
   heartContainer: {
+    width: 24,
     flexDirection: 'column',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 3.43,
+  },
+  heartButton: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 9999,
+    borderWidth: 0.5,
+    borderColor: '#D9D9D9',
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
     elevation: 2,
   },
   heartCount: {
-    marginTop: 2,
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#212529',
+    textAlign: 'center',
+    color: '#595959',
+    fontSize: 12.57,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '300',
+    lineHeight: 14.86,
+    letterSpacing: 0.07,
+  },
+  priceContainer: {
+    alignSelf: 'stretch',
+    justifyContent: 'flex-end',
+    display: 'flex',
+    flexDirection: 'column',
   },
   price: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#212529',
-    marginBottom: 4,
+    color: 'rgba(0, 0, 0, 0.80)',
+    fontSize: 18,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+  },
+  roomDetailsContainer: {
+    alignSelf: 'stretch',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: 1,
+  },
+  roomInfoRow: {
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: 10,
+    display: 'flex',
+    flexDirection: 'row',
   },
   roomInfo: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#495057',
-    marginBottom: 3,
+    opacity: 0.6,
+    color: 'black',
+    fontSize: 14,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '400',
+    lineHeight: 22.4,
+  },
+  additionalInfoRow: {
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: 10,
+    display: 'flex',
+    flexDirection: 'row',
   },
   additionalInfo: {
-    fontSize: 11,
-    color: '#6C757D',
-    marginBottom: 6,
+    opacity: 0.6,
+    color: 'black',
+    fontSize: 14,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '400',
+    lineHeight: 22.4,
   },
-  verificationBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFF5F0',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+  buttonsContainer: {
+    width: 178,
     flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#FFE5D9',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: 4,
   },
-  verificationText: {
-    fontSize: 11,
-    color: '#FF6600',
+  shareButton: {
+    width: 105,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'black',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shareButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Pretendard Variable',
     fontWeight: '600',
-    marginLeft: 4,
+    lineHeight: 19.2,
+  },
+  roommateButton: {
+    width: 104,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#10B585',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  roommateButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '600',
+    lineHeight: 19.2,
   },
 });
 
