@@ -148,11 +148,20 @@ def find_matches(user_id: int, all_profiles: List[UserProfile]) -> List[Matching
             
             # 사용자 정보 가져오기
             user_info = get_user_by_email_by_id(other_profile.user_id)
+            user_introduction = get_user_introduction(other_profile.user_id)
+            
             if user_info:
+                # 학교명 변환
+                university = get_university_name(user_info.get("school_email", ""))
+                
                 matches.append(MatchingResult(
                     user_id=other_profile.user_id,
                     email=user_info["email"],
                     name=user_info["name"],
+                    age=other_profile.age,
+                    gender=user_info.get("gender", ""),
+                    university=user_info.get("school_email", ""),  # school_email을 그대로 전달
+                    message=user_introduction,
                     compatibility_score=compatibility_score,
                     matching_details=get_matching_details(user_profile, other_profile)
                 ))
@@ -167,9 +176,63 @@ def get_user_by_email_by_id(user_id: int):
     import sqlite3
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT id, email, name FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT id, email, name, gender, school_email FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
     if user:
-        return {"id": user[0], "email": user[1], "name": user[2]}
+        return {
+            "id": user[0], 
+            "email": user[1], 
+            "name": user[2], 
+            "gender": user[3], 
+            "school_email": user[4]
+        }
     return None
+
+
+def get_user_introduction(user_id: int) -> str:
+    """사용자 한줄소개를 가져옵니다"""
+    import sqlite3
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT introduction FROM user_info WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result and result[0] else "안녕하세요! 좋은 룸메이트가 되고싶습니다 :)"
+
+
+def get_university_name(school_email: str) -> str:
+    """학교 이메일을 기반으로 대학교 이름을 반환합니다"""
+    if not school_email:
+        return "대학교"
+    
+    email = school_email.lower()
+    if 'korea' in email:
+        return '고려대학교'
+    elif 'sungshin' in email:
+        return '성신여자대학교'
+    elif 'kyunghee' in email:
+        return '경희대학교'
+    elif 'yonsei' in email:
+        return '연세대학교'
+    elif 'seoul' in email:
+        return '서울대학교'
+    elif 'hanyang' in email:
+        return '한양대학교'
+    elif 'chungang' in email:
+        return '중앙대학교'
+    else:
+        # 일반적인 형태: xxx@university.ac.kr -> University대학교
+        domain = email.split('@')[1] if '@' in email else email
+        name = domain.replace('.ac.kr', '').replace('.edu', '').split('.')[0]
+        return f'{name.capitalize()}대학교'
+
+
+def get_compatibility_level(score: float) -> str:
+    """호환성 점수를 기반으로 좋음/보통/나쁨을 반환합니다"""
+    if score >= 0.8:
+        return "좋음"
+    elif score >= 0.6:
+        return "보통"
+    else:
+        return "나쁨"

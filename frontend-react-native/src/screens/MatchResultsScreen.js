@@ -4,18 +4,22 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
-  FlatList,
+  ScrollView,
   Alert,
-  RefreshControl,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import ApiService from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MatchResultsScreen({ navigation }) {
+  const { user } = useAuth();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
     loadMatches();
@@ -23,158 +27,227 @@ export default function MatchResultsScreen({ navigation }) {
 
   const loadMatches = async () => {
     try {
-      const matchData = await ApiService.getMatches();
-      setMatches(matchData);
+      setLoading(true);
+      const matchesData = await ApiService.getMatches();
+      setMatches(matchesData);
+      setError(null);
     } catch (error) {
-      console.error('매칭 결과 로드 실패:', error);
-      Alert.alert('알림', '아직 매칭 가능한 룸메이트가 없습니다.');
-      setMatches([]);
+      console.error('매칭 데이터 로드 실패:', error);
+      setError('매칭 데이터를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadMatches();
+  const handleRetakeTest = () => {
+    navigation.navigate('RoommateChoice');
   };
 
-  const handleContactUser = async (otherUser) => {
-    try {
-      // 1:1 채팅방 생성 또는 기존 채팅방 찾기
-      const chatResponse = await ApiService.createChatRoom(
-        'individual',
-        [otherUser.user_id]
-      );
-      
-      if (chatResponse && chatResponse.room_id) {
-        // 채팅방이 생성되거나 기존 방을 찾으면 채팅 화면으로 이동
-        navigation.navigate('Chat', {
-          roomId: chatResponse.room_id,
-          otherUser: {
-            id: otherUser.user_id,
-            name: otherUser.name,
-            email: otherUser.email
-          }
-        });
-      }
-    } catch (error) {
-      console.error('채팅방 생성 실패:', error);
-      Alert.alert('알림', '채팅방을 생성하는데 실패했습니다. 다시 시도해주세요.');
-    }
-  };
-
-  const getCompatibilityColor = (score) => {
-    if (score >= 0.8) return '#FF6600'; // 녹색
-    if (score >= 0.6) return '#FF9800'; // 주황색
-    return '#F44336'; // 빨간색
+  const handleContactUser = (user) => {
+    Alert.alert('채팅 신청', `${user.name}님에게 채팅을 신청하시겠습니까?`);
   };
 
   const getCompatibilityText = (score) => {
-    if (score >= 0.8) return '매우 좋음';
-    if (score >= 0.6) return '좋음';
-    return '보통';
+    if (score >= 0.8) return '좋음';
+    if (score >= 0.6) return '보통';
+    return '나쁨';
   };
 
-  const renderMatchItem = ({ item }) => (
-    <View style={styles.matchCard}>
-      <View style={styles.matchHeader}>
-        <View style={styles.profileSection}>
-          <View style={styles.profileImage}>
-            <Ionicons name="person" size={30} color="#666" />
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{item.name}</Text>
-            <Text style={styles.profileEmail}>{item.email}</Text>
-          </View>
-        </View>
-        <View style={styles.scoreSection}>
-          <Text 
-            style={[
-              styles.scoreText, 
-              { color: getCompatibilityColor(item.compatibility_score) }
-            ]}
-          >
-            {Math.round(item.compatibility_score * 100)}%
-          </Text>
-          <Text style={styles.scoreLabel}>
-            {getCompatibilityText(item.compatibility_score)}
-          </Text>
+  // 나이대 계산 함수 (ProfileScreen.js와 동일)
+  const getAgeGroup = (age) => {
+    if (!age) return '';
+    if (age >= 19 && age <= 23) return '20대 초반';
+    if (age >= 24 && age <= 27) return '20대 중반';
+    if (age >= 28 && age <= 30) return '20대 후반';
+    if (age >= 31 && age <= 35) return '30대 초반';
+    if (age >= 36 && age <= 39) return '30대 후반';
+    return `${Math.floor(age / 10)}0대`;
+  };
+  
+  // 성별 변환 함수 (ProfileScreen.js와 동일)
+  const getGenderText = (gender) => {
+    if (gender === 'male') return '남성';
+    if (gender === 'female') return '여성';
+    return '';
+  };
+
+  // 학교 이메일에서 학교명 추출 함수 (ProfileScreen.js와 동일)
+  const getSchoolNameFromEmail = (schoolEmail) => {
+    if (!schoolEmail) return '';
+    
+    // @를 기준으로 도메인 추출
+    const domain = schoolEmail.split('@')[1];
+    if (!domain) return '';
+    
+    // 일반적인 학교 도메인 패턴 매칭
+    const schoolPatterns = {
+      'snu.ac.kr': '서울대학교',
+      'korea.ac.kr': '고려대학교', 
+      'yonsei.ac.kr': '연세대학교',
+      'kaist.ac.kr': '카이스트',
+      'postech.ac.kr': '포스텍',
+      'seoul.ac.kr': '서울시립대학교',
+      'hanyang.ac.kr': '한양대학교',
+      'cau.ac.kr': '중앙대학교',
+      'konkuk.ac.kr': '건국대학교',
+      'dankook.ac.kr': '단국대학교',
+    };
+    
+    // 정확한 매칭이 있으면 사용
+    if (schoolPatterns[domain]) {
+      return schoolPatterns[domain];
+    }
+    
+    // 없으면 도메인에서 학교명 추출 시도 (university, univ 등 제거)
+    let schoolName = domain
+      .replace('.ac.kr', '')
+      .replace('.edu', '')
+      .replace('university', '')
+      .replace('univ', '')
+      .replace('.', '');
+    
+    // 첫글자 대문자로 변환하고 '대학교' 추가
+    if (schoolName && schoolName.length > 0) {
+      return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
+    }
+    
+    return '';
+  };
+
+  const getLifestyleCompatibility = (matchingDetails) => {
+    const categories = [
+      {
+        key: 'sleep_type_match',
+        label: '수면패턴',
+        icon: 'bed'
+      },
+      {
+        key: 'home_time_compatible',
+        label: '시간대',
+        icon: 'time'
+      },
+      {
+        key: 'cleaning_frequency_compatible',
+        label: '청소습관',
+        icon: 'brush'
+      },
+      {
+        key: 'smoking_compatible',
+        label: '흡연여부',
+        icon: 'ban'
+      }
+    ];
+
+    return categories.map(category => ({
+      ...category,
+      isCompatible: matchingDetails[category.key] === true
+    }));
+  };
+
+  const renderUserCard = (user, index) => (
+    <View key={user.user_id} style={styles.userCard}>
+      {/* 프로필 이미지 */}
+      <View style={styles.profileImageBg}>
+        <View style={styles.profileImage}>
+          <Ionicons name="person" size={34} color="#595959" />
         </View>
       </View>
 
-      <View style={styles.detailsContainer}>
-        <Text style={styles.detailsTitle}>호환성 분석</Text>
-        <View style={styles.detailsGrid}>
-          <DetailItem
-            icon="bed"
-            title="수면패턴"
-            isMatch={item.matching_details.sleep_type_match}
-          />
-          <DetailItem
-            icon="time"
-            title="시간대"
-            isMatch={item.matching_details.home_time_match}
-          />
-          <DetailItem
-            icon="brush"
-            title="청소습관"
-            isMatch={item.matching_details.cleaning_frequency_compatible}
-          />
-          <DetailItem
-            icon="ban"
-            title="흡연여부"
-            isMatch={item.matching_details.smoking_compatible}
-          />
+      {/* 사용자 정보 */}
+      <View style={styles.userInfoSection}>
+        <Text style={styles.userName}>{user.name}</Text>
+        <View style={styles.userDetails}>
+          <Text style={styles.userDetailsText}>
+            {getAgeGroup(user.age)}{getGenderText(user.gender) ? `, ${getGenderText(user.gender)}` : ''}{getSchoolNameFromEmail(user.university) ? `, ${getSchoolNameFromEmail(user.university)}` : ''}
+          </Text>
+          <View style={styles.dotIndicator} />
+          <View style={styles.cameraIcon}>
+            <Ionicons name="camera" size={6} color="white" />
+          </View>
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={styles.contactButton}
-        onPress={() => handleContactUser(item)}
-      >
-        <Ionicons name="chatbubble-ellipses" size={16} color="#FF6600" />
-        <Text style={styles.contactButtonText}>연락하기</Text>
-      </TouchableOpacity>
-    </View>
-  );
+      {/* 매칭률 */}
+      <View style={styles.matchingSection}>
+        <Text style={styles.scorePercentage}>{Math.round(user.compatibility_score * 100)}%</Text>
+        <Text style={styles.scoreLabel}>{getCompatibilityText(user.compatibility_score)}</Text>
+      </View>
 
-  const DetailItem = ({ icon, title, isMatch }) => (
-    <View style={styles.detailItem}>
-      <Ionicons 
-        name={icon} 
-        size={16} 
-        color={isMatch ? '#FF6600' : '#F44336'} 
-      />
-      <Text style={[
-        styles.detailItemText,
-        { color: isMatch ? '#FF6600' : '#F44336' }
-      ]}>
-        {title}
-      </Text>
-      <Ionicons 
-        name={isMatch ? "checkmark-circle" : "close-circle"} 
-        size={14} 
-        color={isMatch ? '#FF6600' : '#F44336'} 
-      />
-    </View>
-  );
+      {/* 메시지 (프로필 이미지 아래) */}
+      <View style={styles.messageWrapper}>
+        <View style={styles.messageContainer}>
+          <Text style={styles.messageText}>&quot; {user.message || '안녕하세요! 좋은 룸메이트가 되고싶습니다 :)'} &quot;</Text>
+        </View>
+      </View>
 
-  const EmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="people-outline" size={60} color="#ccc" />
-      <Text style={styles.emptyTitle}>매칭된 룸메이트가 없습니다</Text>
-      <Text style={styles.emptyText}>
-        아직 호환되는 룸메이트가 없어요.{'\n'}
-        더 많은 사람들이 가입하면 알림을 드릴게요!
-      </Text>
+      {/* 구분선 */}
+      <View style={styles.separator} />
+
+      {/* 카테고리 태그들 */}
+      <View style={styles.categorySection}>
+        {(() => {
+          const compatibility = getLifestyleCompatibility(user.matching_details || {});
+          const firstRow = compatibility.slice(0, 2);
+          const secondRow = compatibility.slice(2, 4);
+          
+          return (
+            <>
+              <View style={styles.categoryRow}>
+                {firstRow.map((category, idx) => (
+                  <View key={category.key} style={styles.categoryItem}>
+                    <Ionicons 
+                      name={category.icon} 
+                      size={16} 
+                      color={category.isCompatible ? "#10B585" : "#FC6339"} 
+                    />
+                    <Text style={styles.categoryText}>{category.label}</Text>
+                    <View style={[styles.statusDot, {
+                      backgroundColor: category.isCompatible ? '#10B585' : '#FC6339'
+                    }]}>
+                      <Ionicons 
+                        name={category.isCompatible ? "checkmark" : "close"} 
+                        size={10} 
+                        color="white" 
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.categoryRow}>
+                {secondRow.map((category, idx) => (
+                  <View key={category.key} style={styles.categoryItem}>
+                    <Ionicons 
+                      name={category.icon} 
+                      size={16} 
+                      color={category.isCompatible ? "#10B585" : "#FC6339"} 
+                    />
+                    <Text style={styles.categoryText}>{category.label}</Text>
+                    <View style={[styles.statusDot, {
+                      backgroundColor: category.isCompatible ? '#10B585' : '#FC6339'
+                    }]}>
+                      <Ionicons 
+                        name={category.isCompatible ? "checkmark" : "close"} 
+                        size={10} 
+                        color="white" 
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </>
+          );
+        })()}
+      </View>
+
+      {/* 채팅 신청하기 버튼 */}
       <TouchableOpacity 
-        style={styles.retryButton}
-        onPress={onRefresh}
+        style={styles.chatButton}
+        onPress={() => handleContactUser(user)}
       >
-        <Ionicons name="refresh" size={16} color="#228B22" />
-        <Text style={styles.retryButtonText}>새로고침</Text>
+        <Text style={styles.chatButtonText}>채팅 신청하기</Text>
+        <View style={styles.arrowIcon}>
+          <Ionicons name="arrow-forward" size={22} color="white" />
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -182,247 +255,719 @@ export default function MatchResultsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>매칭 결과를 분석하는 중...</Text>
+        <Text style={styles.loadingText}>매칭 결과를 분석하는 중...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={loadMatches}>
+          <Text style={styles.retryButtonText}>다시 시도</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.navigate('MainTabs', { screen: '홈', params: { screen: 'HomeMain' } })}
-        >
-          <Ionicons name="chevron-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>매칭 결과</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-          <Ionicons name="refresh" size={22} color="#228B22" />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      {/* 헤더 영역 */}
+      <View style={styles.headerContainer}>
 
-      {/* 결과 요약 */}
-      <View style={styles.summaryContainer}>
-        <Text style={styles.summaryTitle}>
-          {matches.length}명의 룸메이트를 찾았어요!
+        {/* 헤더 상단 라인 (모든 요소들이 같은 높이) */}
+        <View style={styles.headerTopLine}>
+          {/* 뒤로가기 버튼 + 제목 + 정보 아이콘 */}
+          <View style={styles.leftSection}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
+                <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
+              </Svg>
+            </TouchableOpacity>
+            
+            <Text style={styles.headerTitle}>룸메이트 매칭</Text>
+            <TouchableOpacity onPress={() => setShowInfoModal(true)}>
+              <Ionicons 
+                name="information-circle-outline" 
+                size={24} 
+                color="#494949" 
+                style={styles.infoIcon} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* 테스트 다시하기 버튼 */}
+          <TouchableOpacity style={styles.retestButton} onPress={handleRetakeTest}>
+            <Text style={styles.retestButtonText}>테스트 다시하기</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 결과 제목 */}
+        <Text style={styles.resultTitle}>
+          {matches.length > 0 ? `${matches.length}명의 룸메이트를 찾았어요 !` : '매칭 결과가 없습니다'}
         </Text>
-        {matches.length > 0 && (
-          <Text style={styles.summaryText}>
-            성격 유형과 생활 패턴을 분석하여{'\n'}가장 잘 맞는 순서로 정렬했습니다.
-          </Text>
-        )}
-      </View>
 
-      {/* 매칭 리스트 */}
-      <FlatList
-        data={matches}
-        renderItem={renderMatchItem}
-        keyExtractor={(item) => item.user_id.toString()}
-        ListEmptyComponent={EmptyState}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContent,
-          matches.length === 0 && styles.emptyListContent
-        ]}
+        {/* 결과 설명 */}
+        <Text style={styles.resultDescription}>
+          성격 유형과 생활 패턴을 분석하여{"\n"}{user?.name ? user.name.slice(1) : '사용자'}님에게 가장 잘 맞는 순서로 정렬했습니다.
+        </Text>
+      </View>
+      
+      {/* 헤더와 카드들 사이 그라데이션 그림자 */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0)']}
+        locations={[0, 0.5, 1]}
+        style={styles.shadowGradient}
+        pointerEvents="none"
       />
-    </SafeAreaView>
+      
+      <ScrollView 
+        style={{ marginTop: 243 }}
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 매칭 결과 카드 컴포넌트 */}
+        {matches.map(renderUserCard)}
+      </ScrollView>
+
+      {/* 매칭 시스템 설명 모달 */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showInfoModal}
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.infoModalContainer}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowInfoModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+            
+            <Text style={styles.modalTitle}>룸메이트 매칭 규칙</Text>
+            
+            {/* 제목 아래 구분선 */}
+            <View style={styles.modalTitleSeparator} />
+            
+            <View style={styles.matchingRulesContainer}>
+              <View style={styles.ruleItem}>
+                <View style={styles.ruleIconContainer}>
+                  <Ionicons name="time-outline" size={20} color="black" />
+                </View>
+                <View style={styles.ruleContent}>
+                  <Text style={styles.ruleTitle}>시간대 차이 선호</Text>
+                  <Text style={styles.ruleDescription}>집에 머무는 시간이 다를 때 더 높은 점수 부여</Text>
+                </View>
+              </View>
+              
+              <View style={styles.ruleItem}>
+                <View style={styles.ruleIconContainer}>
+                  <Ionicons name="sparkles-outline" size={20} color="black" />
+                </View>
+                <View style={styles.ruleContent}>
+                  <Text style={styles.ruleTitle}>청소 기준 종합 평가</Text>
+                  <Text style={styles.ruleDescription}>청소 빈도와 민감도를 모두 고려한 세밀한 매칭</Text>
+                </View>
+              </View>
+              
+              <View style={styles.ruleItem}>
+                <View style={styles.ruleIconContainer}>
+                  <Ionicons name="warning-outline" size={20} color="black" />
+                </View>
+                <View style={styles.ruleContent}>
+                  <Text style={styles.ruleTitle}>흡연 여부 완전 구분</Text>
+                  <Text style={styles.ruleDescription}>엄격한 비흡연자와 흡연자는 절대 매칭하지 않음</Text>
+                </View>
+              </View>
+            </View>
+            
+            {/* 3가지 기준 아래 구분선 */}
+            <View style={styles.modalRulesSeparator} />
+            
+            <Text style={styles.modalFooterText}>
+              <Text style={styles.footerNormalText}>이룸만의 </Text>
+              <Text style={styles.footerOrangeText}>종합 매칭 알고리즘</Text>
+              <Text style={styles.footerNormalText}>을 통해{'\n'}</Text>
+              <Text style={styles.footerGreenText}>최적의 룸메이트</Text>
+              <Text style={styles.footerNormalText}>를 연결합니다.</Text>
+            </Text>
+          </View>
+        </View>
+      </Modal>
+      
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F2F2F2',
+    borderRadius: 40,
+    overflow: 'hidden',
+    position: 'relative',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F2F2F2',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  refreshButton: {
-    padding: 5,
-  },
-  summaryContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    alignItems: 'center',
-  },
-  summaryTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  emptyListContent: {
-    flex: 1,
-  },
-  matchCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  matchHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  profileEmail: {
-    fontSize: 14,
-    color: '#666',
-  },
-  scoreSection: {
-    alignItems: 'center',
-  },
-  scoreText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  scoreLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
-  detailsContainer: {
-    marginBottom: 20,
-  },
-  detailsTitle: {
+  loadingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: '#565656',
+    fontFamily: 'Pretendard',
   },
-  detailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '48%',
-    marginBottom: 8,
-  },
-  detailItemText: {
-    fontSize: 14,
-    marginLeft: 6,
-    marginRight: 6,
+  errorContainer: {
     flex: 1,
-  },
-  contactButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F8FF',
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF6600',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F2',
+    padding: 20,
   },
-  contactButtonText: {
+  errorText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FF6600',
-    marginLeft: 6,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#666',
+    color: '#FC6339',
+    fontFamily: 'Pretendard',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 30,
+    marginBottom: 20,
   },
   retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#FC6339',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#F3F8FF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FF6600',
+    borderRadius: 8,
   },
   retryButtonText: {
+    color: 'white',
     fontSize: 14,
-    color: '#FF6600',
-    marginLeft: 6,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+  },
+  headerContainer: {
+    width: '100%',
+    height: 243,
+    left: 0,
+    top: 0,
+    position: 'absolute',
+    backgroundColor: '#F2F2F2',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 10,
+  },
+  statusBar: {
+    width: 412,
+    height: 40,
+    paddingLeft: 16,
+    paddingRight: 16,
+    left: 0,
+    top: 0,
+    position: 'absolute',
+    backgroundColor: '#F2F2F2',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusLeft: {
+    width: 128,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeText: {
+    color: '#171D1B',
+    fontSize: 14,
+    fontFamily: 'Roboto',
+    fontWeight: '400',
+    lineHeight: 20,
+    letterSpacing: 0.25,
+  },
+  statusRight: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 2,
+  },
+  headerTopLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 63,
+    height: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    zIndex: 2,
+  },
+  backButton: {
+    padding: 10,
+  },
+  retestButton: {
+    paddingHorizontal: 13,
+    paddingVertical: 0,
+    height: 34,
+    backgroundColor: '#FC6339',
+    borderRadius: 20,
+    shadowColor: 'rgba(0, 0, 0, 0.08)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  retestButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Pretendard',
     fontWeight: '500',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 16,
+  },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerTitle: {
+    color: 'black',
+    fontSize: 18,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    marginLeft: 12,
+    marginRight: 6,
+  },
+  infoIcon: {
+    marginLeft: 2,
+  },
+  resultTitle: {
+    position: 'absolute',
+    left: 72,
+    top: 130,
+    textAlign: 'center',
+    color: '#1C1C1C',
+    fontSize: 24,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 33.6,
+  },
+  resultDescription: {
+    position: 'absolute',
+    left: 71,
+    top: 176,
+    textAlign: 'center',
+    color: '#565656',
+    fontSize: 15,
+    fontFamily: 'Pretendard',
+    fontWeight: '400',
+    lineHeight: 21,
+  },
+  userCard: {
+    width: 382,
+    height: 270,
+    backgroundColor: 'white',
+    position: 'relative',
+    borderRadius: 18,
+    shadowColor: 'rgba(0, 0, 0, 0.10)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 3,
+    marginBottom: 12,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    overflow: 'visible',
+  },
+  chatButton: {
+    width: 344,
+    height: 50,
+    position: 'absolute',
+    left: 19,
+    top: 203,
+    backgroundColor: 'black',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingLeft: 60,
+    paddingRight: 60,
+    paddingVertical: 0,
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  chatButtonText: {
+    color: 'white',
+    fontSize: 15,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '600',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 22,
+    letterSpacing: 0.2,
+  },
+  arrowIcon: {
+    position: 'absolute',
+    right: 12,
+    width: 36,
+    height: 36,
+    backgroundColor: '#FC6339',
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: 'rgba(252, 99, 57, 0.3)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  messageWrapper: {
+    position: 'absolute',
+    left: 19,
+    top: 80,
+    maxWidth: 320,
+  },
+  messageContainer: {
+    backgroundColor: '#10B585',
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+  },
+  messageText: {
+    opacity: 0.8,
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Pretendard',
+    fontWeight: '500',
+    wordWrap: 'break-word',
+    textAlign: 'center',
+    width: '100%',
+    lineHeight: 16,
+    includeFontPadding: false,
+    paddingBottom: 0,
+    paddingTop: 0,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+  userInfoSection: {
+    width: 147.24,
+    position: 'absolute',
+    left: 83,
+    top: 22,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    display: 'flex',
+  },
+  userName: {
+    color: '#474747',
+    fontSize: 16,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '700',
+    lineHeight: 28.96,
+    wordWrap: 'break-word',
+  },
+  userDetails: {
+    alignSelf: 'flex-start',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    display: 'flex',
+  },
+  userDetailsText: {
+    opacity: 0.8,
+    color: '#343434',
+    fontSize: 13,
+    fontFamily: 'Pretendard',
+    fontWeight: '400',
+    wordWrap: 'break-word',
+  },
+  matchingSection: {
+    width: 83,
+    position: 'absolute',
+    left: 280,
+    top: 18,
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    gap: 3,
+    display: 'flex',
+    minHeight: 60,
+  },
+  scorePercentage: {
+    textAlign: 'center',
+    color: '#10B585',
+    fontSize: 32,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '800',
+    lineHeight: 38,
+    wordWrap: 'break-word',
+    width: '100%',
+    includeFontPadding: false,
+    paddingBottom: 0,
+    paddingTop: 0,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+  scoreLabel: {
+    textAlign: 'center',
+    color: 'black',
+    fontSize: 13,
+    fontFamily: 'Pretendard Variable',
+    fontWeight: '700',
+    lineHeight: 18,
+    wordWrap: 'break-word',
+    width: '100%',
+    includeFontPadding: false,
+    paddingBottom: 0,
+    paddingTop: 0,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+  profileImageBg: {
+    width: 53,
+    height: 53,
+    position: 'absolute',
+    left: 19,
+    top: 18,
+    backgroundColor: '#F2F2F2',
+    borderRadius: 9999,
+  },
+  profileImage: {
+    width: 34,
+    height: 34,
+    position: 'absolute',
+    left: 9.5,
+    top: 9.5,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tagsSection: {
+    position: 'absolute',
+    left: 19,
+    top: 95,
+    width: 344,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  tagItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+    flex: 1,
+  },
+  tagIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  separator: {
+    position: 'absolute',
+    left: 19,
+    right: 19,
+    top: 115,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoModalContainer: {
+    width: 308,
+    height: 385,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 0,
+    shadowColor: 'rgba(0, 0, 0, 0.25)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 4,
+    position: 'relative',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    zIndex: 10,
+    padding: 5,
+  },
+  modalTitle: {
+    width: 282,
+    height: 20,
+    position: 'absolute',
+    left: 13,
+    top: 25.71,
+    textAlign: 'center',
+    color: 'black',
+    fontSize: 20,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  matchingRulesContainer: {
+    width: 285,
+    position: 'absolute',
+    left: 11,
+    top: 90,
+    flexDirection: 'column',
+    gap: 18,
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ruleIconContainer: {
+    width: 46,
+    height: 46,
+    backgroundColor: 'white',
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: '#DEDEDE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ruleContent: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 5,
+  },
+  ruleTitle: {
+    color: 'black',
+    fontSize: 15,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 18,
+    flexWrap: 'nowrap',
+  },
+  ruleDescription: {
+    color: '#595959',
+    fontSize: 12,
+    fontFamily: 'Pretendard',
+    fontWeight: '400',
+    lineHeight: 14,
+    flexWrap: 'nowrap',
+  },
+  modalTitleSeparator: {
+    width: 282,
+    height: 1,
+    backgroundColor: '#999999',
+    position: 'absolute',
+    left: 13,
+    top: 60,
+  },
+  modalRulesSeparator: {
+    width: 282,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    position: 'absolute',
+    left: 13,
+    top: 310,
+  },
+  modalFooterText: {
+    width: 282,
+    position: 'absolute',
+    left: 13,
+    top: 320,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  footerNormalText: {
+    color: 'black',
+    fontSize: 16,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  footerOrangeText: {
+    color: '#FC6339',
+    fontSize: 16,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  footerGreenText: {
+    color: '#10B585',
+    fontSize: 16,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  categorySection: {
+    position: 'absolute',
+    left: 19,
+    right: 19,
+    top: 125,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 15,
+    paddingVertical: 4,
+  },
+  categoryText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+    fontFamily: 'Pretendard',
+    fontWeight: '500',
+  },
+  statusDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginLeft: 'auto',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shadowGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 243,
+    height: 20,
+    zIndex: 5,
   },
 });

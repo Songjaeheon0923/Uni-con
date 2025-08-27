@@ -62,26 +62,27 @@ export default function RoommateChoiceScreen({ navigation, user }) {
 
   return (
     <View style={styles.container}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
-            <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
-          </Svg>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>나만의 룸메이트 찾기</Text>
-      </View>
+      {/* 뒤로가기 버튼 */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.goBack()}
+      >
+        <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
+          <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
+        </Svg>
+      </TouchableOpacity>
+
+      {/* 헤더 타이틀 */}
+      <Text style={styles.headerTitle}>주거 성향 테스트</Text>
 
       {/* 메인 텍스트 */}
       <Text style={styles.mainText}>
-        {userData.name}님의 성향을 파악하고{'\n'}딱 맞는 룸메이트를 찾아보세요!
+        내 주거 성향을 파악하고,{'\n'}딱 맞는 룸메이트를 찾아보세요!
       </Text>
 
       {/* 일러스트레이션 영역 */}
       <View style={styles.illustrationContainer}>
+        <View style={styles.shadowBase} />
         <Image 
           source={require('../../assets/roommate-character.png')}
           style={styles.illustration}
@@ -89,120 +90,107 @@ export default function RoommateChoiceScreen({ navigation, user }) {
         />
       </View>
 
-
-      {/* 버튼들 */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={handlePersonalityTest}>
-          <Text style={styles.actionButtonText}>내 유형 알아보기</Text>
-          <View style={styles.actionButtonIcon}>
-            <Ionicons name="arrow-forward" size={16} color="#696969" />
-          </View>
-        </TouchableOpacity>
-        
-        {/* 한번이라도 테스트를 완료한 사용자에게만 "검사 건너뛰기" 버튼 표시 */}
-        {hasCompletedTest && (
-          <TouchableOpacity style={styles.skipButton} onPress={handleSkipTest}>
-            <Text style={styles.skipButtonText}>검사 건너뛰기</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* 버튼 */}
+      <TouchableOpacity style={styles.actionButton} onPress={handlePersonalityTest}>
+        <Text style={styles.actionButtonText} numberOfLines={1}>내 유형 알아보기</Text>
+        <View style={styles.greenCircle}>
+          <Ionicons name="arrow-forward" size={40} color="#FFFFFF" />
+        </View>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 63,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
     position: 'relative',
+    backgroundColor: '#F2F2F2',
+    overflow: 'hidden',
+    borderRadius: 40,
   },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 63,
+    top: 50,
+    padding: 10,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
+    left: 147,
+    top: 63,
+    position: 'absolute',
     textAlign: 'center',
+    color: 'black',
+    fontSize: 18,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
   },
   mainText: {
-    position: 'absolute',
     left: 59,
     top: 213,
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1C1C1C',
-    lineHeight: 33.6,
+    position: 'absolute',
     textAlign: 'center',
+    color: '#1C1C1C',
+    fontSize: 24,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    lineHeight: 33.6,
   },
   illustrationContainer: {
+    width: 215.42,
+    height: 291,
+    left: 93.47,
+    top: 299,
     position: 'absolute',
-    left: 83,
-    top: 289,
-    width: 247,
-    height: 261,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  shadowBase: {
+    width: 215.42,
+    height: 7.24,
+    left: 0,
+    top: 261.71,
+    position: 'absolute',
+    backgroundColor: 'rgba(252, 99, 57, 0.15)',
+    borderRadius: 9999,
   },
   illustration: {
-    width: '100%',
-    height: '100%',
+    width: 186.36,
+    height: 291,
+    left: 22.99,
+    top: 0,
+    position: 'absolute',
   },
   actionButton: {
-    width: 222,
-    height: 56,
-    backgroundColor: '#696969',
-    borderRadius: 9,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 15,
+    justifyContent: 'center',
+    backgroundColor: '#000000',
+    height: 65,
+    borderRadius: 30,
+    position: 'absolute',
+    left: 55,
+    top: 648,
+    width: 302,
+    paddingLeft: 50,
+    paddingRight: 60,
+    paddingVertical: 0,
   },
   actionButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '500',
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginRight: 10,
+    includeFontPadding: false,
+    lineHeight: 28,
   },
-  actionButtonIcon: {
-    width: 26,
-    height: 26,
-    backgroundColor: '#D9D9D9',
-    borderRadius: 13,
+  greenCircle: {
+    position: 'absolute',
+    right: 8,
+    width: 43,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B585',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    left: 97,
-    top: 648,
-    alignItems: 'center',
-  },
-  skipButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderRadius: 9,
-  },
-  skipButtonText: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });

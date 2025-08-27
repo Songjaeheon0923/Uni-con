@@ -57,6 +57,13 @@ function HomeStack({ user }) {
         {(props) => <HomeScreen {...props} user={user} />}
       </Stack.Screen>
       <Stack.Screen
+        name="MatchResults"
+        component={MatchResultsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="Chat"
         component={ChatScreen}
         options={{
@@ -214,13 +221,6 @@ function ProfileStack({ user, onLogout }) {
           headerShown: false,
         }}
       />
-      <Stack.Screen
-        name="MatchResults"
-        component={MatchResultsScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
     </Stack.Navigator>
   );
 }
@@ -297,13 +297,6 @@ function MainApp() {
         }}
       />
       <Stack.Screen
-        name="RoommateSearch"
-        component={RoommateSearchScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="PersonalityTest"
         component={PersonalityTestScreen}
         options={{
@@ -318,8 +311,8 @@ function MainApp() {
         }}
       />
       <Stack.Screen
-        name="MatchResults"
-        component={MatchResultsScreen}
+        name="RoommateSearch"
+        component={RoommateSearchScreen}
         options={{
           headerShown: false,
         }}
@@ -327,13 +320,6 @@ function MainApp() {
       <Stack.Screen
         name="ChatList"
         component={ChatListScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="Chat"
-        component={ChatScreen}
         options={{
           headerShown: false,
         }}
