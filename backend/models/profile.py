@@ -110,5 +110,9 @@ class MatchingResult(BaseModel):
     user_id: int
     email: str
     name: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    university: Optional[str] = None
+    message: Optional[str] = None  # 한줄소개
     compatibility_score: float  # 0.0 ~ 1.0
     matching_details: dict

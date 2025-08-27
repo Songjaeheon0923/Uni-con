@@ -35,6 +35,8 @@ export default function HomeScreen({ navigation, user }) {
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [policyPage, setPolicyPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [hasCompletedTest, setHasCompletedTest] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
   const scrollViewRef = useRef(null);
   const policyNewsRef = useRef(null);
@@ -52,6 +54,7 @@ export default function HomeScreen({ navigation, user }) {
     loadData();
     getCurrentLocation();
     loadPolicyNews();
+    loadUserProfile();
   }, []);
 
   const getCurrentLocation = async () => {
@@ -165,6 +168,30 @@ export default function HomeScreen({ navigation, user }) {
       setTotalPages(1);
     } finally {
       setLoadingPolicies(false);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await ApiService.getUserProfile();
+      setUserProfile(profile);
+      
+      // 프로필이 완성되어 있는지 확인 (한번이라도 테스트를 했는지)
+      const isComplete = profile && profile.is_complete;
+      setHasCompletedTest(isComplete);
+    } catch (error) {
+      console.error('사용자 프로필 로드 실패:', error);
+      setHasCompletedTest(false);
+    }
+  };
+
+  const handleRoommateButtonPress = () => {
+    if (hasCompletedTest) {
+      // 이미 테스트를 한 경우 - 바로 매칭 결과 화면으로
+      navigation.navigate('MatchResults');
+    } else {
+      // 테스트를 안 한 경우 - 테스트 선택 화면으로
+      navigation.navigate('RoommateChoice');
     }
   };
 
@@ -439,15 +466,30 @@ export default function HomeScreen({ navigation, user }) {
       </View>
 
       {/* 나만의 룸메이트 찾기 박스 */}
-      <TouchableOpacity style={styles.roommateBox} onPress={() => navigation.navigate('RoommateChoice')}>
+      <TouchableOpacity style={styles.roommateBox} onPress={handleRoommateButtonPress}>
         <View style={styles.cardHeader}>
           <PeopleIcon size={24} color="#333333" />
-          <Text style={styles.whiteCardTitle}>나만의 룸메이트 찾기</Text>
+          <Text style={styles.whiteCardTitle}>
+            {hasCompletedTest ? (
+              <>나만의 <Text style={styles.boldText}>룸메이트</Text> 추천받기</>
+            ) : (
+              '내 주거 성향 확인해보기'
+            )}
+          </Text>
         </View>
-        <Text style={styles.whiteCardSubtitle}>주거성향 테스트하고, 나와 딱 맞는 룸메이트를 만나보세요!</Text>
+        <Text style={styles.whiteCardSubtitle}>
+          {hasCompletedTest 
+            ? '저장된 성향을 바탕으로 나와 딱 맞는 룸메이트를 추천해드려요!'
+            : '주거성향 테스트하고, 나와 딱 맞는 룸메이트를 만나보세요!'
+          }
+        </Text>
         <View style={styles.blackActionButton}>
           <Text style={styles.blackActionButtonText}>
-            내 <Text style={styles.boldText}>주거 성향</Text> 확인해보기
+            {hasCompletedTest ? (
+              <>나만의 <Text style={styles.boldText}>룸메이트</Text> 추천받기</>
+            ) : (
+              <>내 <Text style={styles.boldText}>주거 성향</Text> 확인해보기</>
+            )}
           </Text>
           <View style={styles.greenArrowCircle}>
             <Ionicons name="arrow-forward" size={40} color="#FFFFFF" />
@@ -723,11 +765,12 @@ const styles = StyleSheet.create({
   blackActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     backgroundColor: '#000000',
     height: 60,
     borderRadius: 30,
     position: 'relative',
+    paddingLeft: 68,
   },
   blackActionButtonText: {
     fontSize: 20,
@@ -757,6 +800,9 @@ const styles = StyleSheet.create({
   },
   arrowIcon: {
     fontWeight: 'bold',
+  },
+  boldText: {
+    fontWeight: '700',
   },
   contractBox: {
     backgroundColor: '#FFFFFF',

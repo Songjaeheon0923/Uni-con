@@ -43,9 +43,15 @@ export default function PersonalityResultScreen({ navigation, route }) {
   const handleFindRoommate = () => {
     if (fromScreen === 'profile') {
       // 내 정보 화면으로 직접 이동
-      navigation.navigate('ProfileMain');
+      navigation.navigate('MainTabs', { screen: '내 정보' });
     } else {
-      navigation.navigate('MatchResults');
+      // MainTabs의 홈 탭 안의 MatchResults로 이동
+      navigation.navigate('MainTabs', { 
+        screen: '홈', 
+        params: { 
+          screen: 'MatchResults' 
+        } 
+      });
     }
   };
   
