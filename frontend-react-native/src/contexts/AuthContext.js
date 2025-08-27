@@ -30,7 +30,8 @@ export const AuthProvider = ({ children }) => {
       await api.updateUserActivity();
       // 조용히 처리 - 성공 로그 없음
     } catch (error) {
-      // heartbeat 실패는 조용히 처리 - 에러 로그 없음
+      // heartbeat 실패 시에만 에러 로그 출력
+      console.error('Heartbeat failed:', error.message);
     }
   };
 

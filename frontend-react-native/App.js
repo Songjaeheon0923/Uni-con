@@ -37,7 +37,6 @@ import ContractViewScreen from "./src/screens/ContractViewScreen";
 import FavoritedUsersScreen from "./src/screens/FavoritedUsersScreen";
 import FavoriteRoomsScreen from "./src/screens/FavoriteRoomsScreen";
 import UserProfileScreen from "./src/screens/UserProfileScreen";
-import UserProfileViewScreen from "./src/screens/UserProfileViewScreen";
 import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
 import ChatListScreen from "./src/screens/ChatListScreen";
 import PolicyChatbotScreen from "./src/screens/PolicyChatbotScreen";
@@ -363,13 +362,6 @@ function MainApp() {
       <Stack.Screen
         name="ChatList"
         component={ChatListScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="UserProfileView"
-        component={UserProfileViewScreen}
         options={{
           headerShown: false,
         }}

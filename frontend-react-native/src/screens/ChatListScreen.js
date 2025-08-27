@@ -191,9 +191,15 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
             style={styles.avatarSection}
             onPress={() => {
               if (item.isIndividual && item.otherUser) {
-                navigation.navigate('UserProfileView', {
-                  userId: item.otherUser.id,
-                  userName: item.otherUser.name
+                navigation.navigate('MainTabs', {
+                  screen: '홈',
+                  params: {
+                    screen: 'UserProfile',
+                    params: {
+                      userId: item.otherUser.id,
+                      roomId: null // 채팅에서는 특정 방이 없으므로 null
+                    }
+                  }
                 });
               }
             }}

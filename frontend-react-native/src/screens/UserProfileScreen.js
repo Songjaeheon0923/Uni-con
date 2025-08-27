@@ -11,6 +11,8 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, isProfileComplete } from '../utils/personalityUtils';
+import ApiService from '../services/api';
 
 export default function UserProfileScreen({ route, navigation }) {
   const { userId, roomId } = route.params;
@@ -24,14 +26,213 @@ export default function UserProfileScreen({ route, navigation }) {
     loadUserProfile();
   }, [userId]);
 
+  // 백엔드와 동일한 매칭 알고리즘 (utils/matching.py 기반)
+  const calculateDetailedCompatibility = (myProfile, otherProfile) => {
+    let score = 0.0;
+    let totalWeight = 0.0;
+    const details = {};
+
+    // 1. 기상/취침 시간 호환성 (가중치: 0.2)
+    const sleepWeight = 0.2;
+    if (myProfile.sleep_type === otherProfile.sleep_type) {
+      score += sleepWeight * 1.0;
+      details.sleepScore = 100;
+    } else {
+      score += sleepWeight * 0.3;
+      details.sleepScore = 30;
+    }
+    totalWeight += sleepWeight;
+
+    // 2. 청소 빈도 + 민감도 호환성 (가중치: 0.35)
+    const cleaningWeight = 0.35;
+    let cleaningScore = 0;
+    
+    // 청소 빈도 호환성
+    const freqCompatibility = {
+      "daily-daily": 1.0, "daily-weekly": 0.6, "daily-as_needed": 0.2,
+      "weekly-weekly": 1.0, "weekly-as_needed": 0.7, "as_needed-as_needed": 1.0
+    };
+    const freqKey = `${myProfile.cleaning_frequency}-${otherProfile.cleaning_frequency}`;
+    const freqReverseKey = `${otherProfile.cleaning_frequency}-${myProfile.cleaning_frequency}`;
+    const freqScore = freqCompatibility[freqKey] || freqCompatibility[freqReverseKey] || 0.5;
+    
+    // 청소 민감도 호환성
+    const sensCompatibility = {
+      "very_sensitive-very_sensitive": 1.0, "very_sensitive-normal": 0.6, "very_sensitive-not_sensitive": 0.1,
+      "normal-normal": 1.0, "normal-not_sensitive": 0.8, "not_sensitive-not_sensitive": 1.0
+    };
+    const sensKey = `${myProfile.cleaning_sensitivity}-${otherProfile.cleaning_sensitivity}`;
+    const sensReverseKey = `${otherProfile.cleaning_sensitivity}-${myProfile.cleaning_sensitivity}`;
+    const sensScore = sensCompatibility[sensKey] || sensCompatibility[sensReverseKey] || 0.5;
+    
+    cleaningScore = (freqScore + sensScore) / 2;
+    score += cleaningWeight * cleaningScore;
+    details.cleanlinessScore = Math.round(cleaningScore * 100);
+    totalWeight += cleaningWeight;
+
+    // 3. 흡연 호환성 (가중치: 0.25) - 가장 중요
+    const smokingWeight = 0.25;
+    const smokingCompatibility = {
+      "non_smoker_strict-non_smoker_strict": 1.0, "non_smoker_strict-non_smoker_ok": 1.0,
+      "non_smoker_strict-smoker_indoor_no": 0.3, "non_smoker_strict-smoker_indoor_yes": 0.0,
+      "non_smoker_ok-non_smoker_ok": 1.0, "non_smoker_ok-smoker_indoor_no": 0.8,
+      "non_smoker_ok-smoker_indoor_yes": 0.4, "smoker_indoor_no-smoker_indoor_no": 1.0,
+      "smoker_indoor_no-smoker_indoor_yes": 0.6, "smoker_indoor_yes-smoker_indoor_yes": 1.0
+    };
+    const smokingKey = `${myProfile.smoking_status}-${otherProfile.smoking_status}`;
+    const smokingReverseKey = `${otherProfile.smoking_status}-${myProfile.smoking_status}`;
+    const smokingScore = smokingCompatibility[smokingKey] || smokingCompatibility[smokingReverseKey] || 0.5;
+    score += smokingWeight * smokingScore;
+    details.lifestyleScore = Math.round(smokingScore * 100);
+    totalWeight += smokingWeight;
+
+    // 4. 소음 민감도 호환성 (가중치: 0.2)
+    const noiseWeight = 0.2;
+    const noiseCompatibility = {
+      "sensitive-sensitive": 1.0, "sensitive-normal": 0.7, "sensitive-not_sensitive": 0.3,
+      "normal-normal": 1.0, "normal-not_sensitive": 0.8, "not_sensitive-not_sensitive": 1.0
+    };
+    const noiseKey = `${myProfile.noise_sensitivity}-${otherProfile.noise_sensitivity}`;
+    const noiseReverseKey = `${otherProfile.noise_sensitivity}-${myProfile.noise_sensitivity}`;
+    const noiseScore = noiseCompatibility[noiseKey] || noiseCompatibility[noiseReverseKey] || 0.5;
+    score += noiseWeight * noiseScore;
+    details.livingRangeScore = Math.round(noiseScore * 100);
+    totalWeight += noiseWeight;
+
+    const totalScore = totalWeight > 0 ? Math.round((score / totalWeight) * 100) : 0;
+    
+    return {
+      totalScore,
+      sleepScore: details.sleepScore,
+      cleanlinessScore: details.cleanlinessScore,
+      lifestyleScore: details.lifestyleScore,
+      livingRangeScore: details.livingRangeScore
+    };
+  };
+
   const loadUserProfile = async () => {
     try {
       setLoading(true);
-      // 실제 API 호출 시
-      // const userData = await ApiService.getUserProfile(userId);
-      // setUser(userData);
-      // const roomData = await ApiService.getRoomDetail(roomId);
-      // setRoom(roomData);
+      
+      let userName = '사용자';
+      let userTags = [];
+      let userAge = null;
+      let userGender = null;
+      let userSchoolEmail = null;
+      let userBio = '';
+      let userCurrentArea = '';
+      let userPreferredLocation = '';
+      let userBudget = '';
+      let userMoveInDate = '';
+      let userSelfIntro = '';
+      let userWantedRoommate = '';
+      let compatibilityData = null;
+      
+      // 실제 API에서 이름과 태그, 기본 정보 가져오기 (내 정보 화면과 동일한 방식)
+      if (userId) {
+        try {
+          const userProfile = await ApiService.getUserById(userId);
+          if (userProfile) {
+            userName = userProfile.name || '사용자';
+            userAge = userProfile.profile?.age || null;
+            userGender = userProfile.gender;
+            userSchoolEmail = userProfile.school_email;
+            userBio = userProfile.user_info?.bio || '';
+            userCurrentArea = userProfile.user_info?.current_location || '';
+            userPreferredLocation = userProfile.user_info?.desired_location || '';
+            userBudget = userProfile.user_info?.budget || '';
+            userMoveInDate = userProfile.user_info?.move_in_date || '';
+            userSelfIntro = userProfile.user_info?.introduction || '';
+            userWantedRoommate = userProfile.user_info?.roommate_preference || '';
+            
+            // 프로필이 있으면 내 정보 화면과 동일한 태그 생성 로직 사용
+            const profile = userProfile.profile || userProfile;
+            if (isProfileComplete(profile)) {
+              userTags = generateSubTags(profile);
+            }
+            // 프로필이 미완성인 경우 빈 배열 유지 (태그 없음)
+            
+            // 나와의 궁합 점수 계산 (내 프로필과 비교)
+            try {
+              const myProfile = await ApiService.getUserProfile();
+              console.log('내 프로필:', myProfile);
+              console.log('다른 사용자 프로필:', userProfile.profile);
+              console.log('내 프로필 완성도:', isProfileComplete(myProfile));
+              console.log('다른 사용자 프로필 완성도:', isProfileComplete(userProfile.profile));
+              
+              if (myProfile && userProfile.profile && isProfileComplete(myProfile) && isProfileComplete(userProfile.profile)) {
+                compatibilityData = calculateDetailedCompatibility(myProfile, userProfile.profile);
+                console.log('계산된 궁합 점수:', compatibilityData);
+              } else {
+                console.log('프로필 조건 미충족 - 기본 궁합 점수 사용');
+              }
+            } catch (error) {
+              console.log('내 프로필 로드 실패, 기본 궁합 점수 사용:', error);
+            }
+          }
+        } catch (apiError) {
+          // API 호출 실패 시 기본값 사용
+          console.log('API 호출 실패, 기본값 사용:', apiError);
+        }
+      }
+      
+      // ProfileScreen과 동일한 로직으로 나이대, 성별, 학교 계산
+      const getAgeGroup = (age) => {
+        if (!age) return '';
+        if (age >= 19 && age <= 23) return '20대 초반';
+        if (age >= 24 && age <= 27) return '20대 중반';
+        if (age >= 28 && age <= 30) return '20대 후반';
+        if (age >= 31 && age <= 35) return '30대 초반';
+        if (age >= 36 && age <= 39) return '30대 후반';
+        return `${Math.floor(age / 10)}0대`;
+      };
+      
+      const getGenderText = (gender) => {
+        if (gender === 'male') return '남성';
+        if (gender === 'female') return '여성';
+        return '';
+      };
+      
+      const getSchoolNameFromEmail = (schoolEmail) => {
+        if (!schoolEmail) return '';
+        
+        const domain = schoolEmail.split('@')[1];
+        if (!domain) return '';
+        
+        const schoolPatterns = {
+          'snu.ac.kr': '서울대학교',
+          'korea.ac.kr': '고려대학교', 
+          'yonsei.ac.kr': '연세대학교',
+          'kaist.ac.kr': '카이스트',
+          'postech.ac.kr': '포스텍',
+          'seoul.ac.kr': '서울시립대학교',
+          'hanyang.ac.kr': '한양대학교',
+          'cau.ac.kr': '중앙대학교',
+          'konkuk.ac.kr': '건국대학교',
+          'dankook.ac.kr': '단국대학교',
+        };
+        
+        if (schoolPatterns[domain]) {
+          return schoolPatterns[domain];
+        }
+        
+        let schoolName = domain
+          .replace('.ac.kr', '')
+          .replace('.edu', '')
+          .replace('university', '')
+          .replace('univ', '')
+          .replace('.', '');
+        
+        if (schoolName && schoolName.length > 0) {
+          return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
+        }
+        
+        return '';
+      };
+      
+      const ageGroupText = getAgeGroup(userAge) || '';
+      const genderText = getGenderText(userGender) || '';
+      const schoolText = getSchoolNameFromEmail(userSchoolEmail) || '';
       
       // 더미 방 데이터
       setRoom({
@@ -50,24 +251,34 @@ export default function UserProfileScreen({ route, navigation }) {
       // 더미 데이터
       setUser({
         id: userId,
-        name: '반짝이는스케이트',
-        tags: ['청결함', '야행형', '비흡연', '조용함', '요리'],
+        name: userName,
+        tags: userTags,
         age: 20,
         gender: '여성',
         school: '성신여자대학교',
-        bio: '"먼지 없는 집 선호합니다. 깨끗한 집 약속드려요 :)"',
-        matchScore: 88,
+        ageGroupText,
+        genderText,
+        schoolText,
+        bio: userBio,
+        matchScore: compatibilityData?.totalScore || 88,
+        compatibilityDetails: compatibilityData || {
+          sleepScore: 85,
+          cleanlinessScore: 80,
+          lifestyleScore: 90,
+          livingRangeScore: 95
+        },
         profileImage: null,
-        budget: '45만~55만 원 (관리비 포함)',
-        moveInDate: '2025년 9월 초부터 · 최소 1년',
-        preferredLocation: '성북·종로·동대문구',
-        currentArea: '거주 지역',
+        budget: userBudget || '정보 없음',
+        moveInDate: userMoveInDate || '정보 없음',
+        preferredLocation: userPreferredLocation || '정보 없음',
+        currentArea: userCurrentArea || '정보 없음',
         weekdaySchedule: '오전 10시 전후',
         weekendSchedule: '새벽 2시 전후',
         lifeStyle: '청결도 : 물건은 제자리에, 주 1~2회 청소',
         soundSensitivity: '음연 여부 : 비흡연',
         petPolicy: '반려동물: 없음',
-        selfIntro: '저는 조용하고 깔끔한 생활을 선호합니다. 평일엔 집에 있는 시간이 적고, 주로 책을 읽거나 요리를 하며 주말은 사용 후 바로 정리합니다. 밤에 공부해 늦게 잠들지만 생활 소음은 최소화하며, 룸메이트와는 적당한 대화와 서로의 공간 존중을 중시합니다.'
+        selfIntro: userSelfIntro || '정보 없음',
+        wantedRoommate: userWantedRoommate || '정보 없음'
       });
     } catch (error) {
       console.error('사용자 프로필 로드 실패:', error);
@@ -121,8 +332,7 @@ export default function UserProfileScreen({ route, navigation }) {
           </View>
           
           <Text style={styles.profileInfo}>
-            {user.age}대 초반, {user.gender}, {user.school}
-            <Ionicons name="checkmark-circle" size={16} color="#FF6600" />
+            {user.ageGroupText}{user.genderText ? `, ${user.genderText}` : ''}{user.schoolText ? `, ${user.schoolText}` : ''}
           </Text>
           
           <Text style={styles.profileBio}>{user.bio}</Text>
@@ -133,31 +343,31 @@ export default function UserProfileScreen({ route, navigation }) {
           <Text style={styles.sectionTitle}>나와의 궁합 점수</Text>
           <View style={styles.scoreCircle}>
             <Text style={styles.scoreNumber}>{user.matchScore}</Text>
-            <Text style={styles.scoreLabel}>점</Text>
+            <Text style={styles.scoreLabel}>%</Text>
           </View>
           <View style={styles.scoreDetails}>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreItemLabel}>청결도</Text>
               <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: '80%' }]} />
+                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.cleanlinessScore}%` }]} />
               </View>
             </View>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreItemLabel}>라이프스타일</Text>
               <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: '90%' }]} />
+                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.lifestyleScore}%` }]} />
               </View>
             </View>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreItemLabel}>취침시간</Text>
               <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: '85%' }]} />
+                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.sleepScore}%` }]} />
               </View>
             </View>
             <View style={styles.scoreItem}>
               <Text style={styles.scoreItemLabel}>생활범위</Text>
               <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: '95%' }]} />
+                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.livingRangeScore}%` }]} />
               </View>
             </View>
           </View>
@@ -167,7 +377,7 @@ export default function UserProfileScreen({ route, navigation }) {
         <View style={styles.infoSection}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>현재 거주 지역</Text>
-            <Text style={styles.infoValue}>서울 사당동 인근</Text>
+            <Text style={styles.infoValue}>{user.currentArea}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>희망 거주 지역</Text>
@@ -206,9 +416,7 @@ export default function UserProfileScreen({ route, navigation }) {
           
           <Text style={styles.introTitle}>원하는 룸메이트</Text>
           <Text style={styles.introText}>
-            청결을 중요하게 생각하는 분{'\n'}
-            생활 패턴이 너무 이르지 않은 분{'\n'}
-            서로 간단한 요리나 간식 나눌 수 있는 분
+            {user.wantedRoommate}
           </Text>
         </View>
 
@@ -377,7 +585,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: '700',
     color: '#333',
     marginBottom: 12,

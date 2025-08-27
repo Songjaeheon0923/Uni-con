@@ -60,7 +60,10 @@ class ApiService {
         headers['Authorization'] = `Bearer ${this.authToken}`;
       }
 
-      console.log(`API Request: ${options.method || 'GET'} ${endpoint}`);
+      // heartbeat 요청은 로그 제외 (너무 빈번함)
+      if (!endpoint.includes('/activity/heartbeat')) {
+        console.log(`API Request: ${options.method || 'GET'} ${endpoint}`);
+      }
       
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
@@ -87,9 +90,9 @@ class ApiService {
           if (errorData.detail) {
             errorMessage += ` - ${errorData.detail}`;
           }
-          console.error('API error details:', errorData);
+          // 에러 로그 제거 - 사용자에게 콘솔 에러 표시 안함
         } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
+          // 파싱 에러도 조용히 처리
         }
         throw new Error(errorMessage);
       }
