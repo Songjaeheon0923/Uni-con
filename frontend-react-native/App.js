@@ -40,6 +40,7 @@ import UserProfileScreen from "./src/screens/UserProfileScreen";
 import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
 import ChatListScreen from "./src/screens/ChatListScreen";
 import PolicyChatbotScreen from "./src/screens/PolicyChatbotScreen";
+import PolicyDetailScreen from "./src/screens/PolicyDetailScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -127,6 +128,13 @@ function HomeStack({ user }) {
       <Stack.Screen
         name="PolicyChatbot"
         component={PolicyChatbotScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="PolicyDetail"
+        component={PolicyDetailScreen}
         options={{
           headerShown: false,
         }}
