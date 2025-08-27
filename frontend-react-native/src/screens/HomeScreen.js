@@ -198,11 +198,11 @@ export default function HomeScreen({ navigation, user }) {
 
   const handleRoommateButtonPress = () => {
     if (hasCompletedTest) {
-      // 이미 테스트를 한 경우 - 바로 매칭 결과 화면으로
-      navigation.navigate('MatchResults');
+      // 이미 테스트를 한 경우 - 바로 매칭 결과 화면으로 (MainTabs를 우회)
+      navigation.getParent()?.navigate('MatchResults');
     } else {
-      // 테스트를 안 한 경우 - 테스트 선택 화면으로
-      navigation.navigate('RoommateChoice');
+      // 테스트를 안 한 경우 - 테스트 선택 화면으로 (MainTabs를 우회)
+      navigation.getParent()?.navigate('RoommateChoice');
     }
   };
 

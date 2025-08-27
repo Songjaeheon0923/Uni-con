@@ -45,13 +45,8 @@ export default function PersonalityResultScreen({ navigation, route }) {
       // 내 정보 화면으로 직접 이동
       navigation.navigate('MainTabs', { screen: '내 정보' });
     } else {
-      // MainTabs의 홈 탭 안의 MatchResults로 이동
-      navigation.navigate('MainTabs', { 
-        screen: '홈', 
-        params: { 
-          screen: 'MatchResults' 
-        } 
-      });
+      // MatchResults로 직접 이동 (MainTabs 우회)
+      navigation.navigate('MatchResults');
     }
   };
   
@@ -117,7 +112,9 @@ export default function PersonalityResultScreen({ navigation, route }) {
       
       {/* 룸메이트 찾기 버튼 */}
       <TouchableOpacity style={styles.findButton} onPress={handleFindRoommate}>
-        <Text style={styles.findButtonText}>나와 잘 맞는 룸메이트 추천받기</Text>
+        <Text style={styles.findButtonText}>
+          {fromScreen === 'profile' ? '내 정보로 돌아가기' : '나와 잘 맞는 룸메이트 추천받기'}
+        </Text>
       </TouchableOpacity>
       
       {/* 다시 테스트하기 링크 */}

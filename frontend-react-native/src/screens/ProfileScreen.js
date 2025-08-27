@@ -381,8 +381,8 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                   <TouchableOpacity 
                     style={styles.retestButton}
                     onPress={() => {
-                      if (navigation && navigation.navigate) {
-                        navigation.navigate('PersonalityTest', { from: 'profile' });
+                      if (navigation && navigation.getParent) {
+                        navigation.getParent()?.navigate('PersonalityTest', { from: 'profile' });
                       } else {
                         console.warn('Navigation prop not found');
                       }
