@@ -12,6 +12,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Asset } from 'expo-asset';
 import ApiService from '../services/api';
 import { formatPrice as formatPriceUtil, formatArea, getRoomType, formatFloor } from '../utils/priceUtils';
 
@@ -35,24 +36,41 @@ export default function RoomDetailScreen({ route, navigation }) {
 
   // 사용자 정보 (params에서 받거나 기본값 사용)
   const userData = user || { id: "1", name: "김대학생" };
-  const getRoomImages = (roomId) => {
+  const getRoomImage = (roomId) => {
+    // roomId 기반으로 부동산 이미지 선택 (HomeScreen과 동일)
     const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
-    const baseImages = [
-      '1560448204-61ef83db30f1', // 모던 아파트
-      '1560449752-fdc86671adae', // 원룸
-      '1560440021-33f9b867899d', // 투룸 거실
-      '1560439514-3ce5aa6b2e9b', // 침실
-      '1574362848-ba9f3fa30e8f', // 주방
-      '1560448075-bb485b067938', // 화이트 인테리어
-      '1560184897-0c96646eb7e6', // 밝은 방
-      '1555041469-4532ad3d19d9'  // 아늑한 방
+    const roomImages = [
+      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
+      'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
+      'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
+      'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
+      'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
+      'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
+      'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
+      'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
+    ];
+    return roomImages[imageIndex];
+  };
+
+  const getRoomImages = (roomId) => {
+    // 홈 화면의 이미지를 첫 번째로, 나머지는 다른 이미지들로 구성
+    const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+    const roomImages = [
+      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
+      'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
+      'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
+      'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
+      'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
+      'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
+      'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
+      'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
     ];
 
     return [
-      `https://images.unsplash.com/photo-${baseImages[imageIndex]}?auto=format&fit=crop&w=400&h=300&q=80`,
-      `https://images.unsplash.com/photo-${baseImages[(imageIndex + 1) % 8]}?auto=format&fit=crop&w=400&h=300&q=80`,
-      `https://images.unsplash.com/photo-${baseImages[(imageIndex + 2) % 8]}?auto=format&fit=crop&w=400&h=300&q=80`,
-      `https://images.unsplash.com/photo-${baseImages[(imageIndex + 3) % 8]}?auto=format&fit=crop&w=400&h=300&q=80`,
+      roomImages[imageIndex], // 홈 화면과 동일한 메인 이미지
+      roomImages[(imageIndex + 1) % 8],
+      roomImages[(imageIndex + 2) % 8],
+      roomImages[(imageIndex + 3) % 8],
     ];
   };
 
@@ -139,9 +157,36 @@ export default function RoomDetailScreen({ route, navigation }) {
     navigation.navigate('FavoritedUsers', { roomId: id });
   };
 
-  const handleViewContract = () => {
-    // 임시로 비활성화 - 클릭해도 아무것도 실행되지 않음
-    console.log('계약서 검증하기 버튼 클릭됨');
+  const handleViewContract = async () => {
+    try {
+      // ex.png 이미지의 URI 가져오기
+      const asset = Asset.fromModule(require('../../assets/ex.png'));
+      await asset.downloadAsync();
+      
+      // 이미지 파일 정보 구성
+      const imageFile = {
+        uri: asset.uri,
+        type: 'image/png',
+        name: 'ex.png',
+      };
+      
+      // 비동기 분석 시작
+      const response = await ApiService.startAnalysisAsync(imageFile);
+      
+      if (response && response.success) {
+        // 기존 ContractResultScreen으로 이동 (실제 분석 진행)
+        navigation.navigate('ContractResult', { 
+          photoUri: asset.uri,
+          analysisData: null, // 실제 분석 진행
+          taskId: response.task_id // 실제 task_id 사용
+        });
+      } else {
+        Alert.alert('오류', '계약서 분석을 시작할 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('계약서 분석 시작 오류:', error);
+      Alert.alert('오류', '계약서 분석을 시작하는 중 문제가 발생했습니다.');
+    }
   };
 
   if (loading) {
@@ -158,54 +203,48 @@ export default function RoomDetailScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* 이미지 갤러리 */}
-      <View style={styles.imageContainer}>
-        <FlatList
-          data={images}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={(event) => {
-            const index = Math.round(event.nativeEvent.contentOffset.x / width);
-            setCurrentImageIndex(index);
-          }}
-          renderItem={({ item }) => (
-            <Image source={{ uri: item }} style={styles.mainImage} resizeMode="cover" />
-          )}
-          keyExtractor={(item, index) => index.toString()}
-        />
-
-        {/* 헤더 오버레이 */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <View style={styles.headerRightButtons}>
-            <TouchableOpacity onPress={toggleFavorite} style={styles.headerButton}>
-              <Ionicons
-                name={isFavorited ? "heart" : "heart-outline"}
-                size={24}
-                color={isFavorited ? "#FF6600" : "#333"}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="share-outline" size={24} color="#333" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 이미지 카운터 */}
-        <View style={styles.imageCounter}>
-          <Text style={styles.imageCountText}>{currentImageIndex + 1}/{images.length}</Text>
-        </View>
-
-        {/* 재생 버튼 */}
-        <TouchableOpacity style={styles.playButton}>
-          <Ionicons name="play" size={20} color="#fff" />
+      {/* 헤더 */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
+        <View style={styles.headerRightButtons}>
+          <TouchableOpacity onPress={toggleFavorite} style={styles.headerButton}>
+            <Ionicons
+              name={isFavorited ? "heart" : "heart-outline"}
+              size={24}
+              color={isFavorited ? "#FF6600" : "#333"}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Ionicons name="share-outline" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* 이미지 갤러리 */}
+        <View style={styles.imageContainer}>
+          <FlatList
+            data={images}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={(event) => {
+              const index = Math.round(event.nativeEvent.contentOffset.x / width);
+              setCurrentImageIndex(index);
+            }}
+            renderItem={({ item }) => (
+              <Image source={{ uri: item }} style={styles.mainImage} resizeMode="cover" />
+            )}
+            keyExtractor={(item, index) => index.toString()}
+          />
+
+          {/* 이미지 카운터 */}
+          <View style={styles.imageCounter}>
+            <Text style={styles.imageCountText}>{currentImageIndex + 1}/{images.length}</Text>
+          </View>
+        </View>
         {/* 매물 기본 정보 */}
         <View style={styles.basicInfoSection}>
           <View style={styles.propertyHeader}>
@@ -355,7 +394,7 @@ export default function RoomDetailScreen({ route, navigation }) {
           <Text style={styles.sectionTitle}>이 매물 계약서 확인하기</Text>
           <View style={styles.contractPreview}>
             <Image
-              source={{ uri: 'https://via.placeholder.com/300x400/f0f0f0/666?text=부동산임대차계약서' }}
+              source={require('../../assets/ex.png')}
               style={styles.contractImage}
               resizeMode="contain"
             />
@@ -414,14 +453,14 @@ const styles = StyleSheet.create({
     height: 300,
   },
   header: {
-    position: 'absolute',
-    top: 44,
-    left: 0,
-    right: 0,
+    backgroundColor: '#fff',
+    paddingTop: 44,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    zIndex: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   headerButton: {
     width: 40,
@@ -463,6 +502,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   basicInfoSection: {
     padding: 20,

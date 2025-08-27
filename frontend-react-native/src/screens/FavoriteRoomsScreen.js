@@ -186,7 +186,7 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
                   removeFavorite(item.room_id);
                 }}
               >
-                <Ionicons name="heart" size={12} color="#FC6339" />
+                <Ionicons name="heart" size={16} color="#FC6339" />
               </TouchableOpacity>
               <Text style={styles.heartCount}>{item.favorite_count}</Text>
             </View>

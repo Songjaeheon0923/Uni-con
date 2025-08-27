@@ -165,6 +165,7 @@ function MapStack({ user }) {
       <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
       <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
       <Stack.Screen name="ContractView" component={ContractViewScreen} />
+      <Stack.Screen name="ContractResult" component={ContractResultScreen} />
       <Stack.Screen name="FavoritedUsers" component={FavoritedUsersScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     </Stack.Navigator>
@@ -184,6 +185,7 @@ function FavoriteStack({ user }) {
       <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
       <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
       <Stack.Screen name="ContractView" component={ContractViewScreen} />
+      <Stack.Screen name="ContractResult" component={ContractResultScreen} />
       <Stack.Screen name="FavoritedUsers" component={FavoritedUsersScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     </Stack.Navigator>
