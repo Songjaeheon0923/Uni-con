@@ -15,7 +15,7 @@ import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, is
 import ApiService from '../services/api';
 
 export default function UserProfileScreen({ route, navigation }) {
-  const { userId, roomId } = route.params;
+  const { userId, roomId } = route?.params || {};
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -23,7 +23,9 @@ export default function UserProfileScreen({ route, navigation }) {
   const [room, setRoom] = useState(null);
 
   useEffect(() => {
-    loadUserProfile();
+    if (userId) {
+      loadUserProfile();
+    }
   }, [userId]);
 
   // 백엔드와 동일한 매칭 알고리즘 (utils/matching.py 기반)
@@ -278,6 +280,20 @@ export default function UserProfileScreen({ route, navigation }) {
     );
   }
 
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>사용자 정보를 불러올 수 없습니다.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  console.log('렌더링 시작 - user 상태:', user);
+  console.log('user.compatibilityDetails:', user?.compatibilityDetails);
+  console.log('user.tags:', user?.tags);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
@@ -295,17 +311,17 @@ export default function UserProfileScreen({ route, navigation }) {
         {/* 프로필 섹션 */}
         <View style={styles.profileSection}>
           <View style={styles.profileAvatar}>
-            {user.profileImage ? (
+            {user?.profileImage ? (
               <Image source={{ uri: user.profileImage }} style={styles.avatarImage} />
             ) : (
               <Ionicons name="person" size={60} color="#999" />
             )}
           </View>
           
-          <Text style={styles.profileName}>{user.name}</Text>
+          <Text style={styles.profileName}>{user?.name || '이름 없음'}</Text>
           
           <View style={styles.profileTags}>
-            {user.tags.map((tag, index) => (
+            {(user?.tags || []).map((tag, index) => (
               <View key={index} style={styles.tag}>
                 <Text style={styles.tagText}>{tag}</Text>
               </View>
@@ -313,64 +329,66 @@ export default function UserProfileScreen({ route, navigation }) {
           </View>
           
           <Text style={styles.profileInfo}>
-            {user.ageGroupText}{user.genderText ? `, ${user.genderText}` : ''}{user.schoolText ? `, ${user.schoolText}` : ''}
+            {user?.ageGroupText || ''}{user?.genderText ? `, ${user.genderText}` : ''}{user?.schoolText ? `, ${user.schoolText}` : ''}
           </Text>
           
-          <Text style={styles.profileBio}>{user.bio}</Text>
+          <Text style={styles.profileBio}>{user?.bio || '소개가 없습니다.'}</Text>
         </View>
 
         {/* 나와의 궁합 점수 */}
-        <View style={styles.compatibilitySection}>
-          <Text style={styles.sectionTitle}>나와의 궁합 점수</Text>
-          <View style={styles.scoreCircle}>
-            <Text style={styles.scoreNumber}>{user.matchScore}</Text>
-            <Text style={styles.scoreLabel}>%</Text>
+        {console.log('궁합 점수 섹션 렌더링 조건:', !!user?.compatibilityDetails) || user?.compatibilityDetails && (
+          <View style={styles.compatibilitySection}>
+            <Text style={styles.sectionTitle}>나와의 궁합 점수</Text>
+            <View style={styles.scoreCircle}>
+              <Text style={styles.scoreNumber}>{user.matchScore || 0}</Text>
+              <Text style={styles.scoreLabel}>%</Text>
+            </View>
+            <View style={styles.scoreDetails}>
+              <View style={styles.scoreItem}>
+                <Text style={styles.scoreItemLabel}>청결도</Text>
+                <View style={styles.scoreBar}>
+                  <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails?.cleanlinessScore || 0}%` }]} />
+                </View>
+              </View>
+              <View style={styles.scoreItem}>
+                <Text style={styles.scoreItemLabel}>라이프스타일</Text>
+                <View style={styles.scoreBar}>
+                  <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails?.lifestyleScore || 0}%` }]} />
+                </View>
+              </View>
+              <View style={styles.scoreItem}>
+                <Text style={styles.scoreItemLabel}>취침시간</Text>
+                <View style={styles.scoreBar}>
+                  <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails?.sleepScore || 0}%` }]} />
+                </View>
+              </View>
+              <View style={styles.scoreItem}>
+                <Text style={styles.scoreItemLabel}>생활범위</Text>
+                <View style={styles.scoreBar}>
+                  <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails?.livingRangeScore || 0}%` }]} />
+                </View>
+              </View>
+            </View>
           </View>
-          <View style={styles.scoreDetails}>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreItemLabel}>청결도</Text>
-              <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.cleanlinessScore}%` }]} />
-              </View>
-            </View>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreItemLabel}>라이프스타일</Text>
-              <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.lifestyleScore}%` }]} />
-              </View>
-            </View>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreItemLabel}>취침시간</Text>
-              <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.sleepScore}%` }]} />
-              </View>
-            </View>
-            <View style={styles.scoreItem}>
-              <Text style={styles.scoreItemLabel}>생활범위</Text>
-              <View style={styles.scoreBar}>
-                <View style={[styles.scoreBarFill, { width: `${user.compatibilityDetails.livingRangeScore}%` }]} />
-              </View>
-            </View>
-          </View>
-        </View>
+        )}
 
         {/* 거주 희망 정보 */}
         <View style={styles.infoSection}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>현재 거주 지역</Text>
-            <Text style={styles.infoValue}>{user.currentArea}</Text>
+            <Text style={styles.infoValue}>{user?.currentArea || '정보 없음'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>희망 거주 지역</Text>
-            <Text style={styles.infoValue}>{user.preferredLocation}</Text>
+            <Text style={styles.infoValue}>{user?.preferredLocation || '정보 없음'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>예산 범위</Text>
-            <Text style={styles.infoValue}>{user.budget}</Text>
+            <Text style={styles.infoValue}>{user?.budget || '정보 없음'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>입주 가능일 / 기간</Text>
-            <Text style={styles.infoValue}>{user.moveInDate}</Text>
+            <Text style={styles.infoValue}>{user?.moveInDate || '정보 없음'}</Text>
           </View>
         </View>
 
@@ -397,14 +415,14 @@ export default function UserProfileScreen({ route, navigation }) {
           
           <Text style={styles.introTitle}>원하는 룸메이트</Text>
           <Text style={styles.introText}>
-            {user.wantedRoommate}
+            {user?.wantedRoommate || '정보 없음'}
           </Text>
         </View>
 
         {/* 자기소개 */}
         <View style={styles.selfIntroSection}>
           <Text style={styles.sectionTitle}>자기소개</Text>
-          <Text style={styles.selfIntroText}>{user.selfIntro}</Text>
+          <Text style={styles.selfIntroText}>{user?.selfIntro || '자기소개가 없습니다.'}</Text>
         </View>
       </ScrollView>
 
@@ -440,21 +458,21 @@ export default function UserProfileScreen({ route, navigation }) {
             </View>
 
             {/* 매물 정보 */}
-            {room && (
+            {console.log('모달 room 데이터:', room) || room && (
               <View style={styles.modalRoomInfo}>
                 <Image 
-                  source={{ uri: room.images[0] }}
+                  source={{ uri: room?.images?.[0] || 'https://via.placeholder.com/150' }}
                   style={styles.modalRoomImage}
                 />
                 <View style={styles.modalRoomDetails}>
                   <Text style={styles.modalRoomPrice}>
-                    전세 {room.price_deposit}만원 / 월세 {room.price_monthly}만원
+                    전세 {room?.price_deposit || 0}만원 / 월세 {room?.price_monthly || 0}만원
                   </Text>
                   <Text style={styles.modalRoomInfo1}>
-                    {room.room_type} | {room.room_size} | {room.floor}
+                    {room?.room_type || '정보 없음'} | {room?.room_size || '정보 없음'} | {room?.floor || '정보 없음'}
                   </Text>
                   <Text style={styles.modalRoomAddress}>
-                    관리비 {room.management_fee}만원 | {room.address}
+                    관리비 {room?.management_fee || 0}만원 | {room?.address || '주소 정보 없음'}
                   </Text>
                   <View style={styles.modalVerificationBadge}>
                     <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
@@ -468,22 +486,22 @@ export default function UserProfileScreen({ route, navigation }) {
             {user && (
               <View style={styles.modalUserInfo}>
                 <View style={styles.modalUserAvatar}>
-                  {user.profileImage ? (
+                  {user?.profileImage ? (
                     <Image source={{ uri: user.profileImage }} style={styles.modalAvatarImage} />
                   ) : (
                     <Ionicons name="person" size={40} color="#999" />
                   )}
                 </View>
                 <View style={styles.modalUserDetails}>
-                  <Text style={styles.modalUserName}>{user.name}</Text>
+                  <Text style={styles.modalUserName}>{user?.name || '이름 없음'}</Text>
                   <View style={styles.modalUserTags}>
-                    {user.tags.slice(0, 3).map((tag, index) => (
+                    {(user?.tags || []).slice(0, 3).map((tag, index) => (
                       <View key={index} style={styles.modalTag}>
                         <Text style={styles.modalTagText}>{tag}</Text>
                       </View>
                     ))}
                   </View>
-                  <Text style={styles.modalUserBio}>{user.bio}</Text>
+                  <Text style={styles.modalUserBio}>{user?.bio || '소개가 없습니다.'}</Text>
                 </View>
               </View>
             )}

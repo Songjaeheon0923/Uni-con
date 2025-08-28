@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import ApiService from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import RoomMessageCard from '../components/RoomMessageCard';
 
 
 export default function ChatScreen({ navigation, route }) {
@@ -48,19 +49,27 @@ export default function ChatScreen({ navigation, route }) {
     try {
       const response = await ApiService.getChatMessages(roomId);
       if (response && response.messages) {
-        const formattedMessages = response.messages.map(msg => ({
-          id: msg.id.toString(),
-          text: msg.content,
-          messageId: msg.id,
-          sender: msg.sender_id === currentUser.id ? 'me' : 'other',
-          timestamp: new Date(msg.created_at),
-          senderName: msg.sender_name,
-          unreadCount: msg.unread_count || 0, // 읽지 않은 사용자 수
-          sent: msg.sent || false,
-          delivered: msg.delivered || false,
-          read: msg.read || false,
-          status: msg.status || 'pending'
-        }));
+        const formattedMessages = response.messages.map(msg => {
+          // ROOM_SHARE prefix 확인
+          const isRoomShare = msg.content?.startsWith('ROOM_SHARE:');
+          const messageType = isRoomShare ? 'room_share' : (msg.message_type || 'text');
+          const content = isRoomShare ? msg.content.substring(11) : msg.content; // ROOM_SHARE: 제거
+          
+          return {
+            id: msg.id.toString(),
+            text: content,
+            messageId: msg.id,
+            sender: msg.sender_id === currentUser.id ? 'me' : 'other',
+            timestamp: new Date(msg.created_at),
+            senderName: msg.sender_name,
+            unreadCount: msg.unread_count || 0, // 읽지 않은 사용자 수
+            sent: msg.sent || false,
+            delivered: msg.delivered || false,
+            read: msg.read || false,
+            status: msg.status || 'pending',
+            messageType: messageType // 메시지 타입 추가
+          };
+        });
         setMessages(formattedMessages);
         
         // 메시지 읽음 처리
@@ -84,19 +93,27 @@ export default function ChatScreen({ navigation, route }) {
       // peek API를 사용하여 읽음 처리 없이 메시지 로드
       const response = await ApiService.peekChatMessages(roomId);
       if (response && response.messages) {
-        const formattedMessages = response.messages.map(msg => ({
-          id: msg.id.toString(),
-          text: msg.content,
-          messageId: msg.id,
-          sender: msg.sender_id === currentUser.id ? 'me' : 'other',
-          timestamp: new Date(msg.created_at),
-          senderName: msg.sender_name,
-          unreadCount: msg.unread_count || 0, // 읽지 않은 사용자 수
-          sent: msg.sent || false,
-          delivered: msg.delivered || false,
-          read: msg.read || false,
-          status: msg.status || 'pending'
-        }));
+        const formattedMessages = response.messages.map(msg => {
+          // ROOM_SHARE prefix 확인
+          const isRoomShare = msg.content?.startsWith('ROOM_SHARE:');
+          const messageType = isRoomShare ? 'room_share' : (msg.message_type || 'text');
+          const content = isRoomShare ? msg.content.substring(11) : msg.content; // ROOM_SHARE: 제거
+          
+          return {
+            id: msg.id.toString(),
+            text: content,
+            messageId: msg.id,
+            sender: msg.sender_id === currentUser.id ? 'me' : 'other',
+            timestamp: new Date(msg.created_at),
+            senderName: msg.sender_name,
+            unreadCount: msg.unread_count || 0, // 읽지 않은 사용자 수
+            sent: msg.sent || false,
+            delivered: msg.delivered || false,
+            read: msg.read || false,
+            status: msg.status || 'pending',
+            messageType: messageType // 메시지 타입 추가
+          };
+        });
         setMessages(formattedMessages);
         
         // 읽음 처리하지 않음 - 내가 보낸 메시지의 읽음 상태 확인용
@@ -277,11 +294,23 @@ export default function ChatScreen({ navigation, route }) {
                 </Text>
               </View>
               
-              <View style={[styles.messageBubble, styles.myBubble]}>
-                <Text style={[styles.messageText, styles.myText]}>
-                  {item.text}
-                </Text>
-              </View>
+              {item.messageType === 'room_share' ? (
+                <View style={styles.roomShareContainer}>
+                  <RoomMessageCard 
+                    roomData={JSON.parse(item.text)}
+                    onPress={() => {
+                      const roomData = JSON.parse(item.text);
+                      navigation.navigate('RoomDetail', { roomId: roomData.room_id });
+                    }}
+                  />
+                </View>
+              ) : (
+                <View style={[styles.messageBubble, styles.myBubble]}>
+                  <Text style={[styles.messageText, styles.myText]}>
+                    {item.text}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -318,11 +347,23 @@ export default function ChatScreen({ navigation, route }) {
               
               {/* 메시지 버블과 시간 */}
               <View style={styles.otherMessageBubbleRow}>
-                <View style={[styles.messageBubble, styles.otherBubble]}>
-                  <Text style={[styles.messageText, styles.otherText]}>
-                    {item.text}
-                  </Text>
-                </View>
+                {item.messageType === 'room_share' ? (
+                  <View style={styles.roomShareContainer}>
+                    <RoomMessageCard 
+                      roomData={JSON.parse(item.text)}
+                      onPress={() => {
+                        const roomData = JSON.parse(item.text);
+                        navigation.navigate('RoomDetail', { roomId: roomData.room_id });
+                      }}
+                    />
+                  </View>
+                ) : (
+                  <View style={[styles.messageBubble, styles.otherBubble]}>
+                    <Text style={[styles.messageText, styles.otherText]}>
+                      {item.text}
+                    </Text>
+                  </View>
+                )}
                 
                 {/* 시간 (그룹의 마지막 메시지에만) */}
                 {isLastInGroup && (
@@ -760,5 +801,11 @@ const styles = StyleSheet.create({
   emptyMessagesContainer: {
     flex: 1,
     justifyContent: 'center',
+  },
+  roomShareContainer: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
+    marginVertical: 4,
   },
 });

@@ -41,6 +41,7 @@ import RoommateChoiceScreen from "./src/screens/RoommateChoiceScreen";
 import ChatListScreen from "./src/screens/ChatListScreen";
 import PolicyChatbotScreen from "./src/screens/PolicyChatbotScreen";
 import PolicyDetailScreen from "./src/screens/PolicyDetailScreen";
+import ShareRoomScreen from "./src/screens/ShareRoomScreen";
 import api from "./src/services/api";
 
 const Tab = createBottomTabNavigator();
@@ -196,6 +197,7 @@ function FavoriteStack({ user }) {
       <Stack.Screen name="ContractResult" component={ContractResultScreen} />
       <Stack.Screen name="FavoritedUsers" component={FavoritedUsersScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+      <Stack.Screen name="ShareRoom" component={ShareRoomScreen} />
     </Stack.Navigator>
   );
 }
@@ -238,40 +240,46 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route, navigation }) => ({
-        tabBarIcon: ({ focused, color }) => {
-          if (route.name === '홈') {
-            return <HomeIcon size={28} color={color} focused={focused} />;
-          } else if (route.name === '지도') {
-            return <MapIcon size={28} color={color} focused={focused} />;
-          } else if (route.name === '관심목록') {
-            return <HeartIcon size={28} color={color} focused={focused} />;
-          } else if (route.name === '내 정보') {
-            const iconName = focused ? 'person' : 'person-outline';
-            return <Ionicons name={iconName} size={28} color={color} />;
-          }
-        },
-        tabBarActiveTintColor: '#10B585',
-        tabBarInactiveTintColor: '#C0C0C0',
-        tabBarStyle: {
-          height: 100,
-          paddingBottom: 30,
-          paddingTop: 15,
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 0,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-          marginTop: 4,
-        },
-        headerShown: false,
-      })}
+      screenOptions={({ route, navigation }) => {
+        const routeName = getFocusedRouteNameFromRoute(route) ?? '';
+        
+        return {
+          tabBarIcon: ({ focused, color }) => {
+            if (route.name === '홈') {
+              return <HomeIcon size={28} color={color} focused={focused} />;
+            } else if (route.name === '지도') {
+              return <MapIcon size={28} color={color} focused={focused} />;
+            } else if (route.name === '관심목록') {
+              return <HeartIcon size={28} color={color} focused={focused} />;
+            } else if (route.name === '내 정보') {
+              const iconName = focused ? 'person' : 'person-outline';
+              return <Ionicons name={iconName} size={28} color={color} />;
+            }
+          },
+          tabBarActiveTintColor: '#10B585',
+          tabBarInactiveTintColor: '#C0C0C0',
+          tabBarStyle: routeName === 'UserProfile' 
+            ? { display: 'none' }
+            : {
+                height: 100,
+                paddingBottom: 30,
+                paddingTop: 15,
+                backgroundColor: '#FFFFFF',
+                borderTopWidth: 0,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 8,
+              },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '500',
+            marginTop: 4,
+          },
+          headerShown: false,
+        };
+      }}
       screenListeners={({ navigation, route }) => ({
         tabPress: (e) => {
           // 홈 탭을 눌렀을 때만 스택 초기화, 이미 홈 화면에 있으면 무시

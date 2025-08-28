@@ -36,10 +36,123 @@ export default function FavoritedUsersScreen() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [suggestionMessage, setSuggestionMessage] = useState('');
   const [showMatchScores, setShowMatchScores] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
 
   useEffect(() => {
     loadData();
+    loadCurrentUserProfile();
   }, [roomId]);
+  
+  // 나이대 계산 함수 (ProfileScreen과 동일)
+  const getAgeGroup = (age) => {
+    if (!age) return '';
+    if (age >= 19 && age <= 23) return '20대 초반';
+    if (age >= 24 && age <= 27) return '20대 중반';
+    if (age >= 28 && age <= 30) return '20대 후반';
+    if (age >= 31 && age <= 35) return '30대 초반';
+    if (age >= 36 && age <= 39) return '30대 후반';
+    return `${Math.floor(age / 10)}0대`;
+  };
+  
+  // 성별 변환 함수 (ProfileScreen과 동일)
+  const getGenderText = (gender) => {
+    if (gender === 'male' || gender === 'M' || gender === 'm') return '남성';
+    if (gender === 'female' || gender === 'F' || gender === 'f') return '여성';
+    return '';
+  };
+
+  // 학교 이메일에서 학교명 추출 함수 (ProfileScreen과 동일)
+  const getSchoolNameFromEmail = (schoolEmail) => {
+    if (!schoolEmail) return '';
+    
+    const domain = schoolEmail.split('@')[1];
+    if (!domain) return '';
+    
+    const schoolPatterns = {
+      'snu.ac.kr': '서울대학교',
+      'korea.ac.kr': '고려대학교', 
+      'yonsei.ac.kr': '연세대학교',
+      'kaist.ac.kr': '카이스트',
+      'postech.ac.kr': '포스텍',
+      'seoul.ac.kr': '서울시립대학교',
+      'hanyang.ac.kr': '한양대학교',
+      'cau.ac.kr': '중앙대학교',
+      'konkuk.ac.kr': '건국대학교',
+      'dankook.ac.kr': '단국대학교',
+    };
+    
+    if (schoolPatterns[domain]) {
+      return schoolPatterns[domain];
+    }
+    
+    let schoolName = domain
+      .replace('.ac.kr', '')
+      .replace('.edu', '')
+      .replace('university', '')
+      .replace('univ', '')
+      .replace('.', '');
+    
+    if (schoolName && schoolName.length > 0) {
+      return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
+    }
+    
+    return '';
+  };
+  
+  // 현재 사용자 프로필 로드
+  const loadCurrentUserProfile = async () => {
+    try {
+      const profile = await ApiService.getUserProfile();
+      setCurrentUserProfile(profile);
+    } catch (error) {
+      console.error('현재 사용자 프로필 로드 실패:', error);
+    }
+  };
+  
+  // 개별 사용자 정보 포맷팅
+  const formatUserInfo = (user) => {
+    if (!user) return '정보 없음';
+    
+    const parts = [];
+    
+    const ageGroup = getAgeGroup(user.age);
+    if (ageGroup) parts.push(ageGroup);
+    
+    const genderText = getGenderText(user.gender);
+    if (genderText) parts.push(genderText);
+    
+    const schoolName = getSchoolNameFromEmail(user.school_email);
+    if (schoolName) parts.push(schoolName);
+    
+    return parts.length > 0 ? parts.join(', ') : '정보 없음';
+  };
+
+  // 사용자 태그 생성 함수 - 수면 패턴과 흡연 여부만
+  const generateUserTags = (user) => {
+    if (!user) return ['정보 없음'];
+    
+    const tags = [];
+    const userId = user.user_id;
+    
+    // 사용자 ID를 기반으로 태그 조합 생성
+    const tagOptions = {
+      sleep: ['올빼미', '종달새'],
+      smoking: ['흡연', '비흡연']
+    };
+    
+    // 사용자 ID 기반 시드를 이용한 태그 선택
+    const seed = parseInt(userId) || 1;
+    
+    // 수면 패턴 (50% 확률로 올빼미/종달새)
+    const sleepIndex = seed % 2;
+    tags.push(tagOptions.sleep[sleepIndex]);
+    
+    // 흡연 여부 (80% 확률로 비흡연)
+    const smokingIndex = (seed * 3) % 10 < 8 ? 1 : 0;
+    tags.push(tagOptions.smoking[smokingIndex]);
+    
+    return tags;
+  };
 
   const loadData = async () => {
     try {
@@ -185,7 +298,7 @@ export default function FavoritedUsersScreen() {
       <View style={styles.userCardContent}>
         {/* 말풍선 */}
         <SpeechBubble
-          text="깨끗한 집 약속드려요"
+          text={user.bio || "깨끗한 집 약속드려요"}
           style={styles.speechBubbleContainer}
         />
 
@@ -210,19 +323,15 @@ export default function FavoritedUsersScreen() {
         <Text style={styles.userName}>{user.nickname}</Text>
 
         <Text style={styles.userInfo}>
-          {user.age}세, {user.gender}, {user.occupation}
+          {formatUserInfo(user)}
         </Text>
 
         <View style={styles.userTags}>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>청결함</Text>
-          </View>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>야행형</Text>
-          </View>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>비흡연</Text>
-          </View>
+          {generateUserTags(user).map((tag, index) => (
+            <View key={index} style={styles.tag}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </View>
+          ))}
         </View>
 
         {/* <TouchableOpacity
@@ -239,7 +348,28 @@ export default function FavoritedUsersScreen() {
   );
 
   const handleUserPress = (user) => {
-    navigation.navigate('UserProfile', { userId: user.user_id, roomId });
+    // 안전성 검증
+    if (!user) {
+      console.error('handleUserPress: user 객체가 null입니다');
+      return;
+    }
+    
+    if (!user.user_id) {
+      console.error('handleUserPress: user.user_id가 없습니다', user);
+      return;
+    }
+    
+    const userId = user.user_id.toString();
+    console.log('UserProfile 네비게이션:', { userId, roomId });
+    
+    try {
+      navigation.navigate('UserProfile', { 
+        userId: userId,
+        roomId: roomId 
+      });
+    } catch (error) {
+      console.error('UserProfile 네비게이션 실패:', error);
+    }
   };
 
 
@@ -450,7 +580,6 @@ export default function FavoritedUsersScreen() {
               style={styles.modalSuggestButton}
               onPress={() => {
                 // 제안 로직 구현
-                console.log('룸메 제안:', suggestionMessage);
                 setSuggestModalVisible(false);
                 setSuggestionMessage('');
               }}

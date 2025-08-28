@@ -138,6 +138,20 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
     navigation.navigate('RoomDetail', { roomId: room.room_id });
   };
 
+  const handleFindRoommate = (room) => {
+    // 해당 매물의 찜한 사용자들 화면으로 이동 (궁합 점수 순으로)
+    navigation.navigate('FavoritedUsers', { 
+      roomId: room.room_id 
+    });
+  };
+
+  const handleShareRoom = (room) => {
+    // 매물 공유 화면으로 이동
+    navigation.navigate('ShareRoom', { 
+      roomData: room 
+    });
+  };
+
   const renderRoomCard = ({ item }) => (
     <View style={styles.cardContainer}>
       <View style={styles.roomCard}>
@@ -192,10 +206,16 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
             </View>
           </View>
           <View style={styles.buttonsContainer}>
-            <TouchableOpacity style={styles.shareButton}>
+            <TouchableOpacity 
+              style={styles.shareButton}
+              onPress={() => handleShareRoom(item)}
+            >
               <Text style={styles.shareButtonText}>공유하기</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.roommateButton}>
+            <TouchableOpacity 
+              style={styles.roommateButton}
+              onPress={() => handleFindRoommate(item)}
+            >
               <Text style={styles.roommateButtonText}>룸메이트 찾기</Text>
             </TouchableOpacity>
           </View>
