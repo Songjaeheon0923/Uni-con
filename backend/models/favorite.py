@@ -13,6 +13,7 @@ class FavoriteUser(BaseModel):
     gender: Optional[str]
     occupation: Optional[str]
     profile_image: Optional[str]
+    bio: Optional[str]
     matching_score: Optional[int] = 0
     favorite_date: str
 

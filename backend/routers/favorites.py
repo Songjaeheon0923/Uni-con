@@ -170,13 +170,14 @@ async def get_room_favorites(room_id: str):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
             )
 
-        # 찜한 사용자들 조회 (users 테이블과 user_profiles 테이블 조인)
+        # 찜한 사용자들 조회 (users, user_profiles, user_info 테이블 조인)
         cursor.execute(
             """
-            SELECT f.user_id, u.name, f.created_at, up.age, u.gender
+            SELECT f.user_id, u.name, f.created_at, up.age, u.gender, ui.bio
             FROM favorites f
             JOIN users u ON f.user_id = u.id
             LEFT JOIN user_profiles up ON f.user_id = up.user_id
+            LEFT JOIN user_info ui ON f.user_id = ui.user_id
             WHERE f.room_id = ?
             ORDER BY f.created_at DESC
         """,
@@ -195,6 +196,7 @@ async def get_room_favorites(room_id: str):
                 gender=row[4] if row[4] is not None else "Unknown",  # 실제 gender 데이터 또는 기본값
                 occupation="대학생",  # 기본값 (occupation 컬럼이 없으므로)
                 profile_image=None,  # 기본값
+                bio=row[5] if len(row) > 5 and row[5] is not None else None,  # bio 필드 추가
                 matching_score=0,  # 나중에 매칭 알고리즘 구현
                 favorite_date=(
                     str(row[2]) if row[2] else ""
