@@ -361,6 +361,166 @@ async def get_youth_policies(
         raise HTTPException(status_code=500, detail="청년 정책 조회에 실패했습니다")
 
 
+@router.get("/{policy_id}/ai-summary")  
+async def get_policy_ai_summary(
+    policy_id: int
+):
+    """정책 AI 요약 생성"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 정책 정보 조회
+        cursor.execute("""
+            SELECT title, content, target, details, application_period, organization
+            FROM policies
+            WHERE id = ? AND is_active = 1
+        """, (policy_id,))
+        
+        policy = cursor.fetchone()
+        conn.close()
+        
+        if not policy:
+            raise HTTPException(status_code=404, detail="정책을 찾을 수 없습니다")
+        
+        title, content, target, details_json, period, org = policy
+        
+        # 지역 코드를 지역명으로 변환하는 함수
+        def convert_region_codes_to_names(region_codes):
+            if not region_codes:
+                return "전국"
+            
+            # 주요 지역 코드 매핑
+            region_map = {
+                '11': '서울특별시', '26': '부산광역시', '27': '대구광역시', '28': '인천광역시',
+                '29': '광주광역시', '30': '대전광역시', '31': '울산광역시', '36': '세종특별자치시',
+                '41': '경기도', '42': '강원도', '43': '충청북도', '44': '충청남도',
+                '45': '전라북도', '46': '전라남도', '47': '경상북도', '48': '경상남도',
+                '49': '제주특별자치도', '50': '제주특별자치도',
+                '50110': '제주시', '50130': '서귀포시',
+                '44131': '천안시', '44133': '공주시', '44150': '보령시', '44180': '아산시',
+                '44200': '서산시', '44210': '논산시', '44230': '계룡시', '44250': '당진시',
+                '44270': '금산군', '44710': '연기군', '44760': '보은군', '44770': '옥천군',
+                '44790': '영동군', '44800': '진천군', '44810': '괴산군', '44825': '음성군'
+            }
+            
+            if ',' in region_codes:
+                codes = region_codes.split(',')
+                regions = []
+                for code in codes:
+                    code = code.strip()
+                    if code in region_map:
+                        regions.append(region_map[code])
+                    elif code[:2] in region_map:
+                        regions.append(region_map[code[:2]])
+                return ', '.join(list(set(regions)))
+            else:
+                code = region_codes.strip()
+                if code in region_map:
+                    return region_map[code]
+                elif code[:2] in region_map:
+                    return region_map[code[:2]]
+                return "전국"
+
+        # target 필드에서 의미있는 정보만 추출
+        def clean_target_info(target_text):
+            if not target_text:
+                return ""
+            
+            # 연령대 정보만 추출 (만 XX세, 만 XX~XX세)
+            import re
+            age_patterns = re.findall(r'만 \d+[~-]?\d*세?', target_text)
+            if age_patterns:
+                return ', '.join(age_patterns)
+            return ""
+
+        # AI 요약을 위한 정책 정보 구성
+        cleaned_target = clean_target_info(target)
+        
+        policy_text = f"""
+        정책명: {title}
+        시행기관: {org or ''}
+        정책 내용: {content or ''}
+        """
+        
+        if cleaned_target:
+            policy_text += f"\n지원 대상: {cleaned_target}"
+        
+        if period:
+            policy_text += f"\n신청 기간: {period}"
+        
+        # 세부 정보가 있으면 추가
+        if details_json:
+            try:
+                details = json.loads(details_json)
+                if details.get('explanation'):
+                    policy_text += f"\n정책 설명: {details['explanation']}"
+                if details.get('income_condition'):
+                    policy_text += f"\n소득 조건: {details['income_condition']}"
+                if details.get('min_age') and details.get('max_age'):
+                    policy_text += f"\n연령 조건: 만 {details['min_age']}세 ~ {details['max_age']}세"
+                if details.get('region_code'):
+                    region_names = convert_region_codes_to_names(details['region_code'])
+                    policy_text += f"\n적용 지역: {region_names}"
+            except:
+                pass
+        
+        # Gemini AI 요약 생성 (간단한 요약)
+        from ai.policy_chat.gemini_client import GeminiClient
+        
+        gemini = GeminiClient()
+        
+        prompt = f"""
+        다음 청년 주택 정책을 마크다운 형식으로 간단하고 이해하기 쉽게 요약해주세요:
+        
+        {policy_text}
+        
+        다음 형식으로 요약해주세요:
+        
+        **대상:** 연령대와 주요 조건
+        **지원내용:** 핵심 혜택과 금액
+        **신청기간:** 기간 또는 상시접수 여부
+        **지역:** 해당 지역 (전국이면 생략)
+        
+        각 항목은 1줄로 간결하게 작성하고, 불필요한 설명은 제외해주세요.
+        """
+        
+        try:
+            print(f"🤖 AI 요약 생성 시작: {title}")
+            print(f"📝 입력 텍스트: {policy_text[:200]}...")
+            
+            # LangChain 스트리밍 방식으로 AI 요약 생성
+            from langchain.schema import HumanMessage
+            
+            llm = gemini.get_llm()
+            messages = [HumanMessage(content=prompt)]
+            
+            # astream으로 스트리밍 처리
+            summary_parts = []
+            async for chunk in llm.astream(messages):
+                if hasattr(chunk, 'content'):
+                    summary_parts.append(chunk.content)
+            
+            summary = ''.join(summary_parts)
+            
+            print(f"✅ AI 요약 완료: {summary[:100]}...")
+            return {"summary": summary}
+        except Exception as e:
+            print(f"❌ AI 요약 생성 실패: {e}")
+            print(f"🔧 Gemini 클라이언트 상태 확인 필요")
+            # 개선된 폴백 요약 (의미없는 코드 제거)
+            fallback_summary = f"이 정책은 {org or '관련 기관'}에서 시행하는 {title} 정책입니다."
+            if cleaned_target:
+                fallback_summary += f" {cleaned_target}를 대상으로 합니다."
+            return {"summary": fallback_summary}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting policy AI summary: {e}")
+        raise HTTPException(status_code=500, detail="AI 요약 생성에 실패했습니다")
+
+
 @router.get("/search")
 async def search_policies(
     q: str = Query(..., min_length=1),

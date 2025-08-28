@@ -421,6 +421,12 @@ class ApiService {
     return this.request(`/policies/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   }
 
+  async getPolicyAISummary(policyId) {
+    return this.request(`/policies/${policyId}/ai-summary`, {
+      method: 'GET',
+    });
+  }
+
   // 채팅 관련 API
   async createChatRoom(roomType, participantIds, name = null) {
     return this.request('/chat/rooms', {
