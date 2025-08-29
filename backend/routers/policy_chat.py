@@ -41,7 +41,7 @@ async def chat_with_policies(
     """정책 챗봇과 대화 (멀티 Agent 시스템)"""
     try:
         logger.info(f"Policy chat request from user {current_user.get('username')}")
-        
+
         # 챗봇 응답 생성 (멀티 Agent 시스템 사용)
         response = await policy_chatbot.chat(
             user_message=request.message,
@@ -49,9 +49,9 @@ async def chat_with_policies(
             user_context=request.user_context,
             use_multi_agent=True
         )
-        
+
         return ChatResponse(**response)
-        
+
     except Exception as e:
         logger.error(f"Policy chat failed: {e}")
         raise HTTPException(
@@ -59,7 +59,7 @@ async def chat_with_policies(
             detail="채팅 처리 중 오류가 발생했습니다."
         )
 
-@router.post("/chat/simple", response_model=ChatResponse) 
+@router.post("/chat/simple", response_model=ChatResponse)
 async def chat_with_policies_simple(
     request: ChatRequest,
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -67,7 +67,7 @@ async def chat_with_policies_simple(
     """정책 챗봇과 대화 (단순 RAG 시스템)"""
     try:
         logger.info(f"Policy simple chat request from user {current_user.get('username')}")
-        
+
         # 기존 단순 RAG 시스템 사용
         response = await policy_chatbot.chat(
             user_message=request.message,
@@ -75,9 +75,9 @@ async def chat_with_policies_simple(
             user_context=request.user_context,
             use_multi_agent=False
         )
-        
+
         return ChatResponse(**response)
-        
+
     except Exception as e:
         logger.error(f"Policy simple chat failed: {e}")
         raise HTTPException(
@@ -85,50 +85,7 @@ async def chat_with_policies_simple(
             detail="단순 채팅 처리 중 오류가 발생했습니다."
         )
 
-@router.post("/chat/stream")
-async def chat_with_policies_stream(
-    request: ChatRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """정책 챗봇과 스트리밍 대화 (멀티 Agent)"""
-    try:
-        logger.info(f"Policy stream chat request from user {current_user.get('username')}")
-        
-        async def generate_stream():
-            try:
-                # 멀티 Agent 스트리밍 응답 생성
-                async for chunk in policy_chatbot.chat_stream(
-                    user_message=request.message,
-                    user_id=current_user.get('id'),
-                    user_context=request.user_context,
-                    use_multi_agent=True
-                ):
-                    # SSE 형식으로 데이터 전송
-                    yield f"data: {json.dumps({'content': chunk, 'type': 'text'}, ensure_ascii=False)}\n\n"
-                
-                # 스트림 종료 신호
-                yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
-                
-            except Exception as e:
-                logger.error(f"Stream generation failed: {e}")
-                yield f"data: {json.dumps({'content': '답변 생성 중 오류가 발생했습니다.', 'type': 'error'}, ensure_ascii=False)}\n\n"
-        
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/plain",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"  # nginx 버퍼링 비활성화
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Policy stream chat failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="스트리밍 채팅 처리 중 오류가 발생했습니다."
-        )
+
 
 @router.post("/recommendations", response_model=ChatResponse)
 async def get_policy_recommendations(
@@ -138,12 +95,12 @@ async def get_policy_recommendations(
     """사용자 맞춤 정책 추천"""
     try:
         logger.info(f"Policy recommendation request from user {current_user.get('username')}")
-        
+
         # 개인화된 추천 생성
         response = policy_chatbot.get_recommendations(request.user_context)
-        
+
         return ChatResponse(**response)
-        
+
     except Exception as e:
         logger.error(f"Policy recommendation failed: {e}")
         raise HTTPException(
@@ -156,12 +113,12 @@ async def get_chatbot_status():
     """챗봇 상태 확인"""
     try:
         policy_count = policy_chatbot.get_policy_count()
-        
+
         return PolicyCountResponse(
             count=policy_count,
             status="active" if policy_count > 0 else "not_ready"
         )
-        
+
     except Exception as e:
         logger.error(f"Status check failed: {e}")
         raise HTTPException(
@@ -173,29 +130,22 @@ async def get_chatbot_status():
 async def refresh_chatbot_policies(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """정책 데이터 새로고침 (관리자만)"""
+    """정책 데이터 새로고침 - 모든 사용자 가능"""
     try:
-        # 간단한 권한 체크 (실제로는 더 정교한 권한 시스템 필요)
-        if not current_user.get('is_admin', False):
-            raise HTTPException(
-                status_code=403,
-                detail="관리자만 접근할 수 있습니다."
-            )
-        
-        logger.info(f"Policy refresh requested by {current_user.get('username')}")
-        
+        logger.info(f"Policy refresh requested by {current_user.get('username', 'unknown')}")
+
         # 정책 데이터 새로고침
         policy_chatbot.refresh_policies()
-        
+
         new_count = policy_chatbot.get_policy_count()
-        
+
         return {
+            "success": True,
             "message": "정책 데이터가 새로고침되었습니다.",
-            "policy_count": new_count
+            "policy_count": new_count,
+            "last_updated": "just_now"
         }
-        
-    except HTTPException:
-        raise
+
     except Exception as e:
         logger.error(f"Policy refresh failed: {e}")
         raise HTTPException(
@@ -210,13 +160,13 @@ async def get_user_profile_summary(
     """사용자 프로필 및 상담 요약"""
     try:
         summary = await policy_chatbot.get_consultation_summary(current_user.get('id'))
-        
+
         return {
             "user_id": current_user.get('id'),
             "username": current_user.get('username'),
             **summary
         }
-        
+
     except Exception as e:
         logger.error(f"Profile summary failed: {e}")
         raise HTTPException(
@@ -240,7 +190,7 @@ async def set_chat_mode(
                 status_code=400,
                 detail=f"Invalid mode. Choose from: {valid_modes}"
             )
-        
+
         # 여기서는 단순히 확인만 하고, 실제로는 세션에 저장할 수 있음
         return {
             "message": f"Chat mode set to {request.mode}",
@@ -252,7 +202,7 @@ async def set_chat_mode(
                 "streaming": "/api/policy-chat/chat/stream"
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:

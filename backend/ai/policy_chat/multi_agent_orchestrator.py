@@ -16,6 +16,7 @@ from .agents.eligibility_checker_agent import eligibility_checker_agent
 from .agents.policy_ranking_agent import policy_ranking_agent
 from .agents.strategy_planning_agent import strategy_planning_agent
 from .agents.answer_synthesis_agent import answer_synthesis_agent
+from .agents.simple_answer_agent import simple_answer_agent
 from .vector_store import policy_vector_store
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ class MultiAgentOrchestrator:
         self.ranking_agent = policy_ranking_agent
         self.strategy_agent = strategy_planning_agent
         self.synthesis_agent = answer_synthesis_agent
+        self.simple_agent = simple_answer_agent
         self.vector_store = policy_vector_store
         
         # LangGraph workflow 구성
@@ -84,6 +86,27 @@ class MultiAgentOrchestrator:
         """정책 상담 전체 프로세스 실행"""
         try:
             logger.info(f"Starting policy consultation for user {user_id}")
+            
+            # 간단한 질문인지 판단
+            if self.simple_agent.can_handle_simple(user_question):
+                logger.info("Handling as simple question")
+                simple_answer = self.simple_agent.generate_simple_answer(user_question)
+                
+                return {
+                    "success": True,
+                    "final_answer": simple_answer,
+                    "user_profile": {},
+                    "execution_log": ["simple_answer_agent: 간단 답변 생성"],
+                    "agent_errors": [],
+                    "metadata": {
+                        "agent_type": "simple_answer",
+                        "policies_found": 0,
+                        "eligible_policies": 0,
+                        "ranked_policies": 0
+                    }
+                }
+            
+            logger.info("Handling as complex policy question")
             
             # 초기 상태 설정
             initial_state = PolicyConsultationState(
@@ -132,6 +155,18 @@ class MultiAgentOrchestrator:
         """스트리밍 정책 상담 처리"""
         try:
             logger.info(f"Starting streaming consultation for user {user_id}")
+            
+            # 간단한 질문인지 판단
+            if self.simple_agent.can_handle_simple(user_question):
+                logger.info("Handling as simple question (streaming)")
+                
+                # 간단 답변 스트리밍
+                async for chunk in self.simple_agent.generate_simple_answer_stream(user_question):
+                    yield json.dumps({"type": "content", "message": chunk}, ensure_ascii=False) + "\n"
+                
+                return
+            
+            logger.info("Handling as complex policy question (streaming)")
             
             # 1. 사용자 프로파일링
             yield json.dumps({"type": "status", "agent": "profiling", "message": "사용자 정보를 분석중입니다..."}, ensure_ascii=False) + "\n"

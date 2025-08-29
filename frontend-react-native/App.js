@@ -13,6 +13,7 @@ import { SignupProvider } from "./src/contexts/SignupContext";
 import HomeIcon from "./src/components/HomeIcon";
 import MapIcon from "./src/components/MapIcon";
 import HeartIcon from "./src/components/HeartIcon";
+import SplashScreen from "./src/screens/SplashScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import MapScreen from "./src/screens/MapScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
@@ -96,6 +97,7 @@ function HomeStack({ user }) {
         component={RoomDetailScreen}
         options={{
           headerShown: false,
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Stack.Screen
@@ -149,8 +151,28 @@ function AuthStack() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 500,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 500,
+            },
+          },
+        },
+        cardStyleInterpolator: ({ current }) => ({
+          cardStyle: {
+            opacity: current.progress,
+          },
+        }),
       }}
     >
+      <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupStep1Screen} />
       <Stack.Screen name="SignupStep2" component={SignupStep2Screen} />
@@ -171,7 +193,14 @@ function MapStack({ user }) {
       <Stack.Screen name="MapMain">
         {(props) => <MapScreen {...props} user={user} />}
       </Stack.Screen>
-      <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
+      <Stack.Screen 
+        name="RoomDetail" 
+        component={RoomDetailScreen}
+        options={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
       <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
       <Stack.Screen name="ContractView" component={ContractViewScreen} />
       <Stack.Screen name="ContractResult" component={ContractResultScreen} />
@@ -191,7 +220,14 @@ function FavoriteStack({ user }) {
       <Stack.Screen name="FavoriteMain">
         {(props) => <FavoriteRoomsScreen {...props} user={user} />}
       </Stack.Screen>
-      <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
+      <Stack.Screen 
+        name="RoomDetail" 
+        component={RoomDetailScreen}
+        options={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
       <Stack.Screen name="LandlordInfo" component={LandlordInfoScreen} />
       <Stack.Screen name="ContractView" component={ContractViewScreen} />
       <Stack.Screen name="ContractResult" component={ContractResultScreen} />
@@ -242,23 +278,23 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route, navigation }) => {
         const routeName = getFocusedRouteNameFromRoute(route) ?? '';
-        
+
         return {
           tabBarIcon: ({ focused, color }) => {
             if (route.name === '홈') {
               return <HomeIcon size={28} color={color} focused={focused} />;
             } else if (route.name === '지도') {
               return <MapIcon size={28} color={color} focused={focused} />;
-            } else if (route.name === '관심목록') {
+            } else if (route.name === '관심매물') {
               return <HeartIcon size={28} color={color} focused={focused} />;
             } else if (route.name === '내 정보') {
               const iconName = focused ? 'person' : 'person-outline';
               return <Ionicons name={iconName} size={28} color={color} />;
             }
           },
-          tabBarActiveTintColor: '#10B585',
+          tabBarActiveTintColor: '#000000',
           tabBarInactiveTintColor: '#C0C0C0',
-          tabBarStyle: routeName === 'UserProfile' 
+          tabBarStyle: routeName === 'UserProfile'
             ? { display: 'none' }
             : {
                 height: 100,
@@ -292,18 +328,12 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen 
+      <Tab.Screen
         name="홈"
         options={({ route }) => ({
           tabBarStyle: (() => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'HomeMain';
-            // 네비게이션 바를 숨겨야 하는 화면들 (ContractResult는 제외 - 동적으로 처리)
-            if (routeName === 'Chat' || 
-                routeName === 'ContractVerification' || 
-                routeName === 'ContractCamera') {
-              return { display: 'none' };
-            }
-            return {
+            const baseStyle = {
               height: 100,
               paddingBottom: 30,
               paddingTop: 15,
@@ -315,6 +345,22 @@ function MainTabs() {
               shadowRadius: 4,
               elevation: 8,
             };
+
+            // 네비게이션 바를 숨겨야 하는 화면들 - HomeMain이 아닌 경우만 숨김
+            if (routeName !== 'HomeMain' && (
+                routeName === 'Chat' ||
+                routeName === 'ContractVerification' ||
+                routeName === 'ContractCamera' ||
+                routeName === 'RoomDetail' ||
+                routeName === 'LandlordInfo' ||
+                routeName === 'ContractView' ||
+                routeName === 'UserProfile' ||
+                routeName === 'FavoritedUsers' ||
+                routeName === 'PolicyChatbot' ||
+                routeName === 'PolicyDetail')) {
+              return { display: 'none' };
+            }
+            return baseStyle;
           })(),
         })}
       >
@@ -323,7 +369,7 @@ function MainTabs() {
       <Tab.Screen name="지도">
         {(props) => <MapStack {...props} user={user} />}
       </Tab.Screen>
-      <Tab.Screen name="관심목록">
+      <Tab.Screen name="관심매물">
         {(props) => <FavoriteStack {...props} user={user} />}
       </Tab.Screen>
       <Tab.Screen name="내 정보">

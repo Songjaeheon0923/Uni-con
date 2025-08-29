@@ -106,6 +106,8 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
 
 const PropertyMapView = forwardRef(({
   properties = [],
+  showFavoritesOnly = false,
+  initialRegion = null,
   onMarkerPress,
   selectedPropertyId,
   navigation,
@@ -117,12 +119,14 @@ const PropertyMapView = forwardRef(({
 
   // 디버깅: MapView가 받는 properties 개수 확인
   console.log('🗺️ MapView 받은 properties 개수:', properties.length);
-  const [region, setRegion] = useState({
-    latitude: 37.35, // 서울이 화면 중앙에 오도록 조정
-    longitude: 127.1,
-    latitudeDelta: 0.6,  // 서울 주변 지역까지 포함하여 표시
-    longitudeDelta: 0.5,
-  });
+  const [region, setRegion] = useState(
+    initialRegion || {
+      latitude: 37.35, // 기본값: 서울이 화면 중앙에 오도록 조정
+      longitude: 127.1,
+      latitudeDelta: 0.6,  // 서울 주변 지역까지 포함하여 표시
+      longitudeDelta: 0.5,
+    }
+  );
   const [userLocation, setUserLocation] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [buildingProperties, setBuildingProperties] = useState([]);
@@ -139,13 +143,29 @@ const PropertyMapView = forwardRef(({
       }
     }
   }, [ref, mapRef.current]);
+
+  // initialRegion이 변경되면 region 업데이트
+  useEffect(() => {
+    if (initialRegion) {
+      setRegion(initialRegion);
+      console.log('🗺️ 초기 지역이 Google API로 업데이트됨:', initialRegion);
+    }
+  }, [initialRegion]);
   const markerScales = useRef({});
   const markerClickTime = useRef(0);
+
+  // 찜한 매물만 필터링
+  const filteredProperties = useMemo(() => {
+    if (!showFavoritesOnly) return properties;
+    return properties.filter(property => 
+      favorites.includes(property.room_id || property.id)
+    );
+  }, [properties, favorites, showFavoritesOnly]);
 
   // 건물별로 그룹화
   const buildingGroups = useMemo(() => {
     const groups = {};
-    properties.forEach(property => {
+    filteredProperties.forEach(property => {
       // 주소에서 건물 식별자 추출 (동/호 제거)
       let buildingKey = property.address;
       // 호수 제거
@@ -175,7 +195,7 @@ const PropertyMapView = forwardRef(({
     });
 
     return groups;
-  }, [properties]);
+  }, [filteredProperties]);
 
   // Supercluster 인스턴스 생성 (건물 그룹 기반)
   const supercluster = useMemo(() => {
@@ -381,19 +401,20 @@ const PropertyMapView = forwardRef(({
               styles.houseMarkerContainer,
               {
                 transform: [{ scale: markerScales.current[markerId] }],
-                backgroundColor: isSelected ? '#2C2C2C' : '#FFFFFF',
-                borderColor: isSelected ? '#FFFFFF' : '#2C2C2C',
+                backgroundColor: isSelected ? '#000' : '#10B585',
+                borderColor: isSelected ? '#000' : '#fff',
+                borderWidth: 2,
                 overflow: 'visible',
               }
             ]}>
               <HomeIcon
                 size={24}
-                color={isSelected ? '#FFFFFF' : '#2C2C2C'}
+                color="#FFFFFF"
               />
               {hasMultiple && (
                 <View style={[
                   styles.countBadge,
-                  { backgroundColor: isSelected ? '#FF6600' : '#4A90E2' }
+                  { backgroundColor: isSelected ? '#FF6600' : '#000' }
                 ]}>
                   <Text style={styles.countBadgeText}>{group.count}</Text>
                 </View>
@@ -563,6 +584,7 @@ const PropertyMapView = forwardRef(({
         showsScale={false}
         showsBuildings={false}
         showsTraffic={false}
+        showsPointsOfInterest={false}
         onPress={() => {
           // 마커 클릭 직후 100ms 이내이면 무시 (마커 클릭으로 간주)
           const now = Date.now();
@@ -586,7 +608,6 @@ const PropertyMapView = forwardRef(({
             onMarkerSelectionChange(null);
           }
         }}
-        showsIndoors={false}
         loadingEnabled={true}
         mapType="standard"
         rotateEnabled={false}
@@ -647,27 +668,27 @@ const PropertyMapView = forwardRef(({
 
 export default PropertyMapView;
 
-// 네이버 지도 스타일 테마
+// 깔끔한 회색갈 지도 스타일 테마
 const naverMapStyle = [
   {
     featureType: "all",
     elementType: "geometry",
-    stylers: [{ color: "#f8f9fa" }],
+    stylers: [{ color: "#f5f5f5" }],
   },
   {
     featureType: "all",
     elementType: "labels.text.fill",
-    stylers: [{ color: "#4a4a4a" }],
+    stylers: [{ color: "#777777" }],
   },
   {
     featureType: "all",
     elementType: "labels.text.stroke",
-    stylers: [{ color: "#ffffff" }, { weight: 3 }],
+    stylers: [{ color: "#ffffff" }, { weight: 2 }],
   },
   {
     featureType: "administrative",
     elementType: "geometry.stroke",
-    stylers: [{ color: "#c9c9c9" }, { weight: 0.5 }],
+    stylers: [{ color: "#cccccc" }, { weight: 0.5 }],
   },
   {
     featureType: "road",
@@ -677,92 +698,107 @@ const naverMapStyle = [
   {
     featureType: "road",
     elementType: "geometry.stroke",
-    stylers: [{ color: "#d1d1d1" }, { weight: 1 }],
+    stylers: [{ color: "#dddddd" }, { weight: 0.8 }],
   },
   {
     featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#fff8f0" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#ffb380" }, { weight: 1.5 }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#ff9966" }],
-  },
-  {
-    featureType: "road.arterial",
     elementType: "geometry",
     stylers: [{ color: "#ffffff" }],
   },
   {
-    featureType: "road.arterial",
+    featureType: "road.highway",
     elementType: "geometry.stroke",
-    stylers: [{ color: "#b8b8b8" }],
+    stylers: [{ color: "#bbbbbb" }, { weight: 1 }],
   },
   {
-    featureType: "road.local",
-    elementType: "geometry",
-    stylers: [{ color: "#ffffff" }],
-  },
-  {
-    featureType: "road.local",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#e0e0e0" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#e6f3ff" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#4d94ff" }],
-  },
-  {
-    featureType: "landscape",
-    elementType: "geometry",
-    stylers: [{ color: "#f8faf8" }],
-  },
-  {
-    featureType: "landscape.natural",
-    elementType: "geometry",
-    stylers: [{ color: "#f0f8f0" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#f8f8f8" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "geometry",
-    stylers: [{ color: "#e8f5e8" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels",
-    stylers: [{ visibility: "simplified" }],
-  },
-  {
-    featureType: "poi",
+    featureType: "road.highway",
     elementType: "labels.text.fill",
     stylers: [{ color: "#666666" }],
   },
   {
-    featureType: "transit",
+    featureType: "road.arterial",
     elementType: "geometry",
-    stylers: [{ color: "#e6e6e6" }],
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "road.arterial",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#cccccc" }],
+  },
+  {
+    featureType: "road.local",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "road.local",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#e5e5e5" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#e0e0e0" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#999999" }],
+  },
+  {
+    featureType: "landscape",
+    elementType: "geometry",
+    stylers: [{ color: "#f8f8f8" }],
+  },
+  {
+    featureType: "landscape.natural",
+    elementType: "geometry",
+    stylers: [{ color: "#f5f5f5" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [{ color: "#f0f0f0" }],
+  },
+  {
+    featureType: "poi.park",
+    elementType: "geometry",
+    stylers: [{ color: "#eeeeee" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "transit",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.business",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.government",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.medical",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "poi.school",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
   },
   {
     featureType: "transit.line",
     elementType: "geometry",
-    stylers: [{ color: "#0066cc" }],
+    stylers: [{ color: "#cccccc" }],
   },
 ];
 
@@ -778,11 +814,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#10B585",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#2C2C2C",
+    borderWidth: 2,
+    borderColor: "#ffffff",
     overflow: 'visible',
     shadowColor: '#000000',
     shadowOffset: {
@@ -794,7 +830,7 @@ const styles = StyleSheet.create({
     elevation: 3, // Android shadow
   },
   selectedMarkerStyle: {
-    backgroundColor: "#333333",
+    backgroundColor: "#0E9B73",
     borderColor: "#ffffff",
     borderWidth: 2,
   },
@@ -815,7 +851,7 @@ const styles = StyleSheet.create({
     borderColor: "white",
   },
   clusterMarkerContainer: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#10B585",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -837,7 +873,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   buildingMarkerContainer: {
-    backgroundColor: "#FF6600",
+    backgroundColor: "#10B585",
     padding: 8,
     borderRadius: 8,
     borderWidth: 2,
@@ -848,7 +884,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   multiPropertyMarker: {
-    backgroundColor: "#4A90E2",
+    backgroundColor: "#10B585",
   },
   buildingCountText: {
     color: "#ffffff",
@@ -867,7 +903,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#10B585',
     borderRadius: 10,
     minWidth: 20,
     height: 20,

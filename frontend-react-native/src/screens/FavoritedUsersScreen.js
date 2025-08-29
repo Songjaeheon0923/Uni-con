@@ -18,6 +18,7 @@ import ApiService from '../services/api';
 import UserProfileIcon from '../components/UserProfileIcon';
 import SpeechBubble from '../components/SpeechBubble';
 import UserMatchCard from '../components/UserMatchCard';
+import HeartFilledIcon from '../components/HeartFilledIcon';
 import { formatRentPrice } from '../utils/priceFormatter';
 import { getRoomType, formatArea, formatFloor } from '../utils/priceUtils';
 
@@ -42,7 +43,7 @@ export default function FavoritedUsersScreen() {
     loadData();
     loadCurrentUserProfile();
   }, [roomId]);
-  
+
   // 나이대 계산 함수 (ProfileScreen과 동일)
   const getAgeGroup = (age) => {
     if (!age) return '';
@@ -53,7 +54,7 @@ export default function FavoritedUsersScreen() {
     if (age >= 36 && age <= 39) return '30대 후반';
     return `${Math.floor(age / 10)}0대`;
   };
-  
+
   // 성별 변환 함수 (ProfileScreen과 동일)
   const getGenderText = (gender) => {
     if (gender === 'male' || gender === 'M' || gender === 'm') return '남성';
@@ -64,13 +65,13 @@ export default function FavoritedUsersScreen() {
   // 학교 이메일에서 학교명 추출 함수 (ProfileScreen과 동일)
   const getSchoolNameFromEmail = (schoolEmail) => {
     if (!schoolEmail) return '';
-    
+
     const domain = schoolEmail.split('@')[1];
     if (!domain) return '';
-    
+
     const schoolPatterns = {
       'snu.ac.kr': '서울대학교',
-      'korea.ac.kr': '고려대학교', 
+      'korea.ac.kr': '고려대학교',
       'yonsei.ac.kr': '연세대학교',
       'kaist.ac.kr': '카이스트',
       'postech.ac.kr': '포스텍',
@@ -80,25 +81,25 @@ export default function FavoritedUsersScreen() {
       'konkuk.ac.kr': '건국대학교',
       'dankook.ac.kr': '단국대학교',
     };
-    
+
     if (schoolPatterns[domain]) {
       return schoolPatterns[domain];
     }
-    
+
     let schoolName = domain
       .replace('.ac.kr', '')
       .replace('.edu', '')
       .replace('university', '')
       .replace('univ', '')
       .replace('.', '');
-    
+
     if (schoolName && schoolName.length > 0) {
       return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
     }
-    
+
     return '';
   };
-  
+
   // 현재 사용자 프로필 로드
   const loadCurrentUserProfile = async () => {
     try {
@@ -108,49 +109,49 @@ export default function FavoritedUsersScreen() {
       console.error('현재 사용자 프로필 로드 실패:', error);
     }
   };
-  
+
   // 개별 사용자 정보 포맷팅
   const formatUserInfo = (user) => {
     if (!user) return '정보 없음';
-    
+
     const parts = [];
-    
+
     const ageGroup = getAgeGroup(user.age);
     if (ageGroup) parts.push(ageGroup);
-    
+
     const genderText = getGenderText(user.gender);
     if (genderText) parts.push(genderText);
-    
+
     const schoolName = getSchoolNameFromEmail(user.school_email);
     if (schoolName) parts.push(schoolName);
-    
+
     return parts.length > 0 ? parts.join(', ') : '정보 없음';
   };
 
   // 사용자 태그 생성 함수 - 수면 패턴과 흡연 여부만
   const generateUserTags = (user) => {
     if (!user) return ['정보 없음'];
-    
+
     const tags = [];
     const userId = user.user_id;
-    
+
     // 사용자 ID를 기반으로 태그 조합 생성
     const tagOptions = {
       sleep: ['올빼미', '종달새'],
       smoking: ['흡연', '비흡연']
     };
-    
+
     // 사용자 ID 기반 시드를 이용한 태그 선택
     const seed = parseInt(userId) || 1;
-    
+
     // 수면 패턴 (50% 확률로 올빼미/종달새)
     const sleepIndex = seed % 2;
     tags.push(tagOptions.sleep[sleepIndex]);
-    
+
     // 흡연 여부 (80% 확률로 비흡연)
     const smokingIndex = (seed * 3) % 10 < 8 ? 1 : 0;
     tags.push(tagOptions.smoking[smokingIndex]);
-    
+
     return tags;
   };
 
@@ -353,19 +354,19 @@ export default function FavoritedUsersScreen() {
       console.error('handleUserPress: user 객체가 null입니다');
       return;
     }
-    
+
     if (!user.user_id) {
       console.error('handleUserPress: user.user_id가 없습니다', user);
       return;
     }
-    
+
     const userId = user.user_id.toString();
     console.log('UserProfile 네비게이션:', { userId, roomId });
-    
+
     try {
-      navigation.navigate('UserProfile', { 
+      navigation.navigate('UserProfile', {
         userId: userId,
-        roomId: roomId 
+        roomId: roomId
       });
     } catch (error) {
       console.error('UserProfile 네비게이션 실패:', error);
@@ -375,19 +376,26 @@ export default function FavoritedUsersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text>로딩 중...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeAreaContainer}>
+    <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => {
+          // HomeMain으로 돌아가서 탭바가 다시 보이도록
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate('홈', { screen: 'HomeMain' });
+          }
+        }}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>룸메이트 구하기</Text>
@@ -395,8 +403,6 @@ export default function FavoritedUsersScreen() {
           <Ionicons name="search" size={24} color="#333" />
         </TouchableOpacity>
       </View>
-
-      <View style={styles.container}>
         {/* 방 정보 - 고정 */}
         <View style={styles.roomInfo}>
           <Image
@@ -409,24 +415,30 @@ export default function FavoritedUsersScreen() {
             <Text style={styles.roomInfo1}>{getRoomType(room?.area, room?.rooms)} | {formatArea(room?.area)} | {formatFloor(room?.floor)}</Text>
             <Text style={styles.roomAddress}>관리비 {formatMaintenanceCost(room?.area)}원 | {getNearestStation(room?.address)}</Text>
             <View style={styles.verificationBadge}>
-              <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
+              <Ionicons name="checkmark-circle" size={14} color="#ffff" />
               <Text style={styles.verificationText}>집주인 인증</Text>
             </View>
           </View>
           <View style={styles.favoriteCountBadge}>
-            <Ionicons name="heart" size={16} color="#FF6600" />
+            <View style={styles.favoriteCountIcon}>
+              <HeartFilledIcon width={13} height={12} color="#FC6339" />
+            </View>
             <Text style={styles.favoriteCount}>{users.length}</Text>
           </View>
         </View>
 
         {/* 스크롤 가능한 콘텐츠 영역 */}
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollContent}
+          contentContainerStyle={styles.scrollContentContainer}
+          showsVerticalScrollIndicator={false}
+        >
           {/* 찜한 유저 수 */}
           <View style={styles.favoritedSection}>
             <View style={styles.favoritedLeft}>
               <Text style={styles.favoritedText}>이 매물을 찜한 유저 {users.length}명</Text>
               <View style={styles.heartIcon}>
-                <Ionicons name="heart" size={16} color="#FC6339" />
+                <HeartFilledIcon width={13} height={12} color="#FC6339" />
               </View>
             </View>
             <View style={styles.favoritedRight}>
@@ -481,6 +493,7 @@ export default function FavoritedUsersScreen() {
           {/* 다른 유저에게 매물 추천하기 섹션 */}
           <View style={styles.recommendSection}>
             <Text style={styles.recommendTitle}>내 맞춤 유저에게 추천하기</Text>
+            <Text style={styles.recommendSubtitle}>궁합 점수 높은 순</Text>
           </View>
 
           {/* 추천 사용자 리스트 */}
@@ -493,111 +506,11 @@ export default function FavoritedUsersScreen() {
             />
           ))}
         </ScrollView>
-      </View>
-
-      {/* 이 매물로 룸메 제안하기 모달 */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={suggestModalVisible}
-        onRequestClose={() => setSuggestModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {/* 모달 헤더 */}
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setSuggestModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>이 매물로 룸메 제안하기</Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            {/* 매물 정보 */}
-            {room && (
-              <View style={styles.modalRoomInfo}>
-                <Image
-                  source={{ uri: 'https://via.placeholder.com/80x80/f0f0f0/666?text=매물' }}
-                  style={styles.modalRoomImage}
-                />
-                <View style={styles.modalRoomDetails}>
-                  <Text style={styles.modalRoomPrice}>
-                    월세 {room.price_deposit}만원 / {room.price_monthly}만원
-                  </Text>
-                  <Text style={styles.modalRoomInfo1}>
-                    {getRoomType(room?.area, room?.rooms)} | {formatArea(room?.area)} | {formatFloor(room?.floor)}
-                  </Text>
-                  <Text style={styles.modalRoomAddress}>
-                    관리비 {formatMaintenanceCost(room?.area)}원 | {getNearestStation(room?.address)}
-                  </Text>
-                  <View style={styles.modalVerificationBadge}>
-                    <Ionicons name="checkmark-circle" size={14} color="#FF6600" />
-                    <Text style={styles.modalVerificationText}>집주인 인증</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {/* 사용자 정보 */}
-            {selectedUser && (
-              <View style={styles.modalUserInfo}>
-                <View style={styles.modalUserAvatar}>
-                  {selectedUser.profileImage ? (
-                    <Image source={{ uri: selectedUser.profileImage }} style={styles.modalAvatarImage} />
-                  ) : (
-                    <Ionicons name="person" size={40} color="#999" />
-                  )}
-                </View>
-                <View style={styles.modalUserDetails}>
-                  <Text style={styles.modalUserName}>{selectedUser.nickname}</Text>
-                  <View style={styles.modalUserTags}>
-                    {(selectedUser.tags || []).slice(0, 3).map((tag, index) => (
-                      <View key={index} style={styles.modalTag}>
-                        <Text style={styles.modalTagText}>{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  {selectedUser.bio && <Text style={styles.modalUserBio}>{selectedUser.bio}</Text>}
-                </View>
-              </View>
-            )}
-
-            {/* 한 줄 소개 입력 */}
-            <View style={styles.modalInputSection}>
-              <TextInput
-                style={styles.modalTextInput}
-                placeholder="룸메 신청 시 전달할 한 줄 소개를 적어주세요."
-                placeholderTextColor="#999"
-                value={suggestionMessage}
-                onChangeText={setSuggestionMessage}
-                multiline
-                maxLength={100}
-              />
-            </View>
-
-            {/* 룸메 제안하기 버튼 */}
-            <TouchableOpacity
-              style={styles.modalSuggestButton}
-              onPress={() => {
-                // 제안 로직 구현
-                setSuggestModalVisible(false);
-                setSuggestionMessage('');
-              }}
-            >
-              <Text style={styles.modalSuggestButtonText}>룸메 제안하기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeAreaContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
   container: {
     flex: 1,
     backgroundColor: '#F2F2F2',
@@ -613,6 +526,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingTop: 60,
     backgroundColor: '#fff',
   },
   headerTitle: {
@@ -626,12 +540,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
   },
+  scrollContentContainer: {
+    paddingBottom: 80,
+  },
   roomInfo: {
     flexDirection: 'row',
     padding: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   roomImage: {
     width: 100,
@@ -662,36 +587,47 @@ const styles = StyleSheet.create({
   verificationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF5F0',
+    backgroundColor: '#595959',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 7,
     borderWidth: 1,
-    borderColor: '#FFE5D9',
+    borderColor: '#595959',
     alignSelf: 'flex-start',
     gap: 4,
   },
   verificationText: {
     fontSize: 11,
-    color: '#FF6600',
+    color: '#ffffff',
     fontWeight: '600',
   },
   favoriteCountBadge: {
     position: 'absolute',
     top: 20,
     right: 20,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
+  },
+  favoriteCountIcon: {
+    width: 21,
+    height: 21,
+    borderRadius: 10.5,
+    backgroundColor: 'white',
+    borderWidth: 0.5,
+    borderColor: '#D9D9D9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   favoriteCount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF6600',
+    fontSize: 12,
+    fontWeight: '300',
+    color: '#000',
   },
   filterContainer: {
-    paddingHorizontal: 13,
+    paddingHorizontal: 15,
     paddingVertical: 8,
+    marginBottom: 4,
   },
   filterButton: {
     paddingHorizontal: 10,
@@ -711,7 +647,8 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   usersList: {
-    paddingHorizontal: 13,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
   },
   speechBubbleContainer: {
     width: 120,
@@ -744,8 +681,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 16,
     marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 3,
   },
   userCardContent: {
     alignItems: 'center',
@@ -848,14 +791,22 @@ const styles = StyleSheet.create({
   },
   recommendSection: {
     paddingTop: 20,
-    paddingBottom: 5,
-    paddingHorizontal: 13,
+    paddingBottom: 16,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   recommendTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 14,
+    marginTop: 10,
+  },
+  recommendSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#999',
     marginTop: 10,
   },
   recommendScrollView: {
@@ -959,7 +910,7 @@ const styles = StyleSheet.create({
   },
   modalVerificationText: {
     fontSize: 10,
-    color: '#FF6600',
+    color: '#ffff',
     fontWeight: '600',
   },
   modalUserInfo: {
@@ -1041,7 +992,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 15,
   },
   favoritedLeft: {
@@ -1067,7 +1018,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FC6339',
   },
   matchScoreToggleActive: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E7E7E7',
   },
   matchScoreToggleText: {
     fontSize: 12,
@@ -1075,7 +1026,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   matchScoreToggleTextActive: {
-    color: '#666',
+    color: '#ADADAD',
     fontWeight: '600',
   },
   heartIcon: {

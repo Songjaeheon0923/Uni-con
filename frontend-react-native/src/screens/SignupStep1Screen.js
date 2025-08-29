@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   View,
   Text,
@@ -10,42 +10,43 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSignup } from '../contexts/SignupContext';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Logo from "../components/Logo";
+import { useSignup } from "../contexts/SignupContext";
 
 export default function SignupStep1Screen({ navigation }) {
   const { signupData, updateStep1Data } = useSignup();
-  const [email, setEmail] = useState(signupData.email || '');
-  const [password, setPassword] = useState(signupData.password || '');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState(signupData.email || "");
+  const [password, setPassword] = useState(signupData.password || "");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
     if (!email.trim()) {
-      Alert.alert('알림', '이메일을 입력해주세요.');
+      Alert.alert("알림", "이메일을 입력해주세요.");
       return false;
     }
 
-    if (!email.includes('@')) {
-      Alert.alert('알림', '올바른 이메일 형식을 입력해주세요.');
+    if (!email.includes("@")) {
+      Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
       return false;
     }
 
     if (!password.trim()) {
-      Alert.alert('알림', '비밀번호를 입력해주세요.');
+      Alert.alert("알림", "비밀번호를 입력해주세요.");
       return false;
     }
 
     if (password.length < 6) {
-      Alert.alert('알림', '비밀번호는 6자 이상이어야 합니다.');
+      Alert.alert("알림", "비밀번호는 6자 이상이어야 합니다.");
       return false;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('알림', '비밀번호가 일치하지 않습니다.');
+      Alert.alert("알림", "비밀번호가 일치하지 않습니다.");
       return false;
     }
 
@@ -57,22 +58,22 @@ export default function SignupStep1Screen({ navigation }) {
 
     // 1단계 데이터를 Context에 저장
     updateStep1Data({ email, password });
-    
+
     // 2단계로 이동 (API 호출 없이)
-    navigation.navigate('SignupStep2');
+    navigation.navigate("SignupStep2");
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoid}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* 뒤로가기 버튼 */}
           <View style={styles.backButtonContainer}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
               <Ionicons name="chevron-back" size={24} color="#000" />
@@ -83,8 +84,13 @@ export default function SignupStep1Screen({ navigation }) {
           <View style={styles.content}>
             {/* 헤더 텍스트 */}
             <View style={styles.headerContainer}>
-              <Text style={styles.headerTitle}>WEROOM에 오신걸 환영합니다.</Text>
-              <Text style={styles.headerSubtitle}>서비스이용을 위해 회원가입 해주세요.</Text>
+              <View style={styles.logoContainer}>
+                <Logo width={112} height={17} />
+                <Text style={styles.headerTitle}>에 오신걸 환영합니다.</Text>
+              </View>
+              <Text style={styles.headerSubtitle}>
+                서비스이용을 위해 회원가입 해주세요.
+              </Text>
             </View>
 
             {/* 입력 폼 */}
@@ -93,7 +99,7 @@ export default function SignupStep1Screen({ navigation }) {
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
-                  style={[styles.inputContainer, {paddingHorizontal: 16}]}
+                  style={[styles.inputContainer, { paddingHorizontal: 16 }]}
                   placeholder="Example@email.com"
                   value={email}
                   onChangeText={setEmail}
@@ -116,14 +122,14 @@ export default function SignupStep1Screen({ navigation }) {
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
                     style={styles.eyeIcon}
                   >
-                    <Ionicons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={22} 
-                      color="#333" 
+                    <Ionicons
+                      name={showPassword ? "eye-outline" : "eye-off-outline"}
+                      size={22}
+                      color="#333"
                     />
                   </TouchableOpacity>
                 </View>
@@ -142,27 +148,28 @@ export default function SignupStep1Screen({ navigation }) {
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                     style={styles.eyeIcon}
                   >
-                    <Ionicons 
-                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={22} 
-                      color="#333" 
+                    <Ionicons
+                      name={
+                        showConfirmPassword ? "eye-outline" : "eye-off-outline"
+                      }
+                      size={22}
+                      color="#333"
                     />
                   </TouchableOpacity>
                 </View>
               </View>
 
               {/* 다음 버튼 */}
-              <TouchableOpacity 
-                style={styles.nextButton}
-                onPress={handleNext}
-              >
+              <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+                <View style={styles.greenArrowCircle}>
+                  <Ionicons name="arrow-forward" size={35} color="#FFFFFF" />
+                </View>
                 <Text style={styles.nextButtonText}>본인 인증하기</Text>
               </TouchableOpacity>
-
             </View>
           </View>
         </ScrollView>
@@ -174,7 +181,7 @@ export default function SignupStep1Screen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   keyboardAvoid: {
     flex: 1,
@@ -190,8 +197,8 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: {
     flex: 1,
@@ -199,70 +206,87 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   headerContainer: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
     marginBottom: 40,
   },
+  logoContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 13,
+  },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#000000',
-    textAlign: 'left',
-    marginBottom: 8,
+    fontSize: 21,
+    fontWeight: "500",
+    color: "#000000",
+    textAlign: "left",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666666',
-    textAlign: 'left',
+    color: "#666666",
+    textAlign: "left",
     lineHeight: 20,
   },
   formContainer: {
     gap: 20,
   },
   inputGroup: {
-    gap: 8,
+    gap: 6,
   },
   inputLabel: {
     fontSize: 14,
-    color: '#000000',
-    fontWeight: '500',
-    marginBottom: 8,
+    color: "#000000",
+    fontWeight: "300",
+    marginBottom: 0,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    height: 50,
+    borderColor: "#E0E0E0",
+    height: 45,
     paddingHorizontal: 16,
   },
   input: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     paddingVertical: 16,
   },
   eyeIcon: {
     padding: 8,
     marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   nextButton: {
-    backgroundColor: '#666666',
-    borderRadius: 8,
+    backgroundColor: "#000",
+    borderRadius: 40,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
     marginTop: 40,
   },
+  greenArrowCircle: {
+    position: "absolute",
+    right: 6,
+    width: 43,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#10B585",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   nextButtonDisabled: {
-    backgroundColor: '#ADB5BD',
+    backgroundColor: "#ADB5BD",
   },
   nextButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

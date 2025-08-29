@@ -1,5 +1,5 @@
 """
-정책 추천 RAG 챗봇 메인 클래스 - 멀티 Agent 시스템 & 스트리밍 지원
+정책 추천 RAG 챗봇 메인 클래스 - 간단한 답변과 RAG 답변 지원
 """
 
 import logging
@@ -7,8 +7,9 @@ import sqlite3
 from typing import List, Dict, Any, Optional, AsyncGenerator
 from pathlib import Path
 
-from .multi_agent_orchestrator import multi_agent_orchestrator
-from .retrieval_chain import policy_retrieval_chain
+from .agents.simple_answer_agent import simple_answer_agent
+from .agents.rag_answer_agent import rag_answer_agent
+from .agents.intent_classifier import intent_classifier
 from .vector_store import policy_vector_store
 
 logger = logging.getLogger(__name__)
@@ -19,11 +20,9 @@ class PolicyChatbot:
     def __init__(self, db_path: str = "users.db"):
         self.db_path = db_path
         
-        # 멀티 Agent 시스템 (v2)
-        self.multi_agent_orchestrator = multi_agent_orchestrator
-        
-        # 기존 단순 시스템 (v1 - 호환성)
-        self.retrieval_chain = policy_retrieval_chain
+        # 새로운 에이전트 시스템
+        self.simple_agent = simple_answer_agent
+        self.rag_agent = rag_answer_agent
         self.vector_store = policy_vector_store
         
         # 벡터 스토어 초기화
@@ -103,32 +102,27 @@ class PolicyChatbot:
     async def chat(self, user_message: str, user_id: int, user_context: Optional[Dict[str, Any]] = None, use_multi_agent: bool = True) -> Dict[str, Any]:
         """사용자 메시지에 대한 챗봇 응답"""
         try:
-            logger.info(f"Processing chat message: {user_message[:50]}... (multi_agent: {use_multi_agent})")
+            logger.info(f"Processing chat message: {user_message[:50]}...")
             
-            if use_multi_agent:
-                # 멀티 Agent 시스템 사용 (v2)
-                response = await self.multi_agent_orchestrator.process_consultation(user_id, user_message)
-                
+            # 의도 분류
+            intent = intent_classifier.classify_intent(user_message)
+            logger.info(f"Classified intent: {intent}")
+            
+            # 의도에 따라 처리 방식 결정 (단순화)
+            if intent in ['greeting', 'general_chat']:
+                # 인사말이나 일반 대화
+                answer = self.simple_agent.generate_simple_answer(user_message, user_id)
                 return {
-                    "answer": response["final_answer"],
-                    "policies": self._extract_policies_from_response(response),
-                    "source": "multi_agent",
-                    "metadata": response.get("metadata", {}),
-                    "execution_log": response.get("execution_log", []),
-                    "success": response["success"]
+                    "answer": answer,
+                    "policies": [],
+                    "source": "simple",
+                    "intent": intent,
+                    "personalized": []
                 }
             else:
-                # 기존 단순 시스템 사용 (v1 - 호환성)
-                response = self.retrieval_chain.search_and_answer(user_message, top_k=5)
-                
-                # 사용자 컨텍스트가 있으면 개인화된 추천 추가
-                if user_context and response.get('policies'):
-                    response['personalized'] = self._personalize_response(
-                        response['policies'], 
-                        user_context
-                    )
-                
-                response['source'] = 'simple_chain'
+                # 모든 정책 관련 질문은 RAG로
+                response = self.rag_agent.generate_rag_answer(user_message, user_id)
+                response['intent'] = intent
                 return response
             
         except Exception as e:
@@ -143,16 +137,31 @@ class PolicyChatbot:
     async def chat_stream(self, user_message: str, user_id: int, user_context: Optional[Dict[str, Any]] = None, use_multi_agent: bool = True) -> AsyncGenerator[str, None]:
         """사용자 메시지에 대한 스트리밍 응답"""
         try:
-            logger.info(f"Processing streaming chat: {user_message[:50]}... (multi_agent: {use_multi_agent})")
+            logger.info(f"Processing streaming chat: {user_message[:50]}...")
             
-            if use_multi_agent:
-                # 멀티 Agent 스트리밍 (v2)
-                async for chunk in self.multi_agent_orchestrator.process_consultation_stream(user_id, user_message):
-                    yield chunk
+            # 의도 분류
+            intent = intent_classifier.classify_intent(user_message)
+            logger.info(f"Classified intent for streaming: {intent}")
+            
+            # 의도에 따라 처리 방식 결정 (단순화)
+            answer = ""
+            if intent in ['greeting', 'general_chat']:
+                # 인사말이나 일반 대화
+                raw_answer = self.simple_agent.generate_simple_answer(user_message, user_id)
+                answer = str(raw_answer) if raw_answer else ""
             else:
-                # 기존 단순 스트리밍 (v1)
-                async for chunk in self.retrieval_chain.search_and_answer_stream(user_message, top_k=5):
-                    yield chunk
+                # 모든 정책 관련 질문은 RAG로
+                response = self.rag_agent.generate_rag_answer(user_message, user_id)
+                raw_answer = response.get("answer", "") if isinstance(response, dict) else ""
+                answer = str(raw_answer) if raw_answer else ""
+            
+            # 문자열 답변 확인 및 청크로 나누어 스트림
+            if isinstance(answer, str) and answer.strip():
+                chunk_size = 50
+                for i in range(0, len(answer), chunk_size):
+                    yield answer[i:i+chunk_size]
+            else:
+                yield "답변을 생성할 수 없습니다."
             
             logger.info("Successfully completed streaming chat")
             
@@ -165,15 +174,16 @@ class PolicyChatbot:
         try:
             logger.info("Generating personalized policy recommendations...")
             
-            suggestions = self.retrieval_chain.get_policy_suggestions(user_context)
+            # 관련 정책 검색
+            policies = self.vector_store.search("청년 지원 정책 추천", k=10)
             
             # 개인화된 설명 생성
-            if suggestions:
-                personalized = self._personalize_response(suggestions, user_context)
+            if policies:
+                personalized = self._personalize_response(policies, user_context)
                 
                 return {
                     "answer": f"회원님의 상황을 고려한 맞춤 정책을 추천해드립니다.",
-                    "policies": suggestions[:5],  # 상위 5개
+                    "policies": policies[:5],
                     "personalized": personalized,
                     "source": "recommendations"
                 }
@@ -292,24 +302,36 @@ class PolicyChatbot:
     async def get_consultation_summary(self, user_id: int) -> Dict[str, Any]:
         """사용자의 상담 요약 정보 조회"""
         try:
-            # 사용자 프로필 로드
-            from .agents.user_profiling_agent import user_profiling_agent
-            profile = user_profiling_agent._load_existing_profile(user_id)
-            
-            # 찜한 매물 수
-            favorite_count = len(profile.get("property_interests", []))
+            # 사용자 기본 정보 조회
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                
+                # 사용자 정보
+                cursor.execute("""
+                    SELECT u.name, u.gender, up.age, up.lifestyle_type, up.budget_range
+                    FROM users u
+                    LEFT JOIN user_profiles up ON u.id = up.user_id
+                    WHERE u.id = ?
+                """, (user_id,))
+                user_data = cursor.fetchone()
+                
+                # 찜한 매물 수
+                cursor.execute("SELECT COUNT(*) FROM favorites WHERE user_id = ?", (user_id,))
+                favorite_count = cursor.fetchone()[0]
             
             # 기본 통계
             policy_count = self.get_policy_count()
             
             return {
-                "user_profile_completeness": self._calculate_profile_completeness(profile),
+                "user_profile_completeness": 0.8 if user_data else 0.3,
                 "favorite_properties": favorite_count,
                 "available_policies": policy_count,
                 "profile_summary": {
-                    "age": profile.get("age"),
-                    "occupation": profile.get("preferences", {}).get("lifestyle_type"),
-                    "budget_range": profile.get("preferences", {}).get("budget_range"),
+                    "name": user_data['name'] if user_data else "사용자",
+                    "age": user_data['age'] if user_data else None,
+                    "occupation": user_data['lifestyle_type'] if user_data else "미정",
+                    "budget_range": user_data['budget_range'] if user_data else "미정",
                     "region": "서울" if favorite_count > 0 else "미확인"
                 }
             }

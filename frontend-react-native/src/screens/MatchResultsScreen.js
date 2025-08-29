@@ -11,6 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import InfoIcon from '../components/InfoIcon';
+import UserMatchCard from '../components/UserMatchCard';
 import ApiService from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -43,7 +45,7 @@ export default function MatchResultsScreen({ navigation }) {
     navigation.navigate('RoommateChoice');
   };
 
-  const handleContactUser = async (user) => {
+  const handleSendMessage = async (user, message) => {
     try {
       // 기존 채팅방이 있는지 확인
       const response = await ApiService.getChatRooms();
@@ -62,9 +64,14 @@ export default function MatchResultsScreen({ navigation }) {
         const newRoom = await ApiService.createChatRoom(
           'individual',
           [user.user_id],
-          `${user.name}님과의 채팅`
+          `${user.nickname || user.name}님과의 채팅`
         );
         roomId = newRoom.room_id;
+      }
+
+      // 메시지 전송
+      if (message && message.trim()) {
+        await ApiService.sendMessage(roomId, message.trim());
       }
 
       // 채팅 화면으로 이동 (MainTabs를 통해 네비게이션해서 TabBar 숨김)
@@ -188,6 +195,15 @@ export default function MatchResultsScreen({ navigation }) {
   };
 
   const renderUserCard = (user, index) => (
+    <UserMatchCard
+      key={user.user_id}
+      user={user}
+      index={index}
+      onPress={handleSendMessage}
+    />
+  );
+
+  const renderUserCardOld = (user, index) => (
     <View key={user.user_id} style={styles.userCard}>
       {/* 프로필 이미지 */}
       <View style={styles.profileImageBg}>
@@ -337,12 +353,7 @@ export default function MatchResultsScreen({ navigation }) {
 
             <Text style={styles.headerTitle}>룸메이트 매칭</Text>
             <TouchableOpacity onPress={() => setShowInfoModal(true)}>
-              <Ionicons
-                name="information-circle-outline"
-                size={24}
-                color="#494949"
-                style={styles.infoIcon}
-              />
+              <InfoIcon width={30} height={30} />
             </TouchableOpacity>
           </View>
 
@@ -363,13 +374,7 @@ export default function MatchResultsScreen({ navigation }) {
         </Text>
       </View>
 
-      {/* 헤더와 카드들 사이 그라데이션 그림자 */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0)']}
-        locations={[0, 0.5, 1]}
-        style={styles.shadowGradient}
-        pointerEvents="none"
-      />
+
 
       <ScrollView
         style={{ marginTop: 243 }}
@@ -505,10 +510,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: '#F2F2F2',
     shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 2,
+    shadowRadius: 3,
+    elevation: 2,
     zIndex: 10,
   },
   statusBar: {
@@ -563,13 +568,13 @@ const styles = StyleSheet.create({
   retestButton: {
     paddingHorizontal: 13,
     paddingVertical: 0,
-    height: 34,
+    height: 30,
     backgroundColor: '#FC6339',
     borderRadius: 20,
     shadowColor: 'rgba(0, 0, 0, 0.08)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 3,
     justifyContent: 'center',
     alignItems: 'center',
@@ -594,7 +599,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard',
     fontWeight: '600',
     marginLeft: 12,
-    marginRight: 6,
+    marginRight: 3,
   },
   infoIcon: {
     marginLeft: 2,

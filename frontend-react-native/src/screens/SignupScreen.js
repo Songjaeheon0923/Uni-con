@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Logo from '../components/Logo';
 import ApiService from '../services/api';
 
 export default function SignupScreen({ navigation }) {
@@ -58,7 +59,7 @@ export default function SignupScreen({ navigation }) {
     try {
       const response = await ApiService.initialSignup(email, password);
       // 휴대폰 인증 화면으로 이동하며 user_id와 초기 정보 전달
-      navigation.navigate('SignupStep2', { 
+      navigation.navigate('SignupStep2', {
         userId: response.user_id,
         email: email,
         password: password
@@ -76,15 +77,15 @@ export default function SignupScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* 헤더 */}
           <View style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
               <Ionicons name="chevron-back" size={24} color="#333" />
@@ -125,14 +126,14 @@ export default function SignupScreen({ navigation }) {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeIcon}
               >
-                <Ionicons 
-                  name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                  size={22} 
-                  color="#333" 
+                <Ionicons
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={22}
+                  color="#333"
                 />
               </TouchableOpacity>
             </View>
@@ -148,19 +149,19 @@ export default function SignupScreen({ navigation }) {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.eyeIcon}
               >
-                <Ionicons 
-                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                  size={22} 
-                  color="#333" 
+                <Ionicons
+                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                  size={22}
+                  color="#333"
                 />
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.signupButton, isLoading && styles.signupButtonDisabled]}
               onPress={handleSignup}
               disabled={isLoading}
@@ -181,7 +182,7 @@ export default function SignupScreen({ navigation }) {
 
           {/* 개발용 테스트 버튼 */}
           <View style={styles.testContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.testButton}
               onPress={() => {
                 setEmail('test@example.com');

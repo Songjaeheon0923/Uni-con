@@ -455,6 +455,12 @@ class ApiService {
     });
   }
 
+  async shareRoom(chatRoomId, roomData) {
+    // 매물 정보를 ROOM_SHARE 메시지로 전송 (message_type은 text 사용)
+    const shareContent = `ROOM_SHARE:${JSON.stringify(roomData)}`;
+    return this.sendMessage(chatRoomId, shareContent, 'text');
+  }
+
   async getChatMessages(roomId, limit = 50, offset = 0) {
     return this.request(`/chat/rooms/${roomId}/messages?limit=${limit}&offset=${offset}`);
   }
@@ -489,27 +495,18 @@ class ApiService {
 
   // 정책 챗봇 API
   async chatWithPolicyBot({ message, user_context, streaming = false }) {
-    const endpoint = streaming ? '/api/policy-chat/chat/stream' : '/api/policy-chat/chat';
+    // 강제로 일반 엔드포인트만 사용
+    const endpoint = '/api/policy-chat/chat';
+    console.log('DEBUG: Policy chat - FORCED to use regular endpoint:', endpoint);
     
-    if (streaming) {
-      // 스트리밍 응답 처리
-      return this.requestStream(endpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          message,
-          user_context,
-        }),
-      });
-    } else {
-      // 일반 응답 처리
-      return this.request(endpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          message,
-          user_context,
-        }),
-      });
-    }
+    // 무조건 일반 응답만 처리
+    return this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        user_context,
+      }),
+    });
   }
 
   async getPolicyChatStatus() {
@@ -523,6 +520,22 @@ class ApiService {
         user_context: userContext,
       }),
     });
+  }
+
+  async refreshPolicyData() {
+    return this.request('/api/policy-chat/refresh', {
+      method: 'POST',
+    });
+  }
+
+  // Get specific policy details
+  async getPolicyDetail(policyId) {
+    return this.request(`/policies/${policyId}`);
+  }
+
+  // Get policy by title (for chatbot)
+  async getPolicyByTitle(title) {
+    return this.request(`/policies/by-title/${encodeURIComponent(title)}`);
   }
 
   // 사용자 활동 관련 API
@@ -575,17 +588,29 @@ class ApiService {
           
           try {
             const parsed = JSON.parse(data);
-            if (parsed.content) {
-              yield parsed.content;
+            
+            // 문자열 컨텐츠만 yield
+            let textContent = '';
+            if (typeof parsed.content === 'string') {
+              textContent = parsed.content;
+            } else if (typeof parsed.message === 'string') {
+              textContent = parsed.message;
+            } else if (typeof parsed.text === 'string') {
+              textContent = parsed.text;
+            }
+            
+            if (textContent.trim()) {
+              yield textContent;
               // 약간의 지연으로 타이핑 효과
               await new Promise(resolve => setTimeout(resolve, 50));
             }
+            
             if (parsed.type === 'done') {
               return;
             }
           } catch (parseError) {
-            // JSON 파싱 실패시 원본 데이터 반환
-            if (data.trim().length > 0) {
+            // JSON 파싱 실패시 문자열인 경우만 반환
+            if (data.trim().length > 0 && typeof data === 'string') {
               yield data;
               await new Promise(resolve => setTimeout(resolve, 50));
             }

@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CheckIcon from './CheckIcon';
+
+const { width: screenWidth } = Dimensions.get('window');
+const HORIZONTAL_MARGIN = 15; // 좌우 여백 고정값
 
 const UserMatchCard = ({ user, onPress, index }) => {
   const [message, setMessage] = useState('안녕하세요! 혹시 룸메 구하시나요?');
+  const [isSent, setIsSent] = useState(false);
   // Helper functions
   const getCompatibilityText = (score) => {
     if (score >= 0.8) return '좋음';
@@ -198,23 +203,35 @@ const UserMatchCard = ({ user, onPress, index }) => {
         />
       </View>
 
-      {/* 보내기 버튼 */}
-      <TouchableOpacity
-        style={styles.sendButton}
-        onPress={() => onPress(user, message)}
-      >
-        <Text style={styles.sendButtonText}>보내기</Text>
-        <View style={styles.arrowIcon}>
-          <Ionicons name="arrow-forward" size={16} color="white" />
+      {/* 보내기 버튼 또는 전송 완료 상태 */}
+      {isSent ? (
+        <View style={styles.sentStatus}>
+          <Text style={styles.sentStatusText}>전송되었습니다</Text>
+          <View style={styles.checkIconContainer}>
+            <CheckIcon width={10} height={7} color="black" />
+          </View>
         </View>
-      </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={async () => {
+            setIsSent(true);
+            await onPress(user, message);
+          }}
+        >
+          <Text style={styles.sendButtonText}>보내기</Text>
+          <View style={styles.arrowIcon}>
+            <Ionicons name="arrow-forward" size={16} color="white" />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   userCard: {
-    width: 365,
+    width: screenWidth - (HORIZONTAL_MARGIN * 2),
     height: 255,
     backgroundColor: 'white',
     position: 'relative',
@@ -225,8 +242,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
     marginBottom: 12,
-    marginLeft: 'auto',
-    marginRight: 'auto',
+    marginLeft: HORIZONTAL_MARGIN,
+    marginRight: HORIZONTAL_MARGIN,
     overflow: 'visible',
   },
   profileImageBg: {
@@ -301,7 +318,7 @@ const styles = StyleSheet.create({
   matchingSection: {
     width: 83,
     position: 'absolute',
-    left: 248,
+    right: 19,
     top: 18,
     flexDirection: 'column',
     justifyContent: 'flex-start',
@@ -460,6 +477,35 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: '#FC6339',
     borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sentStatus: {
+    position: 'absolute',
+    left: 19,
+    right: 19,
+    top: 210,
+    height: 32,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#000',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sentStatusText: {
+    color: 'black',
+    fontSize: 12,
+    fontFamily: 'Pretendard',
+    fontWeight: '500',
+  },
+  checkIconContainer: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E5E5E5',
     justifyContent: 'center',
     alignItems: 'center',
   },

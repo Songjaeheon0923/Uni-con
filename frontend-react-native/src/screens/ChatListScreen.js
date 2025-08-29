@@ -286,19 +286,30 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
   );
 };
 
-export default function ChatListScreen({ navigation }) {
+export default function ChatListScreen({ navigation, route }) {
   const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAnyItemSwiping, setIsAnyItemSwiping] = useState(false); // 아이템 스와이프 상태
+  
+  // 공유 모드 관련 state
+  const [isShareMode, setIsShareMode] = useState(false);
+  const [selectedChats, setSelectedChats] = useState([]);
+  const [roomData, setRoomData] = useState(null);
 
 
   useEffect(() => {
     // 실제 채팅방 로드
     loadChatRooms();
-  }, []);
+    
+    // route params로 공유 모드인지 확인
+    if (route?.params?.isShareMode && route?.params?.roomData) {
+      setIsShareMode(true);
+      setRoomData(route.params.roomData);
+    }
+  }, [route?.params]);
 
   // 화면에 포커스될 때마다 채팅방 목록 새로고침 (채팅방에서 돌아왔을 때 포함)
   useFocusEffect(
@@ -567,7 +578,104 @@ export default function ChatListScreen({ navigation }) {
     return message;
   };
 
+  // 공유 모드에서 채팅방 선택/해제
+  const toggleChatSelection = (chatId) => {
+    if (!isShareMode) return;
+    
+    setSelectedChats(prev => 
+      prev.includes(chatId) 
+        ? prev.filter(id => id !== chatId)
+        : [...prev, chatId]
+    );
+  };
+
+  // 공유 실행
+  const handleShare = async () => {
+    if (!isShareMode || selectedChats.length === 0) return;
+
+    try {
+      // 선택된 채팅방에 매물 정보 공유
+      for (const chatId of selectedChats) {
+        await ApiService.shareRoom(chatId, roomData);
+      }
+      
+      navigation.goBack();
+      setTimeout(() => {
+        Alert.alert('완료', '매물 정보가 공유되었습니다.');
+      }, 500);
+    } catch (error) {
+      console.error('매물 공유 실패:', error);
+      Alert.alert('오류', '매물 공유에 실패했습니다.');
+    }
+  };
+
   const renderChatItem = ({ item }) => {
+    if (isShareMode) {
+      // 공유 모드에서는 선택 가능한 채팅 아이템 렌더링
+      return (
+        <TouchableOpacity
+          style={[
+            styles.chatRow,
+            selectedChats.includes(item.id) && styles.selectedChatItem
+          ]}
+          onPress={() => toggleChatSelection(item.id)}
+        >
+          {/* 아바타 섹션 */}
+          <View style={styles.avatarSection}>
+            <View style={styles.profileImageContainer}>
+              {item.isIndividual ? (
+                <Ionicons name="person-circle" size={80} color="#ddd" />
+              ) : (
+                <View style={styles.groupProfileContainer}>
+                  <Ionicons name="person-circle" size={56} color="#ddd" style={styles.groupProfile1} />
+                  <Ionicons name="person-circle" size={56} color="#bbb" style={styles.groupProfile2} />
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* 콘텐츠 섹션 */}
+          <View style={styles.contentSection}>
+            {/* 첫 번째 줄: 사용자 정보 */}
+            <View style={styles.userInfoLine}>
+              <Text style={styles.userInfoText}>{item.info || '정보 없음'}</Text>
+            </View>
+
+            {/* 두 번째 줄: 이름과 태그 */}
+            <View style={styles.nameTagLine}>
+              <Text style={styles.nameText}>{item.name || '이름 없음'}</Text>
+              <View style={styles.tagsList}>
+                {item.tags && item.tags.map((tag, index) => (
+                  <View key={index} style={styles.tagBox}>
+                    <Text style={styles.tagLabel}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* 세 번째 줄: 메시지와 시간 */}
+            <View style={styles.messageTimeLine}>
+              <Text style={styles.messageText} numberOfLines={1} ellipsizeMode="tail">
+                {item.lastMessage || '메시지 없음'}
+              </Text>
+              <View style={styles.timeStatusContainer}>
+                {item.userStatus ? (
+                  <Text style={[
+                    styles.timeLabel,
+                    item.userStatus.minutes_ago < 5 && styles.onlineTimeLabel
+                  ]}>
+                    {formatUserStatus(item.userStatus)}
+                  </Text>
+                ) : (
+                  <Text style={styles.timeLabel}>{item.time || ''}</Text>
+                )}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+    
     return (
       <SwipeableChatItem
         item={item}
@@ -610,7 +718,23 @@ export default function ChatListScreen({ navigation }) {
             <Path d="M19 13.5C19.8284 13.5 20.5 12.8284 20.5 12C20.5 11.1716 19.8284 10.5 19 10.5V12V13.5ZM0.939341 10.9393C0.353554 11.5251 0.353554 12.4749 0.939341 13.0607L10.4853 22.6066C11.0711 23.1924 12.0208 23.1924 12.6066 22.6066C13.1924 22.0208 13.1924 21.0711 12.6066 20.4853L4.12132 12L12.6066 3.51472C13.1924 2.92893 13.1924 1.97919 12.6066 1.3934C12.0208 0.807611 11.0711 0.807611 10.4853 1.3934L0.939341 10.9393ZM19 12V10.5L2 10.5V12V13.5L19 13.5V12Z" fill="#494949"/>
           </Svg>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>채팅</Text>
+        <Text style={styles.headerTitle}>
+          {isShareMode ? '공유 상대 선택' : '채팅'}
+        </Text>
+        {isShareMode && (
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleShare}
+            disabled={selectedChats.length === 0}
+          >
+            <Text style={[
+              styles.confirmButtonText,
+              selectedChats.length === 0 ? styles.confirmButtonDisabled : styles.confirmButtonEnabled
+            ]}>
+              {selectedChats.length > 0 ? `${selectedChats.length} 확인` : '확인'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 필터 탭 */}
@@ -683,6 +807,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000',
     textAlign: 'center',
+  },
+  confirmButton: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonDisabled: {
+    color: '#C0C0C0',
+  },
+  confirmButtonEnabled: {
+    color: '#000',
+  },
+  selectedChatItem: {
+    backgroundColor: 'rgba(16, 181, 133, 0.20)',
+    borderColor: '#10B585',
   },
   filterContainer: {
     paddingHorizontal: 14,

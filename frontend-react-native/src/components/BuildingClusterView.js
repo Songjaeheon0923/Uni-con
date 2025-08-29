@@ -1,13 +1,23 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableBottomSheet from './DraggableBottomSheet';
 import PropertyCard from './PropertyCard';
 
 const BuildingClusterView = ({ building, properties, navigation, onClose, onSelectProperty, favorites = [], onToggleFavorite }) => {
+  const [localFavorites, setLocalFavorites] = useState(favorites);
+  const [localProperties, setLocalProperties] = useState(properties);
+
+  useEffect(() => {
+    setLocalFavorites(favorites);
+  }, [favorites]);
+
+  useEffect(() => {
+    setLocalProperties(properties);
+  }, [properties]);
 
   // 같은 건물 내 매물들을 층수와 호수로 정렬
-  const sortedProperties = properties.sort((a, b) => {
+  const sortedProperties = localProperties.sort((a, b) => {
     // 먼저 층수로 정렬
     if (a.floor !== b.floor) {
       return b.floor - a.floor; // 높은 층부터
@@ -35,7 +45,31 @@ const BuildingClusterView = ({ building, properties, navigation, onClose, onSele
     onClose();
   };
 
-  const handleFavorite = (property) => {
+  const handleFavorite = async (property) => {
+    const roomId = property.room_id || property.id;
+    const isFavorited = localFavorites.includes(roomId);
+    
+    // 즉시 UI 업데이트
+    if (isFavorited) {
+      setLocalFavorites(localFavorites.filter(id => id !== roomId));
+    } else {
+      setLocalFavorites([...localFavorites, roomId]);
+    }
+    
+    // favorite_count 업데이트
+    const updatedProperties = localProperties.map(p => {
+      if ((p.room_id || p.id) === roomId) {
+        const currentCount = p.favorite_count || 0;
+        return {
+          ...p,
+          favorite_count: isFavorited ? Math.max(0, currentCount - 1) : currentCount + 1
+        };
+      }
+      return p;
+    });
+    setLocalProperties(updatedProperties);
+    
+    // 상위 컴포넌트에 알리기
     if (onToggleFavorite) {
       onToggleFavorite(property);
     }
@@ -71,7 +105,7 @@ const BuildingClusterView = ({ building, properties, navigation, onClose, onSele
             property={property}
             onPress={() => handlePropertySelect(property)}
             onFavorite={handleFavorite}
-            isFavorited={favorites.includes(property.room_id || property.id)}
+            isFavorited={localFavorites.includes(property.room_id || property.id)}
           />
         ))}
       </ScrollView>

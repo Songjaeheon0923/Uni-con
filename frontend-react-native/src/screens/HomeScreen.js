@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -11,29 +11,35 @@ import {
   FlatList,
   Dimensions,
   SafeAreaView,
-  Image
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "../components/HomeIcon";
 import PeopleIcon from "../components/PeopleIcon";
 import DocumentIcon from "../components/DocumentIcon";
 import ChatIcon from "../components/ChatIcon";
-import * as Location from 'expo-location';
+import RobotIcon from "../components/icons/RobotIcon";
+import * as Location from "expo-location";
 import ApiService from "../services/api";
 import RoomDetailModal from "../components/RoomDetailModal";
-import { formatPrice, formatArea, getRoomType, formatFloor } from "../utils/priceUtils";
+import {
+  formatPrice,
+  formatArea,
+  getRoomType,
+  formatFloor,
+} from "../utils/priceUtils";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function HomeScreen({ navigation, user }) {
   const [rooms, setRooms] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState('찜 많은 순');
+  const [selectedFilter, setSelectedFilter] = useState("찜 많은 순");
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState('성북구');
+  const [currentLocation, setCurrentLocation] = useState("성북구");
   const [policyNews, setPolicyNews] = useState([]);
   const [loadingPolicies, setLoadingPolicies] = useState(false);
   const [policyPage, setPolicyPage] = useState(1);
@@ -48,10 +54,17 @@ export default function HomeScreen({ navigation, user }) {
   const userData = user || {
     id: "1",
     name: "김대학생",
-    location: "성북구"
+    location: "성북구",
   };
 
-  const filterOptions = ['찜 많은 순', '원룸', '투룸', '오피스텔', '빌라', '아파트'];
+  const filterOptions = [
+    "찜 많은 순",
+    "원룸",
+    "투룸",
+    "오피스텔",
+    "빌라",
+    "아파트",
+  ];
 
   useEffect(() => {
     loadData();
@@ -70,8 +83,8 @@ export default function HomeScreen({ navigation, user }) {
   const getCurrentLocation = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('위치 권한이 거부되었습니다');
+      if (status !== "granted") {
+        console.log("위치 권한이 거부되었습니다");
         return;
       }
 
@@ -87,13 +100,16 @@ export default function HomeScreen({ navigation, user }) {
       if (address.length > 0) {
         const locationInfo = address[0];
         // 구 또는 동 정보 추출
-        const district = locationInfo.district || locationInfo.subLocality || locationInfo.city;
+        const district =
+          locationInfo.district ||
+          locationInfo.subLocality ||
+          locationInfo.city;
         if (district) {
-          setCurrentLocation(district.replace(/구$|시$/, '')); // "성북구" 형태로 설정
+          setCurrentLocation(district.replace(/구$|시$/, "")); // "성북구" 형태로 설정
         }
       }
     } catch (error) {
-      console.error('위치 가져오기 실패:', error);
+      console.error("위치 가져오기 실패:", error);
       // 실패 시 기본값 유지
     }
   };
@@ -103,7 +119,7 @@ export default function HomeScreen({ navigation, user }) {
     try {
       await Promise.all([loadRooms(), loadFavorites()]);
     } catch (error) {
-      console.error('데이터 로드 실패:', error);
+      console.error("데이터 로드 실패:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -122,16 +138,18 @@ export default function HomeScreen({ navigation, user }) {
       const roomData = await ApiService.searchRooms(bounds);
       setRooms(roomData);
     } catch (error) {
-      console.error('방 데이터 로드 실패:', error);
+      console.error("방 데이터 로드 실패:", error);
     }
   };
 
   const loadFavorites = async () => {
     try {
-      const favoriteData = await ApiService.getUserFavorites(String(String(userData.id)));
-      setFavorites(favoriteData.map(room => room.room_id));
+      const favoriteData = await ApiService.getUserFavorites(
+        String(String(userData.id))
+      );
+      setFavorites(favoriteData.map((room) => room.room_id));
     } catch (error) {
-      console.error('찜 목록 로드 실패:', error);
+      console.error("찜 목록 로드 실패:", error);
     }
   };
 
@@ -171,7 +189,7 @@ export default function HomeScreen({ navigation, user }) {
         }
       }
     } catch (error) {
-      console.error('정책 뉴스 로드 실패:', error);
+      console.error("정책 뉴스 로드 실패:", error);
       // 에러 시 빈 배열로 설정
       setPolicyNews([]);
       setPolicyPage(1);
@@ -190,7 +208,7 @@ export default function HomeScreen({ navigation, user }) {
       const isComplete = profile && profile.is_complete;
       setHasCompletedTest(isComplete);
     } catch (error) {
-      console.error('사용자 프로필 로드 실패:', error);
+      console.error("사용자 프로필 로드 실패:", error);
       setHasCompletedTest(false);
     }
   };
@@ -198,26 +216,24 @@ export default function HomeScreen({ navigation, user }) {
   const handleRoommateButtonPress = () => {
     if (hasCompletedTest) {
       // 이미 테스트를 한 경우 - 바로 매칭 결과 화면으로 (MainTabs를 우회)
-      navigation.getParent()?.navigate('MatchResults');
+      navigation.getParent()?.navigate("MatchResults");
     } else {
       // 테스트를 안 한 경우 - 테스트 선택 화면으로 (MainTabs를 우회)
-      navigation.getParent()?.navigate('RoommateChoice');
+      navigation.getParent()?.navigate("RoommateChoice");
     }
   };
 
   const goToPage = async (page) => {
-    if (loadingPolicies || page < 1 || page > totalPages || page === policyPage) return;
+    if (loadingPolicies || page < 1 || page > totalPages || page === policyPage)
+      return;
     await loadPolicyNews(page);
 
     // 페이지 변경 후 정책 뉴스 섹션으로 스크롤
     setTimeout(() => {
       if (policyNewsRef.current && scrollViewRef.current) {
-        policyNewsRef.current.measureLayout(
-          scrollViewRef.current,
-          (x, y) => {
-            scrollViewRef.current.scrollTo({ y: y - 20, animated: true });
-          }
-        );
+        policyNewsRef.current.measureLayout(scrollViewRef.current, (x, y) => {
+          scrollViewRef.current.scrollTo({ y: y - 20, animated: true });
+        });
       }
     }, 100);
   };
@@ -240,15 +256,17 @@ export default function HomeScreen({ navigation, user }) {
           key={i}
           style={[
             styles.pageButton,
-            policyPage === i && styles.activePageButton
+            policyPage === i && styles.activePageButton,
           ]}
           onPress={() => goToPage(i)}
           disabled={loadingPolicies}
         >
-          <Text style={[
-            styles.pageButtonText,
-            policyPage === i && styles.activePageButtonText
-          ]}>
+          <Text
+            style={[
+              styles.pageButtonText,
+              policyPage === i && styles.activePageButtonText,
+            ]}
+          >
             {i}
           </Text>
         </TouchableOpacity>
@@ -271,25 +289,29 @@ export default function HomeScreen({ navigation, user }) {
     try {
       if (isFavorited) {
         await ApiService.removeFavorite(roomId);
-        setFavorites(favorites.filter(id => id !== roomId));
+        setFavorites(favorites.filter((id) => id !== roomId));
       } else {
         await ApiService.addFavorite(roomId, String(userData.id));
         setFavorites([...favorites, roomId]);
       }
       // 찜 상태 변경 시 저장하여 다른 화면에서 감지할 수 있도록 함
       try {
-        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-        await AsyncStorage.setItem('favoriteChanged', Date.now().toString());
+        const AsyncStorage =
+          require("@react-native-async-storage/async-storage").default;
+        await AsyncStorage.setItem("favoriteChanged", Date.now().toString());
       } catch (storageError) {
-        console.log('Storage update failed:', storageError);
+        console.log("Storage update failed:", storageError);
       }
     } catch (error) {
-      Alert.alert('오류', isFavorited ? '찜 삭제에 실패했습니다.' : '찜하기에 실패했습니다.');
+      Alert.alert(
+        "오류",
+        isFavorited ? "찜 삭제에 실패했습니다." : "찜하기에 실패했습니다."
+      );
     }
   };
 
   const handleRoommateSearch = () => {
-    navigation.navigate('RoommateSearch');
+    navigation.navigate("RoommateSearch");
   };
 
   const checkProfileCompletion = async () => {
@@ -297,7 +319,7 @@ export default function HomeScreen({ navigation, user }) {
       const profile = await ApiService.getUserProfile();
       return profile && profile.is_complete;
     } catch (error) {
-      console.error('프로필 확인 실패:', error);
+      console.error("프로필 확인 실패:", error);
       return false;
     }
   };
@@ -307,22 +329,25 @@ export default function HomeScreen({ navigation, user }) {
 
     if (isProfileComplete) {
       // 프로필이 완성되어 있으면 바로 매칭 화면으로 이동
-      navigation.navigate('MatchResults');
+      navigation.navigate("MatchResults");
     } else {
       // 프로필이 완성되지 않았으면 검사를 하라는 alert
       Alert.alert(
-        '성격 유형 검사 필요',
-        '룸메이트 매칭을 위해서는 성격 유형 검사를 완료해야 합니다.',
+        "성격 유형 검사 필요",
+        "룸메이트 매칭을 위해서는 성격 유형 검사를 완료해야 합니다.",
         [
-          { text: '취소', style: 'cancel' },
-          { text: '검사하기', onPress: () => navigation.navigate('RoommateSearch') }
+          { text: "취소", style: "cancel" },
+          {
+            text: "검사하기",
+            onPress: () => navigation.navigate("RoommateSearch"),
+          },
         ]
       );
     }
   };
 
   const handleContractVerification = () => {
-    navigation.navigate('ContractVerification');
+    navigation.navigate("ContractVerification");
   };
 
   const handleNewsDetail = async (policy) => {
@@ -332,41 +357,45 @@ export default function HomeScreen({ navigation, user }) {
       if (policyId) {
         await ApiService.recordPolicyView(policyId);
       }
-      
+
       // PolicyDetailScreen으로 네비게이션
-      navigation.navigate('PolicyDetail', { policy });
+      navigation.navigate("PolicyDetail", { policy });
     } catch (error) {
-      console.error('정책 조회 기록 실패:', error);
+      console.error("정책 조회 기록 실패:", error);
       // 에러가 발생해도 화면 이동은 진행
-      navigation.navigate('PolicyDetail', { policy });
+      navigation.navigate("PolicyDetail", { policy });
     }
   };
 
   const getFilteredRooms = () => {
     let filteredRooms = [...rooms];
 
-    switch(selectedFilter) {
-      case '찜 많은 순':
-        return filteredRooms.sort((a, b) => b.favorite_count - a.favorite_count);
-      case '원룸':
-        return filteredRooms.filter(room => room.rooms === 1);
-      case '투룸':
-        return filteredRooms.filter(room => room.rooms === 2);
-      case '오피스텔':
-        return filteredRooms.filter(room => room.address.includes('오피스텔'));
-      case '빌라':
-        return filteredRooms.filter(room => room.address.includes('빌라'));
-      case '아파트':
-        return filteredRooms.filter(room => room.address.includes('아파트'));
+    switch (selectedFilter) {
+      case "찜 많은 순":
+        return filteredRooms.sort(
+          (a, b) => b.favorite_count - a.favorite_count
+        );
+      case "원룸":
+        return filteredRooms.filter((room) => room.rooms === 1);
+      case "투룸":
+        return filteredRooms.filter((room) => room.rooms === 2);
+      case "오피스텔":
+        return filteredRooms.filter((room) =>
+          room.address.includes("오피스텔")
+        );
+      case "빌라":
+        return filteredRooms.filter((room) => room.address.includes("빌라"));
+      case "아파트":
+        return filteredRooms.filter((room) => room.address.includes("아파트"));
       default:
         return filteredRooms;
     }
   };
 
   const handleRoomPress = (room) => {
-    console.log('🏠 HomeScreen selected room:', room); // 디버그용
+    console.log("🏠 HomeScreen selected room:", room); // 디버그용
     // RoomDetailScreen으로 이동
-    navigation.navigate('RoomDetail', { room });
+    navigation.navigate("RoomDetail", { room });
   };
 
   const handleModalClose = () => {
@@ -376,57 +405,57 @@ export default function HomeScreen({ navigation, user }) {
 
   const handleNavigateToChat = (otherUser) => {
     handleModalClose();
-    navigation.navigate('Chat', {
+    navigation.navigate("Chat", {
       user: otherUser,
-      currentUser: userData
+      currentUser: userData,
     });
   };
 
   // 주소를 기반으로 가장 가까운 역과 거리 계산
   const getNearestStation = (address) => {
-    if (!address) return '역 정보 없음';
+    if (!address) return "역 정보 없음";
 
     // 서울 주요 역 리스트 (간단한 매칭용)
     const stations = {
-      '성북': '안암역 10분',
-      '안암': '안암역 5분',
-      '보문': '보문역 8분',
-      '종로': '종각역 12분',
-      '중구': '을지로입구역 10분',
-      '강남': '강남역 7분',
-      '서초': '강남역 15분',
-      '송파': '잠실역 10분',
-      '강동': '천호역 8분',
-      '마포': '홍대입구역 12분',
-      '서대문': '신촌역 10분',
-      '은평': '연신내역 15분',
-      '용산': '용산역 8분',
-      '영등포': '영등포구청역 10분',
-      '구로': '구로역 8분',
-      '관악': '신림역 12분',
-      '동작': '사당역 10분',
-      '성동': '왕십리역 8분',
-      '광진': '건대입구역 10분',
-      '동대문': '동대문역 7분',
-      '중랑': '상봉역 12분',
-      '노원': '노원역 8분',
-      '도봉': '도봉산역 10분',
-      '강북': '미아역 12분'
+      성북: "안암역 10분",
+      안암: "안암역 5분",
+      보문: "보문역 8분",
+      종로: "종각역 12분",
+      중구: "을지로입구역 10분",
+      강남: "강남역 7분",
+      서초: "강남역 15분",
+      송파: "잠실역 10분",
+      강동: "천호역 8분",
+      마포: "홍대입구역 12분",
+      서대문: "신촌역 10분",
+      은평: "연신내역 15분",
+      용산: "용산역 8분",
+      영등포: "영등포구청역 10분",
+      구로: "구로역 8분",
+      관악: "신림역 12분",
+      동작: "사당역 10분",
+      성동: "왕십리역 8분",
+      광진: "건대입구역 10분",
+      동대문: "동대문역 7분",
+      중랑: "상봉역 12분",
+      노원: "노원역 8분",
+      도봉: "도봉산역 10분",
+      강북: "미아역 12분",
     };
 
     // 주소에서 구 이름 추출
     for (const [district, station] of Object.entries(stations)) {
       if (address.includes(district)) {
-        return station + ' 거리';
+        return station + " 거리";
       }
     }
 
-    return '안암역 10분 거리'; // 기본값
+    return "안암역 10분 거리"; // 기본값
   };
 
   // 관리비를 만원 단위로 반올림하여 포맷팅
   const formatMaintenanceCost = (area) => {
-    if (!area) return '7만';
+    if (!area) return "7만";
 
     const cost = Math.round(area * 1000);
     const manWon = Math.round(cost / 10000);
@@ -436,27 +465,32 @@ export default function HomeScreen({ navigation, user }) {
 
   const getRoomImage = (roomId) => {
     // roomId 기반으로 부동산 이미지 선택
-    const imageIndex = parseInt(roomId?.toString().slice(-1) || '0') % 8;
+    const imageIndex = parseInt(roomId?.toString().slice(-1) || "0") % 8;
     const roomImages = [
-      'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 모던 거실
-      'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 침실
-      'https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 주방
-      'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 원룸
-      'https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 아파트 거실
-      'https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 화이트 인테리어
-      'https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop', // 밝은 방
-      'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'  // 아늑한 방
+      "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 모던 거실
+      "https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 침실
+      "https://images.pexels.com/photos/2029722/pexels-photo-2029722.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 주방
+      "https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 원룸
+      "https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 아파트 거실
+      "https://images.pexels.com/photos/2121121/pexels-photo-2121121.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 화이트 인테리어
+      "https://images.pexels.com/photos/1454804/pexels-photo-1454804.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 밝은 방
+      "https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop", // 아늑한 방
     ];
     return roomImages[imageIndex];
   };
 
   const renderRoomCard = ({ item }) => (
-    <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
+    <TouchableOpacity
+      style={styles.roomCard}
+      onPress={() => handleRoomPress(item)}
+    >
       <View style={styles.roomImageContainer}>
         <Image
           source={{ uri: getRoomImage(item.room_id) }}
           style={styles.roomImage}
-          defaultSource={{ uri: 'https://via.placeholder.com/400x300/f0f0f0/666?text=매물' }}
+          defaultSource={{
+            uri: "https://via.placeholder.com/400x300/f0f0f0/666?text=매물",
+          }}
         />
         <TouchableOpacity
           style={styles.heartButton}
@@ -476,17 +510,25 @@ export default function HomeScreen({ navigation, user }) {
       <View style={styles.roomCardInfo}>
         {/* 가격 */}
         <Text style={styles.priceText}>
-          {item.transaction_type} {formatPrice(item.price_deposit, item.transaction_type, item.price_monthly, item.room_id)}
+          {item.transaction_type}{" "}
+          {formatPrice(
+            item.price_deposit,
+            item.transaction_type,
+            item.price_monthly,
+            item.room_id
+          )}
         </Text>
 
         {/* 방 정보 */}
         <Text style={styles.roomInfoText}>
-          {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} | {formatFloor(item.floor)}
+          {getRoomType(item.area, item.rooms)} | {formatArea(item.area)} |{" "}
+          {formatFloor(item.floor)}
         </Text>
 
         {/* 관리비와 거리 정보 */}
         <Text style={styles.additionalInfoText}>
-          관리비 {formatMaintenanceCost(item.area)}원 | {getNearestStation(item.address)}
+          관리비 {formatMaintenanceCost(item.area)}원 |{" "}
+          {getNearestStation(item.address)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -497,7 +539,12 @@ export default function HomeScreen({ navigation, user }) {
       style={[styles.filterButton, isSelected && styles.filterButtonSelected]}
       onPress={onPress}
     >
-      <Text style={[styles.filterButtonText, isSelected && styles.filterButtonTextSelected]}>
+      <Text
+        style={[
+          styles.filterButtonText,
+          isSelected && styles.filterButtonTextSelected,
+        ]}
+      >
         {title}
       </Text>
     </TouchableOpacity>
@@ -513,228 +560,260 @@ export default function HomeScreen({ navigation, user }) {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-    <ScrollView
-      ref={scrollViewRef}
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* 채팅 버튼과 인사말 */}
-      <View style={styles.topContainer}>
-        <Text style={styles.greeting}>안녕하세요, {userData.name.slice(1)}님 :)</Text>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 채팅 버튼과 인사말 */}
+        <View style={styles.topContainer}>
+          <Text style={styles.greeting}>
+            안녕하세요, {userData.name.slice(1)}님 :)
+          </Text>
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => navigation.navigate("ChatList")}
+          >
+            <View style={styles.chatButtonInner}>
+              <ChatIcon size={21} color="#464646" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 나만의 룸메이트 찾기 박스 */}
         <TouchableOpacity
-          style={styles.chatButton}
-          onPress={() => navigation.navigate('ChatList')}
+          style={styles.roommateBox}
+          onPress={handleRoommateButtonPress}
         >
-          <View style={styles.chatButtonInner}>
-            <ChatIcon size={21} color="#464646" />
+          <View style={styles.cardHeader}>
+            <PeopleIcon size={24} color="#333333" />
+            <Text style={styles.whiteCardTitle}>
+              {hasCompletedTest ? (
+                <>나만의 <Text style={styles.boldText}>룸메이트</Text> 찾기</>
+              ) : (
+                <>내 <Text style={styles.boldText}>주거 성향</Text> 확인하기</>
+              )}
+            </Text>
+          </View>
+          <Text style={styles.whiteCardSubtitle}>
+            {hasCompletedTest
+              ? "저장된 성향을 바탕으로 나와 딱 맞는 룸메이트를 추천해드려요!"
+              : "주거성향 테스트하고, 나와 딱 맞는 룸메이트를 만나보세요!"}
+          </Text>
+          <View style={styles.blackActionButton}>
+            <Text style={styles.blackActionButtonText}>
+              {hasCompletedTest ? (
+                <>
+                  나만의 <Text style={styles.boldText}>룸메이트</Text> 추천받기
+                </>
+              ) : (
+                <>
+                  내 <Text style={styles.boldText}>주거 성향</Text> 확인해보기
+                </>
+              )}
+            </Text>
+            <View style={styles.greenArrowCircle}>
+              <Ionicons name="arrow-forward" size={40} color="#FFFFFF" />
+            </View>
           </View>
         </TouchableOpacity>
-      </View>
 
-      {/* 나만의 룸메이트 찾기 박스 */}
-      <TouchableOpacity style={styles.roommateBox} onPress={handleRoommateButtonPress}>
-        <View style={styles.cardHeader}>
-          <PeopleIcon size={24} color="#333333" />
-          <Text style={styles.whiteCardTitle}>
-            {hasCompletedTest ? (
-              <>나만의 <Text style={styles.boldText}>룸메이트</Text> 추천받기</>
-            ) : (
-              '내 주거 성향 확인해보기'
-            )}
+        {/* 계약서 안전성 검증 박스 */}
+        <TouchableOpacity
+          style={styles.contractBox}
+          onPress={handleContractVerification}
+        >
+          <View style={styles.cardHeader}>
+            <DocumentIcon size={24} color="#333" />
+            <Text style={styles.contractCardTitle}>계약서 안전성 검증하기</Text>
+          </View>
+          <Text style={styles.contractCardSubtitle}>
+            내가 가진 계약서의 위험 정도를 확인해보세요.
           </Text>
-        </View>
-        <Text style={styles.whiteCardSubtitle}>
-          {hasCompletedTest
-            ? '저장된 성향을 바탕으로 나와 딱 맞는 룸메이트를 추천해드려요!'
-            : '주거성향 테스트하고, 나와 딱 맞는 룸메이트를 만나보세요!'
-          }
-        </Text>
-        <View style={styles.blackActionButton}>
-          <Text style={styles.blackActionButtonText}>
-            {hasCompletedTest ? (
-              <>나만의 <Text style={styles.boldText}>룸메이트</Text> 추천받기</>
-            ) : (
-              <>내 <Text style={styles.boldText}>주거 성향</Text> 확인해보기</>
-            )}
-          </Text>
-          <View style={styles.greenArrowCircle}>
-            <Ionicons name="arrow-forward" size={40} color="#FFFFFF" />
+          <View style={styles.orangeArrowCircle}>
+            <Ionicons name="arrow-forward" size={50} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+
+        {/* 인기 매물 섹션 */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>{currentLocation} 인기 매물</Text>
+
+          {/* 필터와 방 카드 컨테이너 */}
+          <View style={styles.filterAndRoomsContainer}>
+            {/* 필터 버튼들 */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterContainer}
+            >
+              {filterOptions.map((option) => (
+                <FilterButton
+                  key={option}
+                  title={option}
+                  isSelected={selectedFilter === option}
+                  onPress={() => setSelectedFilter(option)}
+                />
+              ))}
+            </ScrollView>
+
+            {/* 방 카드 리스트 - 가로 스크롤 */}
+            <FlatList
+              data={getFilteredRooms().slice(0, 10)}
+              renderItem={renderRoomCard}
+              keyExtractor={(item) => item.room_id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.roomCardContainer}
+              overScrollMode="never"
+              bounces={false}
+            />
           </View>
         </View>
-      </TouchableOpacity>
 
-      {/* 계약서 안전성 검증 박스 */}
-      <TouchableOpacity style={styles.contractBox} onPress={handleContractVerification}>
-        <View style={styles.cardHeader}>
-          <DocumentIcon size={24} color="#333" />
-          <Text style={styles.contractCardTitle}>계약서 안전성 검증하기</Text>
-        </View>
-        <Text style={styles.contractCardSubtitle}>내가 가진 계약서의 위험 정도를 확인해보세요.</Text>
-        <View style={styles.orangeArrowCircle}>
-          <Ionicons name="arrow-forward" size={50} color="#FFFFFF" />
-        </View>
-      </TouchableOpacity>
-
-      {/* 인기 매물 섹션 */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>{currentLocation} 인기 매물</Text>
-
-        {/* 필터와 방 카드 컨테이너 */}
-        <View style={styles.filterAndRoomsContainer}>
-          {/* 필터 버튼들 */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterContainer}
-          >
-            {filterOptions.map((option) => (
-              <FilterButton
-                key={option}
-                title={option}
-                isSelected={selectedFilter === option}
-                onPress={() => setSelectedFilter(option)}
-              />
-            ))}
-          </ScrollView>
-
-          {/* 방 카드 리스트 - 가로 스크롤 */}
-          <FlatList
-            data={getFilteredRooms().slice(0, 10)}
-            renderItem={renderRoomCard}
-            keyExtractor={(item) => item.room_id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.roomCardContainer}
-            overScrollMode="never"
-            bounces={false}
-          />
-        </View>
-      </View>
-
-      {/* 주요 정책 NEWS */}
-      <View ref={policyNewsRef} style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>주요 정책 NEWS</Text>
-
-        {loadingPolicies ? (
-          <View style={styles.newsBox}>
-            <Text style={styles.loadingText}>정책 정보를 불러오는 중...</Text>
+        {/* 주요 정책 NEWS */}
+        <View ref={policyNewsRef} style={styles.sectionContainer}>
+          <View style={styles.sectionHeader_policy}>
+            <Text style={styles.policyNewsTitle}>주요 정책 NEWS</Text>
+            <TouchableOpacity
+              style={styles.chatbotButton}
+              onPress={() => navigation.navigate("PolicyChatbot")}
+            >
+              <RobotIcon size={16} color="#FFFFFF" />
+              <Text style={styles.chatbotButtonText}>정책봇과 상담하기</Text>
+            </TouchableOpacity>
           </View>
-        ) : policyNews.length > 0 ? (
-          policyNews.map((policy, index) => (
-            <View key={index} style={[styles.newsBox, index > 0 && { marginTop: 10 }]}>
-              <View style={styles.newsContent}>
-                <Text style={styles.newsTag}>#{policy?.policy?.category || policy?.category || '정책'}</Text>
-                <Text style={styles.newsTitle} numberOfLines={2}>
-                  {policy?.policy?.title || policy?.title || '정책 정보'}
-                </Text>
-                <Text style={styles.newsDescription} numberOfLines={2}>
-                  {policy?.policy?.description || policy?.description || policy?.content || '정책 상세 내용을 확인하세요.'}
-                </Text>
-                {policy.reason && (
-                  <Text style={styles.newsReason}>{policy.reason}</Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.newsButton}
-                onPress={() => handleNewsDetail(policy)}
+
+          {loadingPolicies ? (
+            <View style={styles.newsBox}>
+              <Text style={styles.loadingText}>정책 정보를 불러오는 중...</Text>
+            </View>
+          ) : policyNews.length > 0 ? (
+            policyNews.map((policy, index) => (
+              <View
+                key={index}
+                style={[styles.newsBox, index > 0 && { marginTop: 10 }]}
               >
-                <Text style={styles.newsButtonText}>자세히 보기</Text>
+                <View style={styles.newsContent}>
+                  <Text style={styles.newsTag}>
+                    #{policy?.policy?.category || policy?.category || "정책"}
+                  </Text>
+                  <Text style={styles.newsTitle} numberOfLines={2}>
+                    {policy?.policy?.title || policy?.title || "정책 정보"}
+                  </Text>
+                  <Text style={styles.newsDescription} numberOfLines={2}>
+                    {policy?.policy?.description ||
+                      policy?.description ||
+                      policy?.content ||
+                      "정책 상세 내용을 확인하세요."}
+                  </Text>
+                  {policy.reason && (
+                    <Text style={styles.newsReason}>{policy.reason}</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.newsButton}
+                  onPress={() => handleNewsDetail(policy)}
+                >
+                  <Text style={styles.newsButtonText}>자세히 보기</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <View style={styles.newsBox}>
+              <View style={styles.newsContent}>
+                <Text style={styles.newsTag}>#청년 정책</Text>
+                <Text style={styles.newsTitle}>정책 정보를 준비 중입니다</Text>
+              </View>
+            </View>
+          )}
+
+          {/* 페이지네이션 */}
+          {policyNews.length > 0 && totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              {/* 이전 버튼 */}
+              <TouchableOpacity
+                style={[
+                  styles.arrowButton,
+                  policyPage === 1 && styles.disabledButton,
+                ]}
+                onPress={() => goToPage(policyPage - 1)}
+                disabled={loadingPolicies || policyPage === 1}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={16}
+                  color={policyPage === 1 ? "#ccc" : "#000000"}
+                />
+              </TouchableOpacity>
+
+              {/* 페이지 번호들 */}
+              <View style={styles.pageNumbersContainer}>
+                {renderPaginationNumbers()}
+              </View>
+
+              {/* 다음 버튼 */}
+              <TouchableOpacity
+                style={[
+                  styles.arrowButton,
+                  policyPage === totalPages && styles.disabledButton,
+                ]}
+                onPress={() => goToPage(policyPage + 1)}
+                disabled={loadingPolicies || policyPage === totalPages}
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={policyPage === totalPages ? "#ccc" : "#000000"}
+                />
               </TouchableOpacity>
             </View>
-          ))
-        ) : (
-          <View style={styles.newsBox}>
-            <View style={styles.newsContent}>
-              <Text style={styles.newsTag}>#청년 정책</Text>
-              <Text style={styles.newsTitle}>정책 정보를 준비 중입니다</Text>
-            </View>
-          </View>
-        )}
+          )}
+        </View>
+      </ScrollView>
 
-        {/* 페이지네이션 */}
-        {policyNews.length > 0 && totalPages > 1 && (
-          <View style={styles.paginationContainer}>
-            {/* 이전 버튼 */}
-            <TouchableOpacity
-              style={[styles.arrowButton, policyPage === 1 && styles.disabledButton]}
-              onPress={() => goToPage(policyPage - 1)}
-              disabled={loadingPolicies || policyPage === 1}
-            >
-              <Ionicons name="chevron-back" size={16} color={policyPage === 1 ? "#ccc" : "#000000"} />
-            </TouchableOpacity>
-
-            {/* 페이지 번호들 */}
-            <View style={styles.pageNumbersContainer}>
-              {renderPaginationNumbers()}
-            </View>
-
-            {/* 다음 버튼 */}
-            <TouchableOpacity
-              style={[styles.arrowButton, policyPage === totalPages && styles.disabledButton]}
-              onPress={() => goToPage(policyPage + 1)}
-              disabled={loadingPolicies || policyPage === totalPages}
-            >
-              <Ionicons name="chevron-forward" size={16} color={policyPage === totalPages ? "#ccc" : "#000000"} />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    </ScrollView>
-
-    {/* 플로팅 정책 챗봇 버튼 */}
-    <TouchableOpacity
-      style={styles.floatingChatbotButton}
-      onPress={() => navigation.navigate('PolicyChatbot')}
-      activeOpacity={0.8}
-    >
-      <View style={styles.chatbotButtonInner}>
-        <Ionicons name="chatbubbles" size={28} color="#fff" />
-      </View>
-      <View style={styles.chatbotBadge}>
-        <Ionicons name="information-circle" size={12} color="#fff" />
-      </View>
-    </TouchableOpacity>
-
-    {/* Room Detail Modal */}
-    <RoomDetailModal
-      visible={showModal}
-      room={selectedRoom}
-      user={userData}
-      onClose={handleModalClose}
-      onNavigateToChat={handleNavigateToChat}
-    />
-  </SafeAreaView>
+      {/* Room Detail Modal */}
+      <RoomDetailModal
+        visible={showModal}
+        room={selectedRoom}
+        user={userData}
+        onClose={handleModalClose}
+        onNavigateToChat={handleNavigateToChat}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: "#F2F2F2",
   },
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: "#F2F2F2",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   topContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 15,
-    backgroundColor: '#F2F2F2',
+    backgroundColor: "#F2F2F2",
     marginBottom: 3,
   },
   greeting: {
     fontSize: 31,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   chatButton: {
     padding: 4,
@@ -743,25 +822,25 @@ const styles = StyleSheet.create({
     width: 37,
     height: 37,
     borderRadius: 18.5,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 3,
   },
   roommateBox: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     marginHorizontal: 15,
     marginTop: 15,
     paddingHorizontal: 18,
     paddingTop: 22,
     paddingBottom: 17,
     borderRadius: 16,
-    position: 'relative',
-    shadowColor: '#000',
+    position: "relative",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
@@ -771,116 +850,117 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   roommateTextContainer: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   roommateBoxTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 8,
     lineHeight: 24,
   },
   roommateBoxSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
-    color: '#FFFFFF',
+    fontWeight: "400",
+    color: "#FFFFFF",
     opacity: 0.8,
     lineHeight: 14,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
+    fontWeight: "600",
+    color: "#000000",
     marginLeft: 12,
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#000000',
+    color: "#000000",
     lineHeight: 20,
     marginBottom: 16,
     opacity: 0.8,
   },
   whiteCardTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333333',
+    fontWeight: "600",
+    color: "#333333",
     marginLeft: 4,
   },
   whiteCardSubtitle: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
     lineHeight: 20,
     marginBottom: 28,
   },
   contractCardTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#343434',
+    fontWeight: "600",
+    color: "#343434",
     marginLeft: 3,
   },
   contractCardSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     lineHeight: 16,
     marginBottom: 0,
   },
   blackActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    backgroundColor: '#000000',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    backgroundColor: "#000000",
     height: 60,
     borderRadius: 30,
-    position: 'relative',
+    position: "relative",
     paddingLeft: 68,
   },
   blackActionButtonText: {
     fontSize: 20,
-    fontWeight: '200',
-    color: '#FFFFFF',
+    fontWeight: "200",
+    color: "#FFFFFF",
+    marginLeft: -5,
   },
   greenArrowCircle: {
-    position: 'absolute',
+    position: "absolute",
     right: 8,
     width: 43,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#10B585',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#10B585",
+    justifyContent: "center",
+    alignItems: "center",
   },
   orangeArrowCircle: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 12,
     width: 60,
     height: 60,
     borderRadius: 50,
-    backgroundColor: '#FC6339',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FC6339",
+    justifyContent: "center",
+    alignItems: "center",
   },
   arrowIcon: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   boldText: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   contractBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 15,
     marginTop: 12,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 16,
     borderRadius: 16,
-    position: 'relative',
-    shadowColor: '#000',
+    position: "relative",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -890,31 +970,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contractTextContainer: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   contractBoxTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#343434',
+    fontWeight: "600",
+    color: "#343434",
     marginBottom: 8,
     lineHeight: 24,
   },
   contractBoxSubtitle: {
     fontSize: 12,
-    fontWeight: '400',
-    color: '#343434',
+    fontWeight: "400",
+    color: "#343434",
     opacity: 0.8,
     lineHeight: 14,
   },
   sectionContainer: {
     marginTop: 25,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
     paddingHorizontal: 15,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    paddingHorizontal: 15,
+    marginBottom: 15,
+  },
+  sectionHeader_policy: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+    paddingHorizontal: 15,
+  },
+  policyNewsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  chatbotButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#000000",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+  },
+  chatbotButtonText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   filterAndRoomsContainer: {
     gap: 5,
@@ -925,23 +1038,23 @@ const styles = StyleSheet.create({
   filterButton: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     borderRadius: 20,
     marginRight: 5,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   filterButtonSelected: {
-    backgroundColor: '#353535',
-    borderColor: '#353535',
+    backgroundColor: "#353535",
+    borderColor: "#353535",
   },
   filterButtonText: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   filterButtonTextSelected: {
-    color: '#fff',
+    color: "#fff",
   },
   roomCardContainer: {
     paddingLeft: 15,
@@ -952,77 +1065,77 @@ const styles = StyleSheet.create({
   roomCard: {
     width: 181,
     height: 191,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     marginRight: 15,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   roomImageContainer: {
-    position: 'relative',
+    position: "relative",
     height: 111,
   },
   placeholderImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#f0f0f0",
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   roomImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
   },
   heartButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   roomCardInfo: {
     padding: 12,
   },
   priceText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
     marginBottom: 4,
   },
   roomInfoText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#666',
+    fontWeight: "500",
+    color: "#666",
     marginBottom: 3,
   },
   additionalInfoText: {
     fontSize: 11,
-    color: '#999',
+    color: "#999",
   },
   newsBox: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 3,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginHorizontal: 15,
     marginBottom: 5,
   },
@@ -1031,130 +1144,94 @@ const styles = StyleSheet.create({
   },
   newsTag: {
     fontSize: 12,
-    color: '#FF6600',
+    color: "#FF6600",
     marginBottom: 4,
   },
   newsTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
   },
   newsDescription: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
     marginTop: 2,
     lineHeight: 16,
   },
   newsButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   newsButtonText: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   loadingText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
   },
   newsReason: {
     fontSize: 11,
-    color: '#999',
+    color: "#999",
     marginTop: 2,
   },
   paginationContainer: {
     marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 10,
   },
   pageNumbersContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginHorizontal: 15,
   },
   pageButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: "#e9ecef",
     marginHorizontal: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   activePageButton: {
-    backgroundColor: '#10B585',
-    borderColor: '#10B585',
+    backgroundColor: "#10B585",
+    borderColor: "#10B585",
   },
   pageButtonText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   activePageButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
   arrowButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#e9ecef",
+    alignItems: "center",
+    justifyContent: "center",
   },
   disabledButton: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#ddd',
-  },
-  floatingChatbotButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#10B585',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-    zIndex: 1000,
-  },
-  chatbotButtonInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#10B585',
-  },
-  chatbotBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FF6B35',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
+    backgroundColor: "#f5f5f5",
+    borderColor: "#ddd",
   },
   boldText: {
-    fontWeight: '900',
+    fontWeight: "900",
   },
 });

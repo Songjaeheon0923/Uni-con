@@ -12,6 +12,7 @@ import LocationIcon from "../components/LocationIcon";
 import CurrentLocationIcon from "../components/CurrentLocationIcon";
 import HeartIcon from "../components/HeartIcon";
 import ChatIcon from "../components/ChatIcon";
+import FavoriteButton from "../components/FavoriteButton";
 
 const getRoomImage = (roomId) => {
   // roomId 기반으로 부동산 이미지 선택
@@ -40,15 +41,44 @@ export default function MapScreen({ navigation, user }) {
   const [showRecentSearches, setShowRecentSearches] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [initialRegion, setInitialRegion] = useState(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const locationButtonAnim = useRef(new Animated.Value(0)).current;
   const mapViewRef = useRef(null);
   const searchInputRef = useRef(null);
 
+  // Google Maps API 키
+  const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+
   // 사용자 정보
   const userData = user || {
     id: "1",
     name: "김대학생",
+  };
+
+  // 관리비를 만원 단위로 반올림하여 포맷팅
+  const formatMaintenanceCost = (area) => {
+    if (!area) return "7만";
+    // 문자열에서 숫자 부분만 추출 ("190.32㎡" -> 190.32)
+    const numericArea = parseFloat(area.toString().replace(/㎡/g, ''));
+    if (isNaN(numericArea)) return "7만";
+    const cost = Math.round(numericArea * 1000);
+    const manWon = Math.round(cost / 10000);
+    return `${manWon}만`;
+  };
+
+  // 주소에서 가장 가까운 역 정보 추출
+  const getNearestStation = (address) => {
+    if (!address) return "안암역 10분 거리";
+
+    if (address.includes("성수동")) return "성수역 5분 거리";
+    if (address.includes("안암동")) return "안암역 7분 거리";
+    if (address.includes("종로")) return "종로3가역 8분 거리";
+    if (address.includes("성북")) return "성신여대입구역 10분 거리";
+    if (address.includes("동대문")) return "동대문역 6분 거리";
+
+    return "안암역 10분 거리"; // 기본값
   };
 
   const filterOptions = [
@@ -78,17 +108,67 @@ export default function MapScreen({ navigation, user }) {
     },
     {
       id: 'favorites',
-      label: '찜한 매물',
+      label: '찜 개수',
       icon: 'chevron-down',
-      options: ['사람1']
+      options: ['5개', '10개', '15개', '20개']
     },
   ];
 
   useEffect(() => {
+    const initializeMap = async () => {
+      try {
+        // Google API로 서울 좌표 검색
+        const seoulRegion = await searchLocationWithGoogle('서울특별시');
+        if (seoulRegion) {
+          // 검색 결과를 기반으로 초기 지역 설정
+          let latitudeDelta = 0.6;
+          let longitudeDelta = 0.5;
+
+          // bounds 정보가 있으면 사용
+          if (seoulRegion.bounds) {
+            const { northeast, southwest } = seoulRegion.bounds;
+            latitudeDelta = Math.abs(northeast.lat - southwest.lat) * 1.2;
+            longitudeDelta = Math.abs(northeast.lng - southwest.lng) * 1.2;
+          }
+
+          // 오프셋 적용해서 초기 지역 설정
+          const offsetLatitude = seoulRegion.latitude - (latitudeDelta * 0.3);
+
+          setInitialRegion({
+            latitude: offsetLatitude,
+            longitude: seoulRegion.longitude,
+            latitudeDelta,
+            longitudeDelta,
+          });
+
+          console.log('✅ 초기 지역을 Google API로 설정:', seoulRegion.address);
+        } else {
+          // Google API 실패시 기본값 사용
+          setInitialRegion({
+            latitude: 37.35,
+            longitude: 127.1,
+            latitudeDelta: 0.6,
+            longitudeDelta: 0.5,
+          });
+          console.log('⚠️ Google API 실패, 기본 서울 좌표 사용');
+        }
+      } catch (error) {
+        console.error('초기 지역 설정 실패:', error);
+        // 에러 시 기본값 설정
+        setInitialRegion({
+          latitude: 37.35,
+          longitude: 127.1,
+          latitudeDelta: 0.6,
+          longitudeDelta: 0.5,
+        });
+      }
+    };
+
+    initializeMap();
     loadRooms();
     loadFavorites();
   }, []);
-  
+
   const loadFavorites = async () => {
     try {
       const favoriteData = await ApiService.getUserFavorites(String(userData.id));
@@ -144,7 +224,7 @@ export default function MapScreen({ navigation, user }) {
     applyFilter();
   }, [selectedFilterValues, allRooms]);
 
-  const applyFilter = () => {
+  const applyFilter = useCallback(() => {
     console.log('🔍 필터 적용 중...', selectedFilterValues);
     let filteredRooms = [...allRooms];
     console.log('📊 전체 매물 수:', allRooms.length);
@@ -207,6 +287,39 @@ export default function MapScreen({ navigation, user }) {
       console.log('💰 가격 필터 후 매물 수:', filteredRooms.length);
     }
 
+    // 평수 필터
+    if (selectedFilterValues.size) {
+      console.log('📐 평수 필터:', selectedFilterValues.size);
+      const sizeRanges = {
+        '10평 이하': [0, 33], // 1평 ≈ 3.3㎡
+        '10-20평': [33, 66],
+        '20-30평': [66, 99],
+        '30평 이상': [99, 999999]
+      };
+      const [min, max] = sizeRanges[selectedFilterValues.size] || [0, 999999];
+      filteredRooms = filteredRooms.filter(room => {
+        const area = parseFloat(room.area);
+        return !isNaN(area) && area >= min && area <= max;
+      });
+      console.log('📐 평수 필터 후 매물 수:', filteredRooms.length);
+    }
+
+    // 찜 개수 필터
+    if (selectedFilterValues.favorites) {
+      console.log('❤️ 찜 개수 필터:', selectedFilterValues.favorites);
+      const favoriteRanges = {
+        '5개': 5,
+        '10개': 10,
+        '15개': 15,
+        '20개': 20
+      };
+      const minFavorites = favoriteRanges[selectedFilterValues.favorites] || 0;
+      filteredRooms = filteredRooms.filter(room =>
+        (room.favorite_count || 0) >= minFavorites
+      );
+      console.log('❤️ 찜 개수 필터 후 매물 수:', filteredRooms.length);
+    }
+
     console.log('✅ 최종 필터링된 매물 수:', filteredRooms.length);
 
     // 강제 리렌더링을 위해 새 배열 생성
@@ -215,7 +328,7 @@ export default function MapScreen({ navigation, user }) {
 
     // MapView 강제 리렌더링
     setMapKey(prev => prev + 1);
-  };
+  }, [selectedFilterValues, allRooms]);
 
   const goToCurrentLocation = async () => {
     try {
@@ -287,7 +400,7 @@ export default function MapScreen({ navigation, user }) {
       }
 
       const isFavorited = favorites.includes(roomId);
-      
+
       if (isFavorited) {
         await ApiService.removeFavorite(roomId);
         setFavorites(favorites.filter(id => id !== roomId));
@@ -298,8 +411,8 @@ export default function MapScreen({ navigation, user }) {
 
       // 상태 업데이트
       const currentFavoriteCount = property.favorite_count || 0;
-      const newFavoriteCount = isFavorited 
-        ? Math.max(0, currentFavoriteCount - 1) 
+      const newFavoriteCount = isFavorited
+        ? Math.max(0, currentFavoriteCount - 1)
         : currentFavoriteCount + 1;
 
       const updatedRooms = rooms.map(room =>
@@ -308,14 +421,14 @@ export default function MapScreen({ navigation, user }) {
           : room
       );
       setRooms(updatedRooms);
-      
+
       // selectedProperty의 favorite_count도 업데이트
-      setSelectedProperty({ 
-        ...property, 
+      setSelectedProperty({
+        ...property,
         isFavorited: !property.isFavorited,
         favorite_count: newFavoriteCount
       });
-      
+
       console.log('❤️ 좋아요 수 업데이트:', currentFavoriteCount, '->', newFavoriteCount);
     } catch (error) {
       console.error('찜 상태 변경 실패:', error);
@@ -448,10 +561,6 @@ export default function MapScreen({ navigation, user }) {
 
       setRooms(combinedResults);
 
-      // 검색 결과가 없을 때 처리
-      if (combinedResults.length === 0) {
-        Alert.alert('검색 결과 없음', `'${query}'에 대한 검색 결과를 찾을 수 없습니다.`);
-      }
 
       // 지역/주소 검색 시 해당 위치로 포커싱
       await focusOnSearchLocation(query, combinedResults);
@@ -463,46 +572,98 @@ export default function MapScreen({ navigation, user }) {
     }
   };
 
+  // Google Places API를 사용한 지역 검색
+  const searchLocationWithGoogle = async (query) => {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}&region=kr&language=ko`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const result = data.results[0];
+        const location = result.geometry.location;
+        const bounds = result.geometry.bounds || result.geometry.viewport;
+
+        return {
+          latitude: location.lat,
+          longitude: location.lng,
+          address: result.formatted_address,
+          bounds: bounds,
+          locationTypes: result.types
+        };
+      }
+
+      console.log('Google Geocoding API 응답:', data.status);
+      return null;
+    } catch (error) {
+      console.log('Google Geocoding API 에러:', error);
+      return null;
+    }
+  };
+
   const focusOnSearchLocation = async (query, results) => {
     if (!mapViewRef.current) return;
 
-    // 서울 주요 지역별 좌표
-    const seoulLocations = {
-      '강남': { latitude: 37.4979, longitude: 127.0276 },
-      '강남구': { latitude: 37.4979, longitude: 127.0276 },
-      '성북': { latitude: 37.5894, longitude: 127.0167 },
-      '성북구': { latitude: 37.5894, longitude: 127.0167 },
-      '안암': { latitude: 37.5857, longitude: 127.0297 },
-      '안암동': { latitude: 37.5857, longitude: 127.0297 },
-      '광진': { latitude: 37.5384, longitude: 127.0822 },
-      '광진구': { latitude: 37.5384, longitude: 127.0822 },
-      '건대': { latitude: 37.5403, longitude: 127.0695 },
-      '건대입구': { latitude: 37.5403, longitude: 127.0695 },
-      '종로': { latitude: 37.5735, longitude: 126.9788 },
-      '종로구': { latitude: 37.5735, longitude: 126.9788 },
-      '혜화': { latitude: 37.5820, longitude: 127.0012 },
-      '혜화동': { latitude: 37.5820, longitude: 127.0012 },
-      '마포': { latitude: 37.5663, longitude: 126.9019 },
-      '마포구': { latitude: 37.5663, longitude: 126.9019 },
-      '홍대': { latitude: 37.5563, longitude: 126.9236 },
-      '서대문': { latitude: 37.5791, longitude: 126.9368 },
-      '신촌': { latitude: 37.5596, longitude: 126.9426 },
-    };
+    // Google Places API로 검색 시도
+    const googleResult = await searchLocationWithGoogle(query);
 
-    // 지역명으로 검색한 경우 해당 지역으로 포커싱
-    const foundLocation = Object.keys(seoulLocations).find(location =>
-      query.includes(location)
-    );
+    if (googleResult) {
+      // 검색 결과 타입에 따라 적절한 줌 레벨 설정
+      let latitudeDelta = 0.02;
+      let longitudeDelta = 0.02;
 
-    if (foundLocation) {
-      const targetLocation = seoulLocations[foundLocation];
+      // 지역 타입에 따른 줌 레벨 조정
+      if (googleResult.locationTypes) {
+        const types = googleResult.locationTypes;
+
+        if (types.includes('country')) {
+          // 국가 - 매우 넓게
+          latitudeDelta = 10.0;
+          longitudeDelta = 10.0;
+        } else if (types.includes('administrative_area_level_1')) {
+          // 시/도 (서울특별시) - 넓게
+          latitudeDelta = 0.5;
+          longitudeDelta = 0.5;
+        } else if (types.includes('administrative_area_level_2')) {
+          // 구/군 - 중간
+          latitudeDelta = 0.1;
+          longitudeDelta = 0.1;
+        } else if (types.includes('administrative_area_level_3') || types.includes('sublocality')) {
+          // 동/읍/면 - 좁게
+          latitudeDelta = 0.05;
+          longitudeDelta = 0.05;
+        } else if (types.includes('establishment') || types.includes('point_of_interest')) {
+          // 특정 장소/건물 - 매우 좁게
+          latitudeDelta = 0.01;
+          longitudeDelta = 0.01;
+        }
+      }
+
+      // bounds 정보가 있으면 더 정확하게 계산
+      if (googleResult.bounds) {
+        const { northeast, southwest } = googleResult.bounds;
+        latitudeDelta = Math.abs(northeast.lat - southwest.lat) * 1.2; // 여유 공간 20% 추가
+        longitudeDelta = Math.abs(northeast.lng - southwest.lng) * 1.2;
+      }
+
+      // UI 요소를 고려한 중앙 정렬을 위해 아래로 오프셋 (화면 중앙에 배치)
+      const offsetLatitude = googleResult.latitude - (latitudeDelta * 0.50); // 25% 아래로 이동
+
       mapViewRef.current.animateToRegion({
-        ...targetLocation,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
+        latitude: offsetLatitude,
+        longitude: googleResult.longitude,
+        latitudeDelta,
+        longitudeDelta,
       }, 1000);
-    } else if (results.length > 0) {
-      // 검색 결과가 있으면 해당 영역으로 이동
+
+      console.log('✅ Google API로 지역 검색 성공:', googleResult.address);
+      console.log('📍 줌 레벨:', { latitudeDelta, longitudeDelta });
+      return;
+    }
+
+    // Google API 실패시 매물 검색 결과가 있으면 해당 영역으로 이동
+    if (results.length > 0) {
       const coordinates = results.map(room => ({
         latitude: room.latitude,
         longitude: room.longitude,
@@ -512,12 +673,16 @@ export default function MapScreen({ navigation, user }) {
         edgePadding: { top: 100, right: 50, bottom: 100, left: 50 },
         animated: true,
       });
+      console.log('✅ 매물 검색 결과로 지도 이동');
+    } else {
+      console.log('❌ 검색 결과를 찾을 수 없습니다');
     }
   };
 
   const [activeFilter, setActiveFilter] = useState(null);
   const [selectedFilterValues, setSelectedFilterValues] = useState({});
   const [mapKey, setMapKey] = useState(0);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
   const FilterButton = ({ option }) => {
     const hasSelection = selectedFilterValues[option.id];
@@ -585,7 +750,7 @@ export default function MapScreen({ navigation, user }) {
           activeOpacity={0.9}
         >
           <View style={styles.cardImageContainer}>
-            <Image 
+            <Image
               source={{ uri: getRoomImage(selectedProperty?.room_id) }}
               style={styles.cardImage}
               defaultSource={{ uri: 'https://via.placeholder.com/80x80/f0f0f0/666?text=매물' }}
@@ -594,32 +759,27 @@ export default function MapScreen({ navigation, user }) {
 
           <View style={styles.cardInfo}>
             <Text style={styles.cardPrice}>
-              {formatPrice(selectedProperty.price_deposit, selectedProperty.transaction_type, selectedProperty.price_monthly, selectedProperty.room_id)}
+              {selectedProperty.transaction_type} {formatPrice(selectedProperty.price_deposit, selectedProperty.transaction_type, selectedProperty.price_monthly, selectedProperty.room_id)}
             </Text>
             <Text style={styles.cardSubInfo} numberOfLines={1}>
               {getRoomType(selectedProperty.area, selectedProperty.rooms)} | {formatArea(selectedProperty.area)} | {formatFloor(selectedProperty.floor)}
             </Text>
             <Text style={styles.cardAddress} numberOfLines={1}>
-              {selectedProperty.address.split(' ').slice(-3).join(' ')}
+              관리비 {formatMaintenanceCost(selectedProperty.area)}원 | {getNearestStation(selectedProperty.address)}
             </Text>
             <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={12} color="#FF6600" />
+              <Ionicons name="checkmark-circle" size={12} color="#fff" />
               <Text style={styles.verifiedText}>집주인 인증</Text>
             </View>
           </View>
 
           <View style={styles.cardRightSection}>
             <View style={styles.favoriteSection}>
-              <TouchableOpacity
-                style={styles.favoriteButton}
+              <FavoriteButton
+                isFavorited={favorites.includes(selectedProperty.room_id || selectedProperty.id)}
                 onPress={() => handleFavoriteToggle(selectedProperty)}
-              >
-                <Ionicons
-                  name={favorites.includes(selectedProperty.room_id || selectedProperty.id) ? "heart" : "heart-outline"}
-                  size={20}
-                  color={favorites.includes(selectedProperty.room_id || selectedProperty.id) ? "#FF6600" : "#999"}
-                />
-              </TouchableOpacity>
+                style={{ marginBottom: 3 }}
+              />
               <View style={styles.cardLikeCount}>
                 <Text style={styles.likeCountText}>{selectedProperty.favorite_count || 0}</Text>
               </View>
@@ -728,7 +888,17 @@ export default function MapScreen({ navigation, user }) {
       </View>
 
       {/* 필터 바 */}
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, isFilterExpanded && styles.filterContainerExpanded]}>
+        {isFilterExpanded ? (
+          <View style={styles.filterContentExpanded}>
+            {filterOptions.map((option) => (
+              <FilterButton
+                key={option.id}
+                option={option}
+              />
+            ))}
+          </View>
+        ) : (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -741,8 +911,10 @@ export default function MapScreen({ navigation, user }) {
               />
             ))}
           </ScrollView>
+        )}
 
-          {/* 페이드 아웃 그라데이션 */}
+        {/* 페이드 아웃 그라데이션 - 확장되지 않았을 때만 */}
+        {!isFilterExpanded && (
           <LinearGradient
             colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.9)', 'rgba(255,255,255,1)']}
             start={{ x: 0, y: 0 }}
@@ -750,12 +922,22 @@ export default function MapScreen({ navigation, user }) {
             style={styles.fadeGradient}
             pointerEvents="none"
           />
+        )}
 
-          {/* 더보기 버튼 */}
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="chevron-down" size={12} color="#666" />
-          </TouchableOpacity>
-        </View>
+        {/* 더보기 버튼 */}
+        <TouchableOpacity 
+          style={styles.moreButton}
+          onPress={() => setIsFilterExpanded(!isFilterExpanded)}
+        >
+          <Ionicons 
+            name={isFilterExpanded ? "chevron-up" : "chevron-down"} 
+            size={12} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+
+      </View>
+
 
       {/* 지도 */}
       <View style={styles.mapContainer}>
@@ -763,6 +945,8 @@ export default function MapScreen({ navigation, user }) {
           key={mapKey}
           ref={mapViewRef}
           properties={rooms}
+          showFavoritesOnly={showFavoritesOnly}
+          initialRegion={initialRegion}
           onMarkerPress={handleMarkerPress}
           selectedPropertyId={selectedPropertyId}
           navigation={navigation}
@@ -777,9 +961,9 @@ export default function MapScreen({ navigation, user }) {
           {/* 하트(찜 목록) 버튼 */}
           <TouchableOpacity
             style={styles.heartButton}
-            onPress={() => navigation.navigate('FavoriteRooms')}
+            onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
           >
-            <HeartIcon width={22} height={20} color="#333" />
+            <HeartIcon width={22} height={20} color={showFavoritesOnly ? '#FF6600' : '#333'} filled={showFavoritesOnly} />
           </TouchableOpacity>
 
           {/* 현재 위치 버튼 */}
@@ -827,10 +1011,77 @@ export default function MapScreen({ navigation, user }) {
                     setSelectedFilterValues(newFilterValues);
                     setActiveFilter(null);
 
-                    // 필터 변경 후 즉시 적용 (useEffect 대기 없이)
-                    setTimeout(() => {
-                      console.log('🔄 필터 즉시 적용');
-                    }, 100);
+                    // 필터 변경 후 즉시 적용을 위해 직접 필터링 수행
+                    console.log('🔄 필터 즉시 적용');
+                    let filteredRooms = [...allRooms];
+
+                    // 새로운 필터 값으로 필터링
+                    Object.entries(newFilterValues).forEach(([key, value]) => {
+                      if (!value) return;
+
+                      if (key === 'transaction') {
+                        filteredRooms = filteredRooms.filter(room =>
+                          room.transaction_type === value
+                        );
+                      } else if (key === 'type') {
+                        const typeKeywords = {
+                          '원룸': ['원룸', '1룸', 'oneroom'],
+                          '투룸': ['투룸', '2룸', 'tworoom'],
+                          '오피스텔': ['오피스텔', 'officetel', '오피', '상업시설'],
+                          '아파트': ['아파트', 'apartment', '아파', '공동주택']
+                        };
+                        const keywords = typeKeywords[value] || [];
+                        filteredRooms = filteredRooms.filter(room => {
+                          const searchText = `${room.address || ''} ${room.description || ''} ${room.title || ''}`.toLowerCase();
+                          const hasKeyword = keywords.some(keyword =>
+                            searchText.includes(keyword.toLowerCase())
+                          );
+                          if (!hasKeyword && value === '원룸') {
+                            return room.area && parseFloat(room.area) <= 25;
+                          } else if (!hasKeyword && value === '투룸') {
+                            return room.area && parseFloat(room.area) > 25 && parseFloat(room.area) <= 50;
+                          }
+                          return hasKeyword;
+                        });
+                      } else if (key === 'price') {
+                        const priceRanges = {
+                          '1억 이하': [0, 10000],
+                          '1-3억': [10000, 30000],
+                          '3-5억': [30000, 50000],
+                          '5억 이상': [50000, 999999]
+                        };
+                        const [min, max] = priceRanges[value] || [0, 999999];
+                        filteredRooms = filteredRooms.filter(room =>
+                          room.price_deposit >= min && room.price_deposit <= max
+                        );
+                      } else if (key === 'size') {
+                        const sizeRanges = {
+                          '10평 이하': [0, 33],
+                          '10-20평': [33, 66],
+                          '20-30평': [66, 99],
+                          '30평 이상': [99, 999999]
+                        };
+                        const [min, max] = sizeRanges[value] || [0, 999999];
+                        filteredRooms = filteredRooms.filter(room => {
+                          const area = parseFloat(room.area);
+                          return !isNaN(area) && area >= min && area <= max;
+                        });
+                      } else if (key === 'favorites') {
+                        const favoriteRanges = {
+                          '5개': 5,
+                          '10개': 10,
+                          '15개': 15,
+                          '20개': 20
+                        };
+                        const minFavorites = favoriteRanges[value] || 0;
+                        filteredRooms = filteredRooms.filter(room =>
+                          (room.favorite_count || 0) >= minFavorites
+                        );
+                      }
+                    });
+
+                    setRooms([...filteredRooms]);
+                    setMapKey(prev => prev + 1);
                   }}
                 >
                   <Text style={[
@@ -921,7 +1172,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: '#ffffff',
     position: 'relative',
-    zIndex: 10,
+    zIndex: 10000,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -950,12 +1201,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
     zIndex: 1,
+    position: 'relative',
+  },
+  filterContainerExpanded: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    paddingVertical: 15,
+  },
+  filterContentExpanded: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    rowGap: 8,
+    paddingRight: 40,
   },
   filterScrollContent: {
     flexDirection: 'row',
@@ -1101,36 +1360,29 @@ const styles = StyleSheet.create({
   },
   cardSubInfo: {
     fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
+    color: '#888',
   },
   cardAddress: {
     fontSize: 12,
-    color: '#999',
+    color: '#888',
     marginBottom: 4,
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF5F0',
+    backgroundColor: '#595959',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 7,
     borderWidth: 1,
-    borderColor: '#FFE5D9',
+    borderColor: '#595959',
     alignSelf: 'flex-start',
   },
   verifiedText: {
     fontSize: 11,
-    color: '#FF6600',
+    color: '#fff',
     marginLeft: 4,
     fontWeight: '600',
-  },
-  favoriteButton: {
-    borderRadius: 50,
-    backgroundColor: '#f5f5f5',
-    padding: 5,
-    marginBottom: 3,
   },
   cardLikeCount: {
     alignItems: 'center',

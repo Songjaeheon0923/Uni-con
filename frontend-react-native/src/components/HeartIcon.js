@@ -1,7 +1,7 @@
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
 
-const HeartIcon = ({ width = 22, height = 20, color = "black" }) => {
+const HeartIcon = ({ width = 22, height = 20, color = "black", filled = false }) => {
   return (
     <Svg width={width} height={height} viewBox="0 0 22 20" fill="none">
       <Path
@@ -16,7 +16,7 @@ const HeartIcon = ({ width = 22, height = 20, color = "black" }) => {
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
+        fill={filled ? color : "none"}
       />
     </Svg>
   );

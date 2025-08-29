@@ -1,11 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   runOnJS,
   useAnimatedGestureHandler,
+  useDerivedValue,
 } from 'react-native-reanimated';
 import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -19,6 +20,18 @@ const DraggableBottomSheet = ({
   initialHeight = null // 초기 높이 (없으면 snapPoints[1] 사용)
 }) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
+  const [currentHeight, setCurrentHeight] = useState(0);
+
+  // 현재 시트의 표시 높이 계산
+  useDerivedValue(() => {
+    const maxSheetHeight = SCREEN_HEIGHT * 0.9;
+    const currentY = translateY.value;
+    const bottomSheetBottom = SCREEN_HEIGHT;
+    const sheetTop = currentY;
+    const height = bottomSheetBottom - sheetTop;
+    
+    runOnJS(setCurrentHeight)(Math.max(0, Math.min(height, maxSheetHeight)));
+  });
   const gestureHandler = useAnimatedGestureHandler({
     onStart: (_, context) => {
       context.startY = translateY.value;
@@ -52,7 +65,7 @@ const DraggableBottomSheet = ({
           damping: 50,
           stiffness: 300,
         });
-        runOnJS(onClose)();
+        runOnJS(() => setTimeout(() => onClose(), 300))();
         return;
       }
 
@@ -71,6 +84,15 @@ const DraggableBottomSheet = ({
     };
   });
 
+  const handleClose = () => {
+    // 아래로 슬라이드하면서 닫기
+    translateY.value = withSpring(SCREEN_HEIGHT, {
+      damping: 50,
+      stiffness: 300,
+    });
+    setTimeout(() => onClose(), 300); // 애니메이션 완료 후 onClose 호출
+  };
+
   useEffect(() => {
     if (isVisible) {
       // initialHeight가 있으면 사용, 없으면 두 번째 스냅포인트 사용 (중간 높이)
@@ -84,10 +106,7 @@ const DraggableBottomSheet = ({
       });
     } else {
       // 닫기
-      translateY.value = withSpring(SCREEN_HEIGHT * 0.9, {
-        damping: 25,
-        stiffness: 200,
-      });
+      translateY.value = SCREEN_HEIGHT;
     }
   }, [isVisible]);
 
@@ -95,12 +114,17 @@ const DraggableBottomSheet = ({
 
   return (
     <View style={styles.overlay}>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.backdrop} />
+      </TouchableWithoutFeedback>
       <GestureHandlerRootView style={styles.gestureContainer}>
         <PanGestureHandler onGestureEvent={gestureHandler}>
           <Animated.View style={[styles.bottomSheet, animatedStyle]}>
             {/* 드래그 핸들 */}
             <View style={styles.dragHandle} />
-            {children}
+            <View style={[styles.contentContainer, { height: Math.max(0, currentHeight - 60) }]}>
+              {children}
+            </View>
           </Animated.View>
         </PanGestureHandler>
       </GestureHandlerRootView>
@@ -118,6 +142,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     zIndex: 999,
   },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
   gestureContainer: {
     flex: 1,
   },
@@ -132,6 +164,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     zIndex: 1000,
     bottom: 0, // 바닥에서 시작
+  },
+  contentContainer: {
+    overflow: 'hidden',
   },
   dragHandle: {
     width: 40,

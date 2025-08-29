@@ -153,6 +153,58 @@ class PolicyVectorStore:
         """저장된 정책 수 반환"""
         return len(self.policy_metadata)
     
+    def rebuild_from_database(self, db_path: str = "users.db"):
+        """데이터베이스에서 정책을 다시 로드하여 벡터 스토어 재구축"""
+        import sqlite3
+        
+        try:
+            # 기존 데이터 초기화
+            self._initialize_index()
+            self.policy_metadata = []
+            
+            # 데이터베이스에서 정책 로드
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, title, organization, category, target, region, 
+                           content, details, application_url, reference_url, 
+                           start_date, end_date
+                    FROM policies 
+                    WHERE is_active = TRUE
+                    ORDER BY id
+                """)
+                
+                policies = []
+                for row in cursor.fetchall():
+                    policy = {
+                        'id': row[0],
+                        'title': row[1] or '',
+                        'organization': row[2] or '',
+                        'category': row[3] or '',
+                        'target': row[4] or '',
+                        'region': row[5] or '',
+                        'content': row[6] or '',
+                        'details': row[7] or '',
+                        'application_url': row[8] or '',
+                        'reference_url': row[9] or '',
+                        'start_date': row[10] or '',
+                        'end_date': row[11] or ''
+                    }
+                    policies.append(policy)
+                
+                logger.info(f"Loaded {len(policies)} policies from database")
+                
+                # 정책들을 벡터스토어에 추가
+                if policies:
+                    self.add_policies(policies)
+                    logger.info(f"Successfully rebuilt vector store with {len(policies)} policies")
+                else:
+                    logger.warning("No active policies found in database")
+                    
+        except Exception as e:
+            logger.error(f"Failed to rebuild vector store from database: {e}")
+            raise
+    
     def clear(self):
         """모든 데이터 삭제"""
         try:

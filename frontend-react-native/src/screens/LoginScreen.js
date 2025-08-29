@@ -14,7 +14,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import HomeIcon from '../components/HomeIcon';
+import Logo from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen({ navigation }) {
@@ -65,6 +65,14 @@ export default function LoginScreen({ navigation }) {
     setShowTestAccountModal(false);
   };
 
+  const handleGoogleLogin = () => {
+    Alert.alert('알림', 'Google 로그인 준비 중입니다.');
+  };
+
+  const handleKakaoLogin = () => {
+    Alert.alert('알림', '카카오톡 로그인 준비 중입니다.');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -72,51 +80,33 @@ export default function LoginScreen({ navigation }) {
         style={styles.keyboardAvoid}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* 헤더 */}
-          <View style={styles.header}>
-            <Text style={styles.title}>WEROOM</Text>
-            <Text style={styles.subtitle}>위룸에 오신 것을 환영합니다</Text>
-          </View>
-
-          {/* 로고/일러스트레이션 영역 */}
+          {/* 로고 */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <HomeIcon size={60} color="#FF6600" />
-            </View>
+            <Logo width={200} height={32} />
+            <Text style={styles.subtitle}>함께 이루는 공간</Text>
           </View>
+          
+          {/* 설명 텍스트 */}
+          <Text style={styles.description}>서비스 이용을 위해 로그인 해주세요.</Text>
 
           {/* 로그인 폼 */}
           <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="이메일"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {email.length > 0 && (
-                <TouchableOpacity 
-                  onPress={() => setEmail('')}
-                  style={styles.clearIcon}
-                >
-                  <Ionicons 
-                    name="close-circle" 
-                    size={20} 
-                    color="#ccc" 
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+            <Text style={styles.inputLabel}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Example@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
 
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+            <Text style={styles.inputLabel}>비밀번호</Text>
+            <View style={styles.passwordContainer}>
               <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
+                style={[styles.input, styles.passwordInput]}
+                placeholder="비밀번호 입력(문자, 숫자, 특수문자 포함 8-20자)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -129,8 +119,8 @@ export default function LoginScreen({ navigation }) {
               >
                 <Ionicons 
                   name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                  size={20} 
-                  color="#666" 
+                  size={24} 
+                  color="#999" 
                 />
               </TouchableOpacity>
             </View>
@@ -146,11 +136,34 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
+          {/* 소셜 로그인 */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>다른계정으로 로그인하기</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.socialContainer}>
+            <TouchableOpacity 
+              style={styles.socialButton}
+              onPress={handleGoogleLogin}
+            >
+              <Text style={styles.socialButtonText}>Google</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.socialButton, styles.kakaoButton]}
+              onPress={handleKakaoLogin}
+            >
+              <Text style={[styles.socialButtonText, styles.kakaoButtonText]}>카카오톡</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* 회원가입 링크 */}
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>아직 계정이 없으신가요? </Text>
+            <Text style={styles.signupText}>계정이 없으신가요? </Text>
             <TouchableOpacity onPress={handleSignupNavigation}>
-              <Text style={styles.signupLink}>회원가입</Text>
+              <Text style={styles.signupLink}>회원가입하기</Text>
             </TouchableOpacity>
           </View>
 
@@ -211,107 +224,123 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFFFFF',
   },
   keyboardAvoid: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 40,
+    paddingHorizontal: 24,
+    paddingVertical: 60,
   },
-  header: {
+  logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FF6600',
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    marginTop: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: '#313957',
     textAlign: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 50,
-  },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    marginBottom: 40,
   },
   formContainer: {
     marginBottom: 30,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  inputIcon: {
-    marginRight: 12,
+  inputLabel: {
+    fontSize: 16,
+    color: '#0C1421',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   input: {
-    flex: 1,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     fontSize: 16,
     color: '#333',
-    paddingVertical: 16,
+    marginBottom: 20,
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 50,
   },
   eyeIcon: {
-    padding: 4,
-  },
-  clearIcon: {
-    padding: 4,
+    position: 'absolute',
+    right: 16,
+    top: 16,
   },
   loginButton: {
-    backgroundColor: '#FF6600',
-    borderRadius: 12,
+    backgroundColor: '#000000',
+    borderRadius: 20,
     paddingVertical: 16,
+    paddingHorizontal: 13,
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#FF6600',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: 10,
   },
   loginButtonDisabled: {
     backgroundColor: '#ccc',
-    shadowOpacity: 0.1,
   },
   loginButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFFFFF',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 30,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  dividerText: {
+    fontSize: 14,
+    color: '#999',
+    marginHorizontal: 16,
+  },
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  socialButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginHorizontal: 6,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  kakaoButton: {
+    backgroundColor: '#FEE500',
+    borderColor: '#FEE500',
+  },
+  socialButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  kakaoButtonText: {
+    color: '#3C1E1E',
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 20,
   },
   signupText: {
     fontSize: 14,
@@ -319,11 +348,11 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     fontSize: 14,
-    color: '#228B22',
+    color: '#FC6339',
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   testContainer: {
-    marginTop: 30,
     alignItems: 'center',
   },
   testButton: {

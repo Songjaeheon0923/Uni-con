@@ -22,20 +22,20 @@ const { width } = Dimensions.get('window');
 // 주소 포맷팅 함수 - 시구 제외하고 동부터 표시
 const formatAddress = (address) => {
   if (!address) return '';
-  
+
   // 주소를 공백으로 분리
   const parts = address.split(' ');
-  
+
   // 서울특별시, 경기도 등과 구를 제거하고 동부터 시작
   const filteredParts = parts.filter((part, index) => {
     // 특별시, 광역시, 도, 시, 구 등을 제거
-    if (part.includes('특별시') || part.includes('광역시') || part.includes('도') || 
+    if (part.includes('특별시') || part.includes('광역시') || part.includes('도') ||
         part.endsWith('시') || part.endsWith('구')) {
       return false;
     }
     return true;
   });
-  
+
   // 처음 2-3개 부분만 사용 (동, 번지 등)
   return filteredParts.slice(0, 2).join(' ');
 };
@@ -70,28 +70,28 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
   const [favoriteRooms, setFavoriteRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // 사용자 정보
   const userData = user || { id: "1" };
 
   useEffect(() => {
     loadFavorites();
-    
+
     // 탭이 포커스될 때마다 찜 목록 새로고침
     const unsubscribe = navigation.addListener('focus', () => {
       loadFavorites();
     });
-    
+
     return unsubscribe;
   }, [navigation]);
-  
+
   const loadFavorites = async () => {
     try {
       setLoading(true);
       const favorites = await ApiService.getUserFavorites(String(userData.id));
-      
+
       console.log('API 응답 샘플:', favorites[0]); // 첫 번째 아이템의 구조 확인
-      
+
       // API 응답 구조에 맞게 데이터 변환
       const formattedFavorites = favorites.map(item => ({
         id: item.room_id,
@@ -106,7 +106,7 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
         favorite_count: item.favorite_count || 0, // 실제 백엔드 데이터 사용
         verified: true, // 실제 인증 여부는 백엔드에서 받아와야 함
       }));
-      
+
       setFavoriteRooms(formattedFavorites);
     } catch (error) {
       console.error('찜 목록 로드 실패:', error);
@@ -116,39 +116,40 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
       setRefreshing(false);
     }
   };
-  
+
   const onRefresh = () => {
     setRefreshing(true);
     loadFavorites();
   };
-  
+
   const removeFavorite = async (roomId) => {
     try {
       await ApiService.removeFavorite(roomId);
       setFavoriteRooms(favoriteRooms.filter(room => room.room_id !== roomId));
-      
+
       // 찜 상태 변경을 저장하여 다른 화면에서 감지할 수 있도록 함
       await AsyncStorage.setItem('favoriteChanged', Date.now().toString());
     } catch (error) {
       Alert.alert('오류', '찜 삭제에 실패했습니다.');
     }
   };
-  
+
   const handleRoomPress = (room) => {
     navigation.navigate('RoomDetail', { roomId: room.room_id });
   };
 
   const handleFindRoommate = (room) => {
     // 해당 매물의 찜한 사용자들 화면으로 이동 (궁합 점수 순으로)
-    navigation.navigate('FavoritedUsers', { 
-      roomId: room.room_id 
+    navigation.navigate('FavoritedUsers', {
+      roomId: room.room_id
     });
   };
 
   const handleShareRoom = (room) => {
-    // 매물 공유 화면으로 이동
-    navigation.navigate('ShareRoom', { 
-      roomData: room 
+    // 채팅 목록 화면을 공유 모드로 이동
+    navigation.navigate('ChatList', {
+      isShareMode: true,
+      roomData: room
     });
   };
 
@@ -157,7 +158,7 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
       <View style={styles.roomCard}>
         <TouchableOpacity onPress={() => handleRoomPress(item)}>
           <View style={styles.imageContainer}>
-            <Image 
+            <Image
               source={{ uri: getRoomImage(item.room_id) }}
               style={styles.roomImage}
               defaultSource={{ uri: 'https://via.placeholder.com/116x116/f0f0f0/666?text=매물' }}
@@ -181,7 +182,7 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
                     </Text>
                   </View>
                   <View style={styles.additionalInfoRow}>
-                    <Text 
+                    <Text
                       style={styles.additionalInfo}
                       numberOfLines={1}
                       ellipsizeMode="tail"
@@ -193,7 +194,7 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
               </View>
             </View>
             <View style={styles.heartContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.heartButton}
                 onPress={(e) => {
                   e.stopPropagation();
@@ -206,13 +207,13 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
             </View>
           </View>
           <View style={styles.buttonsContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.shareButton}
               onPress={() => handleShareRoom(item)}
             >
               <Text style={styles.shareButtonText}>공유하기</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.roommateButton}
               onPress={() => handleFindRoommate(item)}
             >
@@ -241,7 +242,7 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>관심 목록</Text>
+        <Text style={styles.headerTitle}>관심 매물</Text>
       </View>
 
       {favoriteRooms.length === 0 ? (
@@ -290,12 +291,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard',
   },
   listContainer: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
     paddingVertical: 0,
     gap: 10,
   },
   cardContainer: {
-    width: 384,
+    width: width - 30,
     height: 158,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.10,
     shadowRadius: 3,
     elevation: 3,
     flexDirection: 'column',
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   roomCard: {
-    width: 365,
+    width: width - 72,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
@@ -371,13 +372,13 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   contentHeader: {
-    width: 213,
+    width: width - 190,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   contentLeft: {
-    width: 178,
+    width: width - 224,
     height: 80,
     paddingTop: 3,
     flexDirection: 'column',
@@ -398,6 +399,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     gap: 3.43,
+    marginRight: 8,
   },
   heartButton: {
     width: 24,
@@ -478,20 +480,21 @@ const styles = StyleSheet.create({
     lineHeight: 22.4,
   },
   buttonsContainer: {
-    width: 178,
+    width: width - 198,
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     alignItems: 'flex-start',
     gap: 4,
   },
   shareButton: {
-    width: 105,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    flex: 1,
+    paddingHorizontal: 12,
     backgroundColor: 'black',
     borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 3,
+    minHeight: 27,
   },
   shareButtonText: {
     color: 'white',
@@ -501,13 +504,13 @@ const styles = StyleSheet.create({
     lineHeight: 19.2,
   },
   roommateButton: {
-    width: 104,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    flex: 1,
+    paddingHorizontal: 12,
     backgroundColor: '#10B585',
     borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 27,
   },
   roommateButtonText: {
     color: 'white',

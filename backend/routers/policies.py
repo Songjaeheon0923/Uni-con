@@ -521,6 +521,79 @@ async def get_policy_ai_summary(
         raise HTTPException(status_code=500, detail="AI 요약 생성에 실패했습니다")
 
 
+@router.get("/by-title/{title}")
+async def get_policy_by_title(title: str):
+    """정책명으로 정책 상세 정보 조회 (챗봇용)"""
+    try:
+        print(f"Searching for policy with title: '{title}'")
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 정책명으로 유연한 검색 (부분 일치, 공백/특수문자 제거)
+        clean_title = title.replace(" ", "").replace("」", "").replace("「", "")
+        search_patterns = [
+            title,  # 정확한 매칭
+            f"%{title}%",  # 부분 매칭
+            f"%{clean_title}%",  # 공백/특수문자 제거 후 매칭
+        ]
+        
+        # 여러 패턴으로 검색
+        cursor.execute("""
+            SELECT id, source, source_id, title, organization, target, 
+                   content, application_period, start_date, end_date,
+                   application_url, reference_url, category, region, details,
+                   view_count, created_at
+            FROM policies
+            WHERE (title = ? OR title LIKE ? OR REPLACE(REPLACE(title, ' ', ''), '　', '') LIKE ?)
+            AND is_active = 1
+            ORDER BY 
+                CASE 
+                    WHEN title = ? THEN 1
+                    WHEN title LIKE ? THEN 2
+                    ELSE 3
+                END,
+                view_count DESC
+            LIMIT 1
+        """, (title, f"%{title}%", f"%{clean_title}%", title, f"%{title}%"))
+        
+        policy = cursor.fetchone()
+        conn.close()
+        
+        if not policy:
+            raise HTTPException(status_code=404, detail="정책을 찾을 수 없습니다")
+        
+        try:
+            details = json.loads(policy[14]) if policy[14] else {}
+        except:
+            details = {}
+            
+        return {
+            "id": policy[0],
+            "source": policy[1],
+            "source_id": policy[2],
+            "title": policy[3],
+            "organization": policy[4],
+            "target": policy[5],
+            "content": policy[6],
+            "application_period": policy[7],
+            "start_date": policy[8],
+            "end_date": policy[9],
+            "application_url": policy[10],
+            "reference_url": policy[11],
+            "category": policy[12],
+            "region": policy[13],
+            "details": details,
+            "view_count": policy[15],
+            "created_at": policy[16]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting policy by title: {e}")
+        raise HTTPException(status_code=500, detail="정책 조회에 실패했습니다")
+
+
 @router.get("/search")
 async def search_policies(
     q: str = Query(..., min_length=1),

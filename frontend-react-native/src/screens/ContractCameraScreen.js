@@ -54,7 +54,7 @@ export default function ContractCameraScreen({ navigation }) {
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 8,
-              tabBarActiveTintColor: '#10B585',
+              tabBarActiveTintColor: '#000000',
               tabBarInactiveTintColor: '#C0C0C0',
             }
           });
