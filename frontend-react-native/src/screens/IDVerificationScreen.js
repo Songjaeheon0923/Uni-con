@@ -80,9 +80,11 @@ export default function IDVerificationScreen({ navigation }) {
 
         {/* 진행 상태 표시 */}
         <View style={styles.progressContainer}>
-          <View style={[styles.progressDot, styles.progressCompleted]} />
-          <View style={[styles.progressDot, styles.progressCompleted]} />
-          <View style={styles.progressDot} />
+          <Image 
+            source={require('../../assets/stage2.png')} 
+            style={styles.stageImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* 메인 컨텐츠 */}
@@ -108,7 +110,11 @@ export default function IDVerificationScreen({ navigation }) {
             style={styles.takePhotoButton}
             onPress={handleTakePhoto}
           >
-            <Text style={styles.takePhotoButtonText}>촬영하기</Text>
+            <Image 
+              source={require('../../assets/TakePicture.png')} 
+              style={styles.takePhotoButtonImage}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
 
           {/* 안내 텍스트 */}
@@ -193,24 +199,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingHorizontal: 16,
   },
-  progressDot: {
-    width: 30,
-    height: 31,
-    borderRadius: 15.5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#C6C6C6',
-  },
-  progressCompleted: {
-    backgroundColor: '#A0A0A0',
-    borderColor: '#C6C6C6',
-  },
-  progressActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#C6C6C6',
+  stageImage: {
+    width: 165,
+    height: 48,
   },
   content: {
     flex: 1,
@@ -260,17 +253,13 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   takePhotoButton: {
-    backgroundColor: '#666666',
-    borderRadius: 8,
-    paddingVertical: 16,
     alignItems: 'center',
     marginTop: 40,
     marginBottom: 20,
   },
-  takePhotoButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  takePhotoButtonImage: {
+    width: 335,
+    height: 56,
   },
   bottomText: {
     fontSize: 14,

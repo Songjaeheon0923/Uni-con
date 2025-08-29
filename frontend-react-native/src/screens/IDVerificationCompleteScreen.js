@@ -42,9 +42,11 @@ export default function IDVerificationCompleteScreen({ navigation }) {
 
       {/* 진행 상태 표시 */}
       <View style={styles.progressContainer}>
-        <View style={[styles.progressDot, styles.progressCompleted]} />
-        <View style={[styles.progressDot, styles.progressCompleted]} />
-        <View style={styles.progressDot} />
+        <Image 
+          source={require('../../assets/stage2.png')} 
+          style={styles.stageImage}
+          resizeMode="contain"
+        />
       </View>
 
       {/* 메인 컨텐츠 */}
@@ -100,8 +102,10 @@ export default function IDVerificationCompleteScreen({ navigation }) {
             style={styles.nextButton}
             onPress={handleNext}
           >
+            <View style={styles.greenArrowCircle}>
+              <Ionicons name="arrow-forward" size={35} color="#FFFFFF" />
+            </View>
             <Text style={styles.nextButtonText}>다음</Text>
-            <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         )}
 
@@ -131,24 +135,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingHorizontal: 16,
   },
-  progressDot: {
-    width: 30,
-    height: 31,
-    borderRadius: 15.5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#C6C6C6',
-  },
-  progressCompleted: {
-    backgroundColor: '#A0A0A0',
-    borderColor: '#C6C6C6',
-  },
-  progressActive: {
-    backgroundColor: '#A0A0A0',
-    borderColor: '#C6C6C6',
+  stageImage: {
+    width: 165,
+    height: 48,
   },
   content: {
     flex: 1,
@@ -259,14 +250,23 @@ const styles = StyleSheet.create({
     color: '#28A745',
   },
   nextButton: {
-    backgroundColor: '#666666',
-    borderRadius: 8,
-    paddingVertical: 16,
-    flexDirection: 'row',
+    backgroundColor: '#000',
+    borderRadius: 40,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    flexDirection: 'row',
     marginTop: 40,
+  },
+  greenArrowCircle: {
+    position: 'absolute',
+    right: 6,
+    width: 43,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#10B585',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   nextButtonText: {
     fontSize: 16,

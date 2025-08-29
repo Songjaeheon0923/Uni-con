@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSignup } from '../contexts/SignupContext';
@@ -172,9 +173,11 @@ export default function SchoolVerificationScreen({ navigation }) {
 
           {/* 진행 상태 표시 */}
           <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, styles.progressCompleted]} />
-            <View style={[styles.progressDot, styles.progressCompleted]} />
-            <View style={[styles.progressDot, styles.progressCompleted]} />
+            <Image 
+              source={require('../../assets/stage3.png')} 
+              style={styles.stageImage}
+              resizeMode="contain"
+            />
           </View>
 
           {/* 메인 컨텐츠 */}
@@ -247,6 +250,7 @@ export default function SchoolVerificationScreen({ navigation }) {
               <TouchableOpacity 
                 style={[
                   styles.nextButton,
+                  isVerified && styles.nextButtonVerified,
                   isLoading && styles.nextButtonDisabled
                 ]}
                 onPress={isVerified ? handleSignupComplete : handleSkip}
@@ -292,24 +296,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingHorizontal: 16,
   },
-  progressDot: {
-    width: 30,
-    height: 31,
-    borderRadius: 15.5,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#C6C6C6',
-  },
-  progressCompleted: {
-    backgroundColor: '#A0A0A0',
-    borderColor: '#C6C6C6',
-  },
-  progressActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#C6C6C6',
+  stageImage: {
+    width: 165,
+    height: 48,
   },
   content: {
     flex: 1,
@@ -367,10 +358,14 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     backgroundColor: '#666666',
-    borderRadius: 8,
-    paddingVertical: 16,
+    borderRadius: 40,
+    paddingVertical: 20,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 40,
+  },
+  nextButtonVerified: {
+    backgroundColor: '#000',
   },
   nextButtonDisabled: {
     backgroundColor: '#ADB5BD',
@@ -381,11 +376,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   verifyButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 16,
+    backgroundColor: '#000',
+    borderRadius: 40,
+    paddingVertical: 20,
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
+    marginTop: 10,
   },
   verifyButtonText: {
     fontSize: 16,
