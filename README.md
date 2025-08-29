@@ -138,12 +138,12 @@ Uni-con/
 
 ## 👥 Team
 
-- **이성민** - *PM & DeveLoper* - [@danlee-dev](https://github.com/danlee-dev)
+- **이성민** - *PM & Developer* - [@danlee-dev](https://github.com/danlee-dev)
 - **송재헌** - *Developer* - [@Songjaeheon0923](https://github.com/Songjaeheon0923)
 - **문유빈** - *Designer*
 
 
 <div align="center">
   <p>Made with ❤️ for university students</p>
-  <p>© 2024 Uni-con Team. All rights reserved.</p>
+  <p>© 2025 Uni-con Team. All rights reserved.</p>
 </div>
