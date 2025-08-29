@@ -15,8 +15,17 @@ schedule
 
 # AI Dependencies for Policy Chatbot
 langchain
+langchain-core
 langchain-google-genai
 openai
 faiss-cpu
 numpy
 langgraph
+google-generativeai
+
+# Computer Vision for Contract Analysis
+opencv-python-headless
+
+# Additional Dependencies
+typing-extensions
+urllib3
