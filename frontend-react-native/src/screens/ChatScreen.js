@@ -17,6 +17,10 @@ import Svg, { Path } from 'react-native-svg';
 import ApiService from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import RoomMessageCard from '../components/RoomMessageCard';
+import PhoneIcon from '../components/icons/PhoneIcon';
+import PersonIcon from '../components/icons/PersonIcon';
+import SendIcon from '../components/icons/SendIcon';
+import PlusIcon from '../components/icons/PlusIcon';
 
 
 export default function ChatScreen({ navigation, route }) {
@@ -26,6 +30,7 @@ export default function ChatScreen({ navigation, route }) {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [otherUserProfile, setOtherUserProfile] = useState(null);
+  const [favorites, setFavorites] = useState([]);
   const flatListRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
@@ -44,6 +49,64 @@ export default function ChatScreen({ navigation, route }) {
     };
   }, [roomId]);
 
+  const handleFavoriteToggle = async (roomId) => {
+    try {
+      const isFavorited = favorites.includes(roomId);
+      if (isFavorited) {
+        setFavorites(prev => prev.filter(id => id !== roomId));
+        // 찜 해제 시 개수 -1
+        setMessages(prevMessages => 
+          prevMessages.map(msg => {
+            if (msg.messageType === 'room_share') {
+              try {
+                const roomData = JSON.parse(msg.text);
+                if (roomData.room_id === roomId) {
+                  const updatedRoomData = {
+                    ...roomData,
+                    favorite_count: Math.max(0, (roomData.favorite_count || 0) - 1)
+                  };
+                  return {
+                    ...msg,
+                    text: JSON.stringify(updatedRoomData)
+                  };
+                }
+              } catch (e) {
+                console.error('JSON parse error:', e);
+              }
+            }
+            return msg;
+          })
+        );
+      } else {
+        setFavorites(prev => [...prev, roomId]);
+        // 찜 추가 시 개수 +1
+        setMessages(prevMessages => 
+          prevMessages.map(msg => {
+            if (msg.messageType === 'room_share') {
+              try {
+                const roomData = JSON.parse(msg.text);
+                if (roomData.room_id === roomId) {
+                  const updatedRoomData = {
+                    ...roomData,
+                    favorite_count: (roomData.favorite_count || 0) + 1
+                  };
+                  return {
+                    ...msg,
+                    text: JSON.stringify(updatedRoomData)
+                  };
+                }
+              } catch (e) {
+                console.error('JSON parse error:', e);
+              }
+            }
+            return msg;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('찜 토글 실패:', error);
+    }
+  };
 
   const loadMessages = async () => {
     try {
@@ -54,6 +117,18 @@ export default function ChatScreen({ navigation, route }) {
           const isRoomShare = msg.content?.startsWith('ROOM_SHARE:');
           const messageType = isRoomShare ? 'room_share' : (msg.message_type || 'text');
           const content = isRoomShare ? msg.content.substring(11) : msg.content; // ROOM_SHARE: 제거
+          
+          // 디버깅 로그 추가
+          if (isRoomShare) {
+            console.log('ROOM_SHARE message detected in loadMessages:', msg.content);
+            console.log('Parsed content:', content);
+            try {
+              const parsedData = JSON.parse(content);
+              console.log('Successfully parsed room data:', parsedData);
+            } catch (parseError) {
+              console.error('Failed to parse room data:', parseError);
+            }
+          }
           
           return {
             id: msg.id.toString(),
@@ -98,6 +173,18 @@ export default function ChatScreen({ navigation, route }) {
           const isRoomShare = msg.content?.startsWith('ROOM_SHARE:');
           const messageType = isRoomShare ? 'room_share' : (msg.message_type || 'text');
           const content = isRoomShare ? msg.content.substring(11) : msg.content; // ROOM_SHARE: 제거
+          
+          // 디버깅 로그 추가
+          if (isRoomShare) {
+            console.log('ROOM_SHARE message detected in loadMessagesWithoutMarkingAsRead:', msg.content);
+            console.log('Parsed content:', content);
+            try {
+              const parsedData = JSON.parse(content);
+              console.log('Successfully parsed room data:', parsedData);
+            } catch (parseError) {
+              console.error('Failed to parse room data:', parseError);
+            }
+          }
           
           return {
             id: msg.id.toString(),
@@ -274,8 +361,8 @@ export default function ChatScreen({ navigation, route }) {
     const isConsecutive = prevItem && prevItem.sender === item.sender;
     const isLastInGroup = !nextItem || nextItem.sender !== item.sender;
     
-    // 프로필을 보여줄지 결정 (다른 사람의 메시지이고, 그룹의 마지막 메시지)
-    const showProfile = !isMe && isLastInGroup;
+    // 프로필을 보여줄지 결정 (다른 사람의 메시지이고, 그룹의 첫 번째 메시지)
+    const showProfile = !isMe && !isConsecutive;
     
     if (isMe) {
       // 내가 보낸 메시지
@@ -296,13 +383,29 @@ export default function ChatScreen({ navigation, route }) {
               
               {item.messageType === 'room_share' ? (
                 <View style={styles.roomShareContainer}>
-                  <RoomMessageCard 
-                    roomData={JSON.parse(item.text)}
-                    onPress={() => {
+                  {(() => {
+                    try {
                       const roomData = JSON.parse(item.text);
-                      navigation.navigate('RoomDetail', { roomId: roomData.room_id });
-                    }}
-                  />
+                      return (
+                        <RoomMessageCard 
+                          roomData={roomData}
+                          onPress={() => {
+                            navigation.navigate('RoomDetail', { roomId: roomData.room_id });
+                          }}
+                          isFavorited={favorites.includes(roomData.room_id)}
+                          onFavoriteToggle={() => handleFavoriteToggle(roomData.room_id)}
+                        />
+                      );
+                    } catch (error) {
+                      console.error('Failed to parse room share data:', error);
+                      console.log('Raw text data:', item.text);
+                      return (
+                        <View style={styles.errorContainer}>
+                          <Text style={styles.errorText}>매물 정보를 불러올 수 없습니다</Text>
+                        </View>
+                      );
+                    }
+                  })()}
                 </View>
               ) : (
                 <View style={[styles.messageBubble, styles.myBubble]}>
@@ -328,7 +431,9 @@ export default function ChatScreen({ navigation, route }) {
                     <Text style={styles.botInitial}>K</Text>
                   </View>
                 ) : (
-                  <Ionicons name="person-circle" size={65} color="#ddd" />
+                  <View style={[styles.avatar, { backgroundColor: '#F8F8F8', borderWidth: 1, borderColor: '#E5E5E5' }]}>
+                    <PersonIcon size={24} color="#000000" />
+                  </View>
                 )
               ) : (
                 <View style={styles.avatarSpacer} />
@@ -348,14 +453,41 @@ export default function ChatScreen({ navigation, route }) {
               {/* 메시지 버블과 시간 */}
               <View style={styles.otherMessageBubbleRow}>
                 {item.messageType === 'room_share' ? (
-                  <View style={styles.roomShareContainer}>
-                    <RoomMessageCard 
-                      roomData={JSON.parse(item.text)}
-                      onPress={() => {
-                        const roomData = JSON.parse(item.text);
-                        navigation.navigate('RoomDetail', { roomId: roomData.room_id });
-                      }}
-                    />
+                  <View style={styles.roomShareWithTimeContainer}>
+                    <View style={styles.roomShareContainer}>
+                      {(() => {
+                        try {
+                          const roomData = JSON.parse(item.text);
+                          return (
+                            <RoomMessageCard 
+                              roomData={roomData}
+                              onPress={() => {
+                                navigation.navigate('RoomDetail', { roomId: roomData.room_id });
+                              }}
+                              isFavorited={favorites.includes(roomData.room_id)}
+                              onFavoriteToggle={() => handleFavoriteToggle(roomData.room_id)}
+                            />
+                          );
+                        } catch (error) {
+                          console.error('Failed to parse room share data:', error);
+                          console.log('Raw text data:', item.text);
+                          return (
+                            <View style={styles.errorContainer}>
+                              <Text style={styles.errorText}>매물 정보를 불러올 수 없습니다</Text>
+                            </View>
+                          );
+                        }
+                      })()}
+                    </View>
+                    
+                    {/* 매물 카드 오른쪽 아래에 시간 표시 */}
+                    {isLastInGroup && (
+                      <View style={styles.roomShareTimeOverlay}>
+                        <Text style={styles.otherTimestamp}>
+                          {formatTime(item.timestamp)}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 ) : (
                   <View style={[styles.messageBubble, styles.otherBubble]}>
@@ -365,8 +497,8 @@ export default function ChatScreen({ navigation, route }) {
                   </View>
                 )}
                 
-                {/* 시간 (그룹의 마지막 메시지에만) */}
-                {isLastInGroup && (
+                {/* 시간 (일반 메시지이고 그룹의 마지막 메시지에만) */}
+                {item.messageType !== 'room_share' && isLastInGroup && (
                   <View style={styles.otherMessageInfo}>
                     <Text style={styles.otherTimestamp}>
                       {formatTime(item.timestamp)}
@@ -394,7 +526,9 @@ export default function ChatScreen({ navigation, route }) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.outerContainer}>
+      <SafeAreaView style={styles.topSafeArea} />
+      <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -411,7 +545,7 @@ export default function ChatScreen({ navigation, route }) {
         </View>
         
         <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="ellipsis-vertical" size={20} color="#000" />
+          <PhoneIcon size={28} />
         </TouchableOpacity>
       </View>
 
@@ -431,64 +565,72 @@ export default function ChatScreen({ navigation, route }) {
       />
 
       {/* 입력 영역 */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.inputContainer}
-      >
-        <View style={styles.inputRow}>
+      <View style={styles.inputContainer}>
+        <View style={styles.inputOuterWrapper}>
           <TouchableOpacity style={styles.attachButton}>
-            <Ionicons name="add-circle" size={24} color="#45DCB1" />
+            <PlusIcon size={48} backgroundColor="#D9D9D9" iconColor="#595959" />
           </TouchableOpacity>
           
-          <TextInput
-            style={styles.textInput}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="메시지를 입력하세요"
-            placeholderTextColor="#B3B3B3"
-            multiline
-            maxLength={1000}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.textInput}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder="메시지를 입력하세요"
+              placeholderTextColor="#B3B3B3"
+              multiline
+              maxLength={1000}
+            />
+          </View>
           
           <TouchableOpacity 
             style={[styles.sendButton, inputText.trim() ? styles.sendButtonActive : null]}
             onPress={sendMessage}
             disabled={!inputText.trim()}
           >
-            <Ionicons 
-              name="arrow-up" 
+            <SendIcon 
               size={20} 
-              color={inputText.trim() ? '#fff' : '#8C8C8C'} 
+              color={inputText.trim() ? '#00E1A0' : '#8C8C8C'} 
             />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </View>
+      </View>
+      <SafeAreaView style={styles.bottomSafeArea} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: '#F2F2F2',
+  },
+  topSafeArea: {
+    backgroundColor: '#F2F2F2',
+  },
+  bottomSafeArea: {
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 40,
-    overflow: 'hidden',
+    backgroundColor: '#F2F2F2',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#F2F2F2',
     justifyContent: 'space-between',
   },
   userInfo: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
+    backgroundColor: '#F2F2F2',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#CCCCCC',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -520,25 +662,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   avatarContainer: {
-    width: 65,
-    marginRight: 4,
+    width: 50,
+    marginRight: 2,
     alignItems: 'flex-start',
   },
   avatarSpacer: {
-    width: 65,
-    height: 65,
+    width: 50,
+    height: 40,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#45DCB1',
-    shadowOffset: { width: 0, height: 0.28 },
-    shadowOpacity: 0.6,
-    shadowRadius: 1.63,
-    elevation: 2,
   },
   botAvatar: {
     backgroundColor: '#45DCB1',
@@ -555,7 +692,7 @@ const styles = StyleSheet.create({
   senderNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
     gap: 3,
   },
   senderName: {
@@ -571,8 +708,10 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   myBubble: {
-    backgroundColor: '#FFE500',
+    backgroundColor: '#CDCDCD',
     alignSelf: 'flex-end',
+    borderWidth: 1,
+    borderColor: '#CDCDCD',
   },
   otherBubble: {
     backgroundColor: '#FFFFFF',
@@ -580,8 +719,8 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   messageText: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 15.7,
+    lineHeight: 21,
     fontFamily: 'Pretendard',
     fontWeight: '400',
   },
@@ -709,9 +848,10 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   inputContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingTop: 10,
+    paddingBottom: 40,
     borderTopWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -1 },
@@ -719,28 +859,34 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  inputRow: {
+  inputOuterWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    gap: 12,
+  },
+  inputWrapper: {
+    flex: 1,
+    backgroundColor: '#F2F2F2',
     borderRadius: 24,
-    paddingHorizontal: 4,
+    borderWidth: 1.058,
+    borderColor: '#D9D9D9',
+    paddingHorizontal: 16,
     paddingVertical: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
+    height: 48,
   },
   textInput: {
-    flex: 1,
-    minHeight: 40,
+    minHeight: 32,
     maxHeight: 120,
     backgroundColor: 'transparent',
     borderRadius: 0,
     borderWidth: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 0,
+    paddingVertical: 8,
     fontSize: 16,
     fontFamily: 'Pretendard',
     fontWeight: '400',
@@ -749,27 +895,23 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   sendButton: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     backgroundColor: '#E5E5EA',
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 2,
-    marginBottom: 2,
   },
   sendButtonActive: {
-    backgroundColor: '#45DCB1',
+    backgroundColor: '#000000',
     transform: [{ scale: 1.05 }],
   },
   attachButton: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 2,
-    marginBottom: 2,
   },
   menuButton: {
     width: 32,
@@ -805,7 +947,32 @@ const styles = StyleSheet.create({
   roomShareContainer: {
     backgroundColor: 'transparent',
     borderRadius: 0,
-    padding: 0,
-    marginVertical: 4,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
+    marginVertical: 8,
+    width: '100%',
+    maxWidth: 300,
+  },
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffcdd2',
+  },
+  errorText: {
+    color: '#c62828',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  roomShareWithTimeContainer: {
+    position: 'relative',
+    width: '100%',
+    maxWidth: 300,
+  },
+  roomShareTimeOverlay: {
+    position: 'absolute',
+    bottom: -15,
+    right: 12,
   },
 });
