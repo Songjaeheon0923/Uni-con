@@ -119,10 +119,6 @@ const UserMatchCard = ({ user, onPress, index }) => {
           <Text style={styles.userDetailsText}>
             {getAgeGroup(user.age)}{getGenderText(user.gender) ? `, ${getGenderText(user.gender)}` : ''}{getSchoolNameFromEmail(user.university) ? `, ${getSchoolNameFromEmail(user.university)}` : ''}
           </Text>
-          <View style={styles.dotIndicator} />
-          <View style={styles.cameraIcon}>
-            <Ionicons name="camera" size={6} color="white" />
-          </View>
         </View>
       </View>
 

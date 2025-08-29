@@ -43,18 +43,13 @@ const getNearestStation = (address) => {
 
 const RoomMessageCard = ({ roomData, onPress, isFavorited = false, onFavoriteToggle }) => {
   if (!roomData) {
-    console.log('❌ RoomMessageCard: roomData is null/undefined');
     return null;
   }
-
-  console.log('✅ RoomMessageCard: roomData received:', roomData);
 
   // 실제 렌더링 값들 계산
   const priceText = `${roomData.transaction_type} ${formatPrice(roomData.price_deposit, roomData.transaction_type, roomData.price_monthly, roomData.room_id)}`;
   const subInfoText = `${getRoomType(roomData.area, roomData.rooms)} | ${formatArea(roomData.area)} | ${formatFloor(roomData.floor)}`;
   const addressText = `관리비 ${formatMaintenanceCost(roomData.area)}원 | ${getNearestStation(roomData.address)}`;
-
-  console.log('📝 RoomMessageCard: Computed texts:', { priceText, subInfoText, addressText });
 
   return (
     <View

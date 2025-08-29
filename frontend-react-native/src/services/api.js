@@ -60,8 +60,8 @@ class ApiService {
         headers['Authorization'] = `Bearer ${this.authToken}`;
       }
 
-      // heartbeat 요청은 로그 제외 (너무 빈번함)
-      if (!endpoint.includes('/activity/heartbeat')) {
+      // heartbeat와 peek 요청은 로그 제외 (너무 빈번함)
+      if (!endpoint.includes('/activity/heartbeat') && !endpoint.includes('/messages/peek')) {
         console.log(`API Request: ${options.method || 'GET'} ${endpoint}`);
       }
       
@@ -160,6 +160,11 @@ class ApiService {
 
   async getUserFavorites(userId) {
     return this.request(`/favorites/user/${userId}`);
+  }
+
+  // 두 사용자의 공통 찜 목록 조회
+  async getCommonFavorites(userId1, userId2) {
+    return this.request(`/favorites/common/${userId1}/${userId2}`);
   }
 
   async getRoomFavorites(roomId) {

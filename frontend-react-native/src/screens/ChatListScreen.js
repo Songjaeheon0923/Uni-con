@@ -563,16 +563,7 @@ export default function ChatListScreen({ navigation, route }) {
     
     // ROOM_SHARE 메시지인지 확인
     if (message.startsWith('ROOM_SHARE:')) {
-      try {
-        const roomData = JSON.parse(message.substring(11));
-        // 가격 정보로 자연스러운 미리보기 생성
-        const priceText = roomData.transaction_type === 'monthly' 
-          ? `월세 ${Math.floor(roomData.price_deposit / 10000)}/${Math.floor(roomData.price_monthly / 10000)}만원`
-          : `전세 ${Math.floor(roomData.price_deposit / 10000)}만원`;
-        return `📍 매물을 공유했습니다 - ${priceText}`;
-      } catch (error) {
-        return '📍 매물을 공유했습니다';
-      }
+      return '📍 매물을 공유했습니다';
     }
     
     return message;

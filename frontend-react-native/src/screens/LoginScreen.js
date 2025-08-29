@@ -92,15 +92,25 @@ export default function LoginScreen({ navigation }) {
           {/* 로그인 폼 */}
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Example@email.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.emailContainer}>
+              <TextInput
+                style={[styles.input, styles.emailInput]}
+                placeholder="Example@email.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {email.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setEmail('')}
+                  style={styles.clearIcon}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
 
             <Text style={styles.inputLabel}>비밀번호</Text>
             <View style={styles.passwordContainer}>
@@ -266,6 +276,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginBottom: 20,
+  },
+  emailContainer: {
+    position: 'relative',
+  },
+  emailInput: {
+    paddingRight: 50,
+  },
+  clearIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
   },
   passwordContainer: {
     position: 'relative',
