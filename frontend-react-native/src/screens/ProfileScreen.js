@@ -904,11 +904,12 @@ const styles = StyleSheet.create({
   },
   editingActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     width: '100%',
     marginTop: 8,
     paddingHorizontal: 16,
+    gap: 8,
   },
   bioInput: {
     borderWidth: 1,
@@ -941,8 +942,8 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#D0D0D0',
     marginHorizontal: 0,
-    marginTop: 20,
-    marginBottom: 0,
+    marginTop: 0,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
