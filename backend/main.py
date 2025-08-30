@@ -11,7 +11,13 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    try:
+        print("🔄 Initializing database...")
+        init_db()
+        print("✅ Database initialization completed!")
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+        # 데이터베이스 초기화 실패해도 서버는 계속 실행
     yield
 
 
