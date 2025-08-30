@@ -470,6 +470,14 @@ function MainApp() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
     </Stack.Navigator>
   );
 }

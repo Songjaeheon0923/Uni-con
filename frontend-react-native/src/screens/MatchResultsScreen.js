@@ -228,6 +228,7 @@ export default function MatchResultsScreen({ navigation }) {
       user={user}
       index={index}
       onPress={handleSendMessage}
+      roomId={null}
       showToggle={false}
       showProfileButton={false}
     />
