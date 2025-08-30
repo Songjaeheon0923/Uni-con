@@ -11,7 +11,9 @@ import {
   TextInput,
   Image,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  StatusBar,
+  SafeAreaView
 } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import ApiService from "../services/api";
@@ -19,6 +21,10 @@ import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, is
 
 
 export default function ProfileScreen({ navigation, user, onLogout }) {
+  // 디버그 로그
+  console.log('ProfileScreen - user:', user ? 'exists' : 'null');
+  console.log('ProfileScreen - onLogout:', onLogout ? 'exists' : 'null');
+  
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bio, setBio] = useState('');
@@ -329,14 +335,47 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      {/* 내 정보 타이틀 - 고정 위치 */}
-      <View style={styles.fixedHeaderContainer}>
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" translucent={false} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
+        {/* 헤더 */}
+        <View style={styles.header}>
+        <View style={styles.headerLeft} />
         <Text style={styles.headerTitle}>내 정보</Text>
+        <TouchableOpacity
+          style={styles.headerLogoutButton}
+          onPress={() => {
+            Alert.alert(
+              '로그아웃',
+              '정말 로그아웃 하시겠습니까?',
+              [
+                { text: '취소', style: 'cancel' },
+                {
+                  text: '로그아웃',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      if (onLogout) {
+                        await ApiService.logout();
+                        onLogout();
+                      } else {
+                        console.log('로그아웃 함수가 없음');
+                        await ApiService.logout();
+                      }
+                    } catch (error) {
+                      console.error('로그아웃 실패:', error);
+                      if (onLogout) {
+                        onLogout();
+                      }
+                    }
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Ionicons name="log-out-outline" size={24} color="#666" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -725,11 +764,19 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                     style: 'destructive',
                     onPress: async () => {
                       try {
-                        await ApiService.logout();
-                        onLogout();
+                        if (onLogout) {
+                          await ApiService.logout();
+                          onLogout();
+                        } else {
+                          // onLogout이 없는 경우 기본 동작
+                          console.log('로그아웃 함수가 없음');
+                          await ApiService.logout();
+                        }
                       } catch (error) {
                         console.error('로그아웃 실패:', error);
-                        onLogout();
+                        if (onLogout) {
+                          onLogout();
+                        }
                       }
                     }
                   }
@@ -742,7 +789,8 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </SafeAreaView>
+    </>
   );
 }
 
@@ -750,24 +798,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    paddingTop: 120,
   },
-  fixedHeaderContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FAFAFA',
-    paddingTop: 80,
-    marginBottom: 10,
-    paddingBottom: 10,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 1000,
+    backgroundColor: '#FAFAFA',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 44,
+  },
+  headerLeft: {
+    width: 40,
+  },
+  headerRight: {
+    width: 40,
+  },
+  headerLogoutButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000000',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    flex: 1,
+    textAlign: 'center',
   },
   profileSection: {
     alignItems: 'center',

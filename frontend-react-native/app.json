@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "frontend-react-native",
+    "name": "e:room",
     "slug": "frontend-react-native",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,11 +16,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.unicon.weroom",
       "config": {
-        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyAwZAUct7Q9wmN7BWFw4nZeHB_ClNab8t4"
       }
     },
     "android": {
       "package": "com.unicon.weroom",
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -28,7 +29,7 @@
       "edgeToEdgeEnabled": true,
       "config": {
         "googleMaps": {
-          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyAwZAUct7Q9wmN7BWFw4nZeHB_ClNab8t4"
         }
       },
       "permissions": [
@@ -39,7 +40,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
       [

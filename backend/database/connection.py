@@ -1,5 +1,8 @@
 import sqlite3
+import json
+import os
 from typing import Optional, List
+from pathlib import Path
 from models.user import UserCreate
 from models.profile import UserProfile, ProfileUpdateRequest
 
@@ -8,11 +11,14 @@ DATABASE_PATH = "users.db"
 
 def get_db_connection():
     """데이터베이스 연결을 반환합니다."""
-    return sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.execute("PRAGMA encoding='UTF-8'")
+    return conn
 
 
 def init_db():
     conn = sqlite3.connect(DATABASE_PATH)
+    conn.execute("PRAGMA encoding='UTF-8'")
     cursor = conn.cursor()
     
     # 기존 users 테이블 (school_verified, school_verified_at 제거)
@@ -283,11 +289,10 @@ def init_db():
     
     conn.commit()
     
-    # 더미 데이터 생성
-    create_dummy_data(cursor, conn)
-    create_test_users_and_profiles(cursor, conn)
-    
     conn.close()
+    
+    # 초기 데이터 백업 파일이 있으면 복원
+    restore_initial_data_if_exists()
 
 
 def create_dummy_data(cursor, conn):
@@ -422,7 +427,7 @@ def create_dummy_data(cursor, conn):
 
 
 def get_user_by_email(email: str):
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, email, name, hashed_password, phone_number, gender, school_email
@@ -444,7 +449,7 @@ def get_user_by_email(email: str):
 
 
 def create_user(user_data: UserCreate, hashed_password: str):
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(
@@ -474,7 +479,7 @@ def create_user(user_data: UserCreate, hashed_password: str):
 
 
 def get_user_profile(user_id: int) -> Optional[UserProfile]:
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT p.user_id, p.sleep_type, p.home_time, p.cleaning_frequency, 
@@ -599,18 +604,18 @@ def get_completed_profiles() -> List[UserProfile]:
 
 def create_test_users_and_profiles(cursor, conn):
     """테스트용 사용자들과 완성된 프로필 생성"""
-    import hashlib
     
-    # 이미 테스트 사용자가 있는지 확인
-    cursor.execute("SELECT COUNT(*) FROM users WHERE email LIKE 'test%@example.com'")
-    user_count = cursor.fetchone()[0]
+    # 기존 테스트 사용자들 삭제 (새로운 해시로 다시 생성하기 위해)
+    cursor.execute("DELETE FROM user_profiles WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'test%@example.com')")
+    cursor.execute("DELETE FROM user_info WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'test%@example.com')")
+    cursor.execute("DELETE FROM favorites WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'test%@example.com')")
+    cursor.execute("DELETE FROM users WHERE email LIKE 'test%@example.com'")
+    conn.commit()
     
-    if user_count > 0:
-        return  # 이미 테스트 사용자가 있으면 스킵
-    
-    # 패스워드 해시 생성 (간단한 예시)
+    # bcrypt를 사용한 패스워드 해시 생성
+    from utils.security import get_password_hash
     def hash_password(password):
-        return hashlib.sha256(password.encode()).hexdigest()
+        return get_password_hash(password)
     
     # 테스트 사용자들 데이터
     test_users = [
@@ -1412,3 +1417,186 @@ def delete_chat_room(room_id: int, user_id: int):
         return False
     finally:
         conn.close()
+
+def restore_initial_data_if_exists():
+    """초기 데이터 백업 파일이 있으면 복원"""
+    backup_path = Path("database/initial_data.json")
+    
+    if not backup_path.exists():
+        print("No initial data backup found, using default dummy data creation")
+        # 백업이 없으면 기존 더미 데이터 생성 방식 사용
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        create_dummy_data(cursor, conn)
+        create_test_users_and_profiles(cursor, conn)
+        conn.commit()
+        conn.close()
+        return
+    
+    print(f"Found initial data backup: {backup_path}")
+    print("Restoring initial data from backup...")
+    
+    try:
+        # 백업 데이터 로드
+        with open(backup_path, 'r', encoding='utf-8') as f:
+            backup_data = json.load(f)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 데이터가 이미 있는지 확인
+        cursor.execute("SELECT COUNT(*) FROM users")
+        existing_users = cursor.fetchone()[0]
+        
+        if existing_users > 0:
+            print("Database already has data, skipping restore")
+            conn.close()
+            return
+        
+        # 복원 수행 - 전체 데이터 복원
+        total_restored = 0
+        
+        # 1. 사용자 복원
+        if 'users' in backup_data and backup_data['users']:
+            for user in backup_data['users']:
+                cursor.execute('''
+                    INSERT INTO users (id, email, name, hashed_password, phone_number, gender, school_email, created_at, last_seen_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    user['id'], user['email'], user['name'], user['hashed_password'],
+                    user.get('phone_number'), user.get('gender'), user.get('school_email'),
+                    user.get('created_at'), user.get('last_seen_at')
+                ))
+            total_restored += len(backup_data['users'])
+            print(f"Restored {len(backup_data['users'])} users")
+        
+        # 2. 사용자 프로필 복원
+        if 'user_profiles' in backup_data and backup_data['user_profiles']:
+            for profile in backup_data['user_profiles']:
+                cursor.execute('''
+                    INSERT INTO user_profiles 
+                    (id, user_id, sleep_type, home_time, cleaning_frequency, cleaning_sensitivity,
+                     smoking_status, noise_sensitivity, age, personality_type, lifestyle_type, 
+                     budget_range, is_complete, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    profile['id'], profile['user_id'], profile.get('sleep_type'), profile.get('home_time'),
+                    profile.get('cleaning_frequency'), profile.get('cleaning_sensitivity'), 
+                    profile.get('smoking_status'), profile.get('noise_sensitivity'), profile.get('age'),
+                    profile.get('personality_type'), profile.get('lifestyle_type'), profile.get('budget_range'),
+                    profile.get('is_complete', False), profile.get('updated_at')
+                ))
+            total_restored += len(backup_data['user_profiles'])
+            print(f"Restored {len(backup_data['user_profiles'])} user profiles")
+        
+        # 3. 사용자 정보 복원
+        if 'user_info' in backup_data and backup_data['user_info']:
+            for info in backup_data['user_info']:
+                cursor.execute('''
+                    INSERT INTO user_info 
+                    (id, user_id, bio, current_location, desired_location, budget, move_in_date,
+                     lifestyle, roommate_preference, introduction, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    info['id'], info['user_id'], info.get('bio'), info.get('current_location'),
+                    info.get('desired_location'), info.get('budget'), info.get('move_in_date'),
+                    info.get('lifestyle'), info.get('roommate_preference'), info.get('introduction'),
+                    info.get('created_at'), info.get('updated_at')
+                ))
+            total_restored += len(backup_data['user_info'])
+            print(f"Restored {len(backup_data['user_info'])} user info records")
+        
+        # 4. 방 데이터 복원
+        if 'rooms' in backup_data and backup_data['rooms']:
+            for room in backup_data['rooms']:
+                cursor.execute('''
+                    INSERT INTO rooms 
+                    (id, room_id, address, latitude, longitude, transaction_type, price_deposit,
+                     price_monthly, area, rooms, floor, building_year, description, landlord_name,
+                     landlord_phone, risk_score, view_count, favorite_count, is_active, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    room['id'], room['room_id'], room['address'], room['latitude'], room['longitude'],
+                    room['transaction_type'], room['price_deposit'], room['price_monthly'], room['area'],
+                    room['rooms'], room.get('floor'), room.get('building_year'), room.get('description'),
+                    room.get('landlord_name'), room.get('landlord_phone'), room.get('risk_score', 0),
+                    room.get('view_count', 0), room.get('favorite_count', 0), room.get('is_active', True),
+                    room.get('created_at')
+                ))
+            total_restored += len(backup_data['rooms'])
+            print(f"Restored {len(backup_data['rooms'])} rooms")
+        
+        # 5. 정책 데이터 복원 (기존 스키마 구조에 맞게)
+        if 'policies' in backup_data and backup_data['policies']:
+            # 먼저 기존 스키마로 policies 테이블 다시 생성
+            cursor.execute('DROP TABLE IF EXISTS policies')
+            cursor.execute('''
+                CREATE TABLE policies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source TEXT,
+                    source_id TEXT UNIQUE,
+                    title TEXT NOT NULL,
+                    organization TEXT,
+                    target TEXT,
+                    content TEXT,
+                    application_period TEXT,
+                    start_date TEXT,
+                    end_date TEXT,
+                    application_url TEXT,
+                    reference_url TEXT,
+                    category TEXT,
+                    region TEXT,
+                    details TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    view_count INTEGER DEFAULT 0,
+                    is_active BOOLEAN DEFAULT TRUE
+                )
+            ''')
+            
+            for policy in backup_data['policies']:
+                cursor.execute('''
+                    INSERT INTO policies 
+                    (id, source, source_id, title, organization, target, content, application_period,
+                     start_date, end_date, application_url, reference_url, category, region, details,
+                     created_at, last_updated, view_count, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    policy['id'], policy.get('source'), policy.get('source_id'), policy['title'],
+                    policy.get('organization'), policy.get('target'), policy.get('content'),
+                    policy.get('application_period'), policy.get('start_date'), policy.get('end_date'),
+                    policy.get('application_url'), policy.get('reference_url'), policy.get('category'),
+                    policy.get('region'), policy.get('details'), policy.get('created_at'),
+                    policy.get('last_updated'), policy.get('view_count', 0), policy.get('is_active', True)
+                ))
+            total_restored += len(backup_data['policies'])
+            print(f"Restored {len(backup_data['policies'])} policies")
+        
+        # 6. 찜하기 데이터 복원
+        if 'favorites' in backup_data and backup_data['favorites']:
+            for favorite in backup_data['favorites']:
+                cursor.execute('''
+                    INSERT INTO favorites (id, user_id, room_id, created_at)
+                    VALUES (?, ?, ?, ?)
+                ''', (
+                    favorite['id'], favorite['user_id'], favorite['room_id'], favorite.get('created_at')
+                ))
+            total_restored += len(backup_data['favorites'])
+            print(f"Restored {len(backup_data['favorites'])} favorites")
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"Initial data restoration completed! Total records: {total_restored}")
+        
+    except Exception as e:
+        print(f"Error restoring initial data: {e}")
+        print("Falling back to default dummy data creation...")
+        # 복원 실패 시 기존 방식으로 폴백
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        create_dummy_data(cursor, conn)
+        create_test_users_and_profiles(cursor, conn)
+        conn.commit()
+        conn.close()
+

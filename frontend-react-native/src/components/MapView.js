@@ -24,11 +24,10 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
   // 선택 상태가 변경될 때 크기 조정
   React.useEffect(() => {
     if (markerScales.current[markerId]) {
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: isSelected ? 1.1 : 1,
+        duration: 150,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }).start();
     }
   }, [isSelected, markerId]);
@@ -36,17 +35,15 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
   const handlePress = () => {
     // 클릭 애니메이션
     Animated.sequence([
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: 1.2,
+        duration: 100,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }),
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: 1,
+        duration: 100,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }),
     ]).start();
 
@@ -74,6 +71,7 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
       onPress={handlePress}
       tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
+      stopPropagation={true}
     >
       <View
         collapsable={false}
@@ -94,11 +92,10 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
             overflow: 'visible',
           }
         ]}>
-          <Text style={{
-            color: isSelected ? "#ffffff" : "#000000",
-            fontSize: 12,
-            fontWeight: 'bold'
-          }}>📍</Text>
+          <HomeIcon
+            size={20}
+            color={isSelected ? "#ffffff" : "#000000"}
+          />
         </Animated.View>
       </View>
     </Marker>
@@ -120,7 +117,7 @@ const PropertyMapView = forwardRef(({
 }, ref) => {
 
   // 디버깅: MapView가 받는 properties 개수 확인
-  console.log('🗺️ MapView 받은 properties 개수:', properties.length);
+  // console.log('🗺️ MapView 받은 properties 개수:', properties.length);
   const [region, setRegion] = useState(
     initialRegion || {
       latitude: 37.35, // 기본값: 서울이 화면 중앙에 오도록 조정
@@ -297,8 +294,9 @@ const PropertyMapView = forwardRef(({
             // 클러스터 확대
             handleClusterPress(cluster);
           }}
-          tracksViewChanges={true}
+          tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
+          stopPropagation={true}
         >
           <View
             collapsable={false}
@@ -402,8 +400,9 @@ const PropertyMapView = forwardRef(({
         <Marker
           coordinate={{ latitude: group.latitude, longitude: group.longitude }}
           onPress={handleMarkerPress}
-          tracksViewChanges={true}
+          tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
+          stopPropagation={true}
         >
           <View
             collapsable={false}
