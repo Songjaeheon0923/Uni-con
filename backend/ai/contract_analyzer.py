@@ -13,8 +13,7 @@ import sys
 # RAG 시스템 import
 try:
     from .rag_system.contract_rag import ContractRAGSystem
-    RAG_AVAILABLE = False  # 임시로 RAG 비활성화
-    print("[RAG] RAG 시스템이 임시로 비활성화되었습니다.")
+    RAG_AVAILABLE = True  # RAG 활성화
 except ImportError:
     RAG_AVAILABLE = False
     print("[RAG] Warning: RAG system not available. Basic analysis only.")
