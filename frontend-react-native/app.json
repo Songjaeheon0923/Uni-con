@@ -30,7 +30,13 @@
         "googleMaps": {
           "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
         }
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -48,6 +54,11 @@
           "cameraPermission": "이 앱은 신분증 인증을 위해 카메라 접근이 필요합니다."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2270adbe-6746-4286-977a-a07f533d1aee"
+      }
+    }
   }
 }
