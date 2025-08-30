@@ -599,18 +599,18 @@ def get_completed_profiles() -> List[UserProfile]:
 
 def create_test_users_and_profiles(cursor, conn):
     """테스트용 사용자들과 완성된 프로필 생성"""
-    import hashlib
     
-    # 이미 테스트 사용자가 있는지 확인
-    cursor.execute("SELECT COUNT(*) FROM users WHERE email LIKE 'test%@example.com'")
-    user_count = cursor.fetchone()[0]
+    # 기존 테스트 사용자들 삭제 (새로운 해시로 다시 생성하기 위해)
+    cursor.execute("DELETE FROM user_profiles WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'test%@example.com')")
+    cursor.execute("DELETE FROM user_info WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'test%@example.com')")
+    cursor.execute("DELETE FROM favorites WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'test%@example.com')")
+    cursor.execute("DELETE FROM users WHERE email LIKE 'test%@example.com'")
+    conn.commit()
     
-    if user_count > 0:
-        return  # 이미 테스트 사용자가 있으면 스킵
-    
-    # 패스워드 해시 생성 (간단한 예시)
+    # bcrypt를 사용한 패스워드 해시 생성
+    from utils.security import get_password_hash
     def hash_password(password):
-        return hashlib.sha256(password.encode()).hexdigest()
+        return get_password_hash(password)
     
     # 테스트 사용자들 데이터
     test_users = [
