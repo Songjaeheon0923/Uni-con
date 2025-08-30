@@ -17,16 +17,6 @@ import { Ionicons } from "@expo/vector-icons";
 import ApiService from "../services/api";
 import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, isProfileComplete } from '../utils/personalityUtils';
 
-// 인증 체크 컴포넌트
-const VerificationCheck = ({ verified = true }) => (
-  <View style={styles.verificationCheck}>
-    <Ionicons
-      name={verified ? "checkmark-circle" : "close-circle"}
-      size={20}
-      color={verified ? "#FF6600" : "#F44336"}
-    />
-  </View>
-);
 
 export default function ProfileScreen({ navigation, user, onLogout }) {
   const [favorites, setFavorites] = useState([]);
@@ -362,12 +352,89 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
             <Ionicons name="person-circle" size={150} color="#ddd" />
           </View>
 
-          {/* 이름과 인증 */}
+          {/* 이름 */}
           <View style={styles.nameContainer}>
-            <View style={styles.nameRow}>
-              <Text style={styles.userName}>{userData.name}</Text>
-              <VerificationCheck verified={true} />
-            </View>
+            <Text style={styles.userName}>{userData.name}</Text>
+          </View>
+
+          {/* 기본 정보 */}
+          <View style={styles.basicInfoRow}>
+            <Text style={styles.basicInfoText}>
+              {userProfile ?
+                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}${getSchoolNameFromEmail(userProfile.school_email) ? `, ${getSchoolNameFromEmail(userProfile.school_email)}` : ''}` :
+                '정보 로딩 중...'
+              }
+            </Text>
+          </View>
+
+          {/* 한줄 소개 - 말풍선 스타일 */}
+          <View style={styles.bioSection}>
+            {isEditingBio ? (
+              <View style={styles.editingContainer}>
+                <TextInput
+                  ref={bioInputRef}
+                  style={styles.bioInput}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="한줄 소개를 입력해주세요"
+                  maxLength={40}
+                  multiline={false}
+                  returnKeyType="done"
+                  onSubmitEditing={async () => {
+                    const success = await saveBio();
+                    if (success) {
+                      setIsEditingBio(false);
+                    }
+                  }}
+                />
+                <View style={styles.editingActions}>
+                  <Text style={styles.characterCount}>({bio.length}/40)</Text>
+                  <TouchableOpacity
+                    style={styles.bioSaveButton}
+                    onPress={async () => {
+                      const success = await saveBio();
+                      if (success) {
+                        setIsEditingBio(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.bioSaveButtonText}>저장</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.bioDisplayContainer}>
+                <TouchableOpacity
+                  style={styles.bioBox}
+                  onPress={() => {
+                    setIsEditingBio(true);
+                    setTimeout(() => {
+                      bioInputRef.current?.focus();
+                    }, 100);
+                  }}
+                >
+                  <Text style={styles.bioBoxText}>
+                    {bio || '먼지 없는 집 선호합니다. 깨끗한 집 약속드려요 :)'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.editIconButton}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setIsEditingBio(true);
+                    setTimeout(() => {
+                      bioInputRef.current?.focus();
+                    }, 100);
+                  }}
+                >
+                  <Image 
+                    source={require('../../assets/pen.png')} 
+                    style={styles.penIcon}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* 태그 컨테이너 */}
@@ -377,7 +444,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
               <>
                 {/* 메인 태그와 버튼 */}
                 <View style={styles.tagHeader}>
-                  <Text style={styles.mainTagText}>{personalityData.mainType}</Text>
+                  <Text style={styles.mainTagText}>[ {personalityData.mainType} ]</Text>
                   <TouchableOpacity
                     style={styles.retestButton}
                     onPress={() => {
@@ -426,82 +493,10 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
             )}
           </View>
 
-          {/* 기본 정보 */}
-          <View style={styles.basicInfoRow}>
-            <Text style={styles.basicInfoText}>
-              {userProfile ?
-                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}${getSchoolNameFromEmail(userProfile.school_email) ? `, ${getSchoolNameFromEmail(userProfile.school_email)}` : ''}` :
-                '정보 로딩 중...'
-              }
-            </Text>
-          </View>
-
-          {/* 한줄 소개 */}
-          <View style={styles.bioSection}>
-            <View style={styles.bioHeader}>
-              <Text style={styles.bioLabel}>한줄 소개</Text>
-              <TouchableOpacity
-                style={[styles.editBioButton, isEditingBio && styles.saveButton]}
-                onPress={async () => {
-                  if (isEditingBio) {
-                    const success = await saveBio();
-                    if (success) {
-                      setIsEditingBio(false);
-                      console.log('한줄 소개 저장 완료');
-                    }
-                  } else {
-                    setIsEditingBio(true);
-                    setTimeout(() => {
-                      bioInputRef.current?.focus();
-                    }, 100);
-                  }
-                }}
-              >
-                <Text style={[styles.editBioButtonText, isEditingBio && styles.saveButtonText]}>
-                  {isEditingBio ? '저장하기' : '수정하기'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {isEditingBio ? (
-              <View>
-                <TextInput
-                  ref={bioInputRef}
-                  style={styles.bioInput}
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="한줄 소개를 입력해주세요"
-                  maxLength={40}
-                  multiline={false}
-                  returnKeyType="done"
-                  onSubmitEditing={async () => {
-                    const success = await saveBio();
-                    if (success) {
-                      setIsEditingBio(false);
-                    }
-                  }}
-                />
-                <Text style={styles.characterCount}>({bio.length}/40)</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.bioTextContainer}
-                onPress={() => {
-                  setIsEditingBio(true);
-                  setTimeout(() => {
-                    bioInputRef.current?.focus();
-                  }, 100);
-                }}
-              >
-                <Text style={styles.bioText}>
-                  {bio || '한줄 소개를 입력해주세요'}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {/* 구분선 */}
-            <View style={styles.divider} />
-          </View>
         </View>
+
+        {/* 구분선 */}
+        <View style={styles.divider} />
 
         {/* 내 정보 섹션 */}
         <View style={styles.infoSection}>
@@ -790,19 +785,11 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 8,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-  },
-  verificationCheck: {
-    marginLeft: 8,
   },
   tagContainer: {
     backgroundColor: '#E8E8E8',
@@ -821,7 +808,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   mainTagText: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#333',
     fontWeight: '600',
     flex: 1,
@@ -847,7 +834,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subTag: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -862,7 +849,7 @@ const styles = StyleSheet.create({
   basicInfoRow: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   basicInfoText: {
     fontSize: 16,
@@ -871,55 +858,84 @@ const styles = StyleSheet.create({
   },
   bioSection: {
     width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  bioHeader: {
+  // 하양 박스 + 연필 아이콘 스타일
+  bioDisplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  bioBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 9,
+    borderWidth: 0.8,
+    borderColor: '#C9C9C9',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bioBoxText: {
+    color: '#343434',
+    fontSize: 15,
+    fontFamily: 'Pretendard',
+    fontWeight: '600',
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  editIconButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  penIcon: {
+    width: 32,
+    height: 32,
+  },
+  // 편집 모드 스타일
+  editingContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  editingActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  bioLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  editButton: {
-    padding: 4,
-  },
-  editBioButton: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  editBioButtonText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    width: '100%',
+    marginTop: 8,
+    paddingHorizontal: 16,
   },
   bioInput: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 14,
     color: '#333',
-    minHeight: 40,
+    textAlign: 'center',
+    width: '90%',
+    minHeight: 44,
   },
   characterCount: {
     fontSize: 12,
     color: '#999',
-    textAlign: 'right',
-    marginTop: 4,
   },
-  bioTextContainer: {
-    minHeight: 40,
-    justifyContent: 'center',
+  bioSaveButton: {
+    backgroundColor: '#FF6600',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  bioText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+  bioSaveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
   },
   divider: {
     height: 2,
