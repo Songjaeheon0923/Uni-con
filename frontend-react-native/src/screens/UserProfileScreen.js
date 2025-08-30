@@ -100,7 +100,7 @@ export default function UserProfileScreen({ route, navigation }) {
       try {
         const currentUserProfile = await ApiService.getUserProfile();
         const currentUser = await ApiService.getUserById(currentUserProfile.user_id);
-        
+
         if (currentUser) {
           // 나이대 계산
           const getAgeGroup = (age) => {
@@ -123,10 +123,10 @@ export default function UserProfileScreen({ route, navigation }) {
           // 학교 이름 추출
           const getSchoolNameFromEmail = (schoolEmail) => {
             if (!schoolEmail) return '';
-            
+
             const domain = schoolEmail.split('@')[1];
             if (!domain) return '';
-            
+
             const schoolPatterns = {
               'snu.ac.kr': '서울대학교',
               'korea.ac.kr': '고려대학교',
@@ -139,7 +139,7 @@ export default function UserProfileScreen({ route, navigation }) {
               'konkuk.ac.kr': '건국대학교',
               'dankook.ac.kr': '단국대학교',
             };
-            
+
             return schoolPatterns[domain] || '';
           };
 
@@ -150,7 +150,7 @@ export default function UserProfileScreen({ route, navigation }) {
               // 수면 패턴
               if (profile.sleep_type === 'early_bird') tags.push('종달새');
               else if (profile.sleep_type === 'night_owl') tags.push('올빼미');
-              
+
               // 흡연 여부
               if (profile.smoking_status === 'non_smoker_strict' || profile.smoking_status === 'non_smoker_ok') {
                 tags.push('비흡연');
@@ -441,13 +441,13 @@ export default function UserProfileScreen({ route, navigation }) {
             // API에서 궁합점수 가져오기 (roomId가 있으면 getRoomMatches를 우선 시도)
             try {
               let matchingUser = null;
-              
+
               // roomId가 있으면 해당 방의 찜한 유저 목록에서 먼저 찾기
               if (roomId) {
                 try {
                   const roomMatchedUsers = await ApiService.getRoomMatches(roomId);
                   console.log("방 찜한 사용자들:", roomMatchedUsers);
-                  matchingUser = roomMatchedUsers?.find(user => 
+                  matchingUser = roomMatchedUsers?.find(user =>
                     user.user_id?.toString() === userId?.toString()
                   );
                   if (matchingUser) {
@@ -457,22 +457,22 @@ export default function UserProfileScreen({ route, navigation }) {
                   console.log("getRoomMatches 실패:", roomError);
                 }
               }
-              
+
               // 방 찜한 사용자에서 찾지 못했거나 roomId가 없으면 전체 매칭에서 찾기
               if (!matchingUser) {
                 const allMatchingUsers = await ApiService.getMatches();
                 console.log("전체 매칭 사용자들:", allMatchingUsers);
-                matchingUser = allMatchingUsers?.find(user => 
+                matchingUser = allMatchingUsers?.find(user =>
                   user.user_id?.toString() === userId?.toString()
                 );
                 if (matchingUser) {
                   console.log("전체 매칭 사용자 목록에서 찾음:", matchingUser);
                 }
               }
-              
+
               if (matchingUser) {
                 let score;
-                
+
                 // matching_score 우선 사용 (방 찜한 사용자 데이터)
                 if (matchingUser.matching_score) {
                   score = Math.round(matchingUser.matching_score);
@@ -486,7 +486,7 @@ export default function UserProfileScreen({ route, navigation }) {
                   console.log("궁합점수 필드를 찾을 수 없음");
                   score = 80; // 기본값
                 }
-                
+
                 compatibilityData = {
                   totalScore: score,
                   sleepScore: score,
@@ -631,7 +631,7 @@ export default function UserProfileScreen({ route, navigation }) {
   console.log("user.tags:", user?.tags);
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -1276,7 +1276,7 @@ const styles = StyleSheet.create({
   },
   messageInputContainer: {
     flex: 1,
-    height: 55,
+    height: 50,
     backgroundColor: "#E7E7E7",
     borderWidth: 1,
     borderColor: "#B7B7B7",
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     width: 125,
-    height: 55,
+    height: 50,
     backgroundColor: "black",
     borderRadius: 152,
     flexDirection: "row",
@@ -1317,8 +1317,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   arrowIcon: {
-    width: 45,
-    height: 45,
+    width: 42,
+    height: 42,
     backgroundColor: "#FC6339",
     borderRadius: 50,
     justifyContent: "center",
