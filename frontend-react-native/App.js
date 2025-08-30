@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AppState, Text } from "react-native";
 import { NavigationContainer, getFocusedRouteNameFromRoute } from "@react-navigation/native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // 전역 폰트 설정
 Text.defaultProps = Text.defaultProps || {};
@@ -525,10 +526,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <SignupProvider>
-        <AppContent />
-      </SignupProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <SignupProvider>
+          <AppContent />
+        </SignupProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

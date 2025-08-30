@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
 import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
-import HomeIcon from "./HomeIcon";
 import LocationIcon from "./LocationIcon";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
@@ -75,14 +74,11 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
       tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
     >
-      <View
-        collapsable={false}
-        style={{
-          width: 100,  // 44px * 1.2 scale + padding for animation
+      <View style={{
+          width: 100,
           height: 100,
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'visible',
         }}>
         <Animated.View style={[
           styles.houseMarkerContainer,
@@ -91,7 +87,6 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
             backgroundColor: isSelected ? "#FF0000" : "#FF6600",
             borderColor: isSelected ? "#ffffff" : "#000000",
             borderWidth: isSelected ? 2 : 1.5,
-            overflow: 'visible',
           }
         ]}>
           <Text style={{
@@ -297,18 +292,14 @@ const PropertyMapView = forwardRef(({
             // 클러스터 확대
             handleClusterPress(cluster);
           }}
-          tracksViewChanges={true}
+          tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
         >
-          <View
-            collapsable={false}
-            style={{
-              // 애니메이션을 위한 외부 컨테이너 (충분한 여유 공간 확보)
-              width: Math.max(100, Math.min(130, 100 + pointCount / 20)), // scale 1.2 + border 3px*2 + 충분한 여유
+          <View style={{
+              width: Math.max(100, Math.min(130, 100 + pointCount / 20)),
               height: Math.max(100, Math.min(130, 100 + pointCount / 20)),
               alignItems: 'center',
               justifyContent: 'center',
-              overflow: 'visible',
             }}>
             <Animated.View style={[
               styles.clusterMarkerContainer,
@@ -320,8 +311,9 @@ const PropertyMapView = forwardRef(({
                 borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
               }
             ]}>
-            <HomeIcon
-              size={Math.max(26, Math.min(45, Math.round((56 + pointCount / 20) * 0.5)))} // 핀 크기의 50%
+            <Ionicons
+              name="business"
+              size={Math.max(20, Math.min(30, Math.round((56 + pointCount / 20) * 0.4)))}
               color="#FFFFFF"
             />
             <Text style={[
@@ -402,17 +394,14 @@ const PropertyMapView = forwardRef(({
         <Marker
           coordinate={{ latitude: group.latitude, longitude: group.longitude }}
           onPress={handleMarkerPress}
-          tracksViewChanges={true}
+          tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
         >
-          <View
-            collapsable={false}
-            style={{
-              width: 100,  // 44px * 1.2 = 52.8px + badge overflow(10px) + padding
+          <View style={{
+              width: 100,
               height: 100,
               alignItems: 'center',
               justifyContent: 'center',
-              overflow: 'visible',
             }}>
             <Animated.View style={[
               styles.houseMarkerContainer,
@@ -421,11 +410,11 @@ const PropertyMapView = forwardRef(({
                 backgroundColor: isSelected ? '#000' : '#10B585',
                 borderColor: isSelected ? '#000' : '#fff',
                 borderWidth: 2,
-                overflow: 'visible',
               }
             ]}>
-              <HomeIcon
-                size={24}
+              <Ionicons
+                name="home"
+                size={22}
                 color="#FFFFFF"
               />
               {hasMultiple && (
@@ -860,15 +849,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#ffffff",
-    overflow: 'visible',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3, // Android shadow
   },
   searchMarker: {
     width: 32,
@@ -916,15 +896,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#ffffff",
-    overflow: 'visible',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3, // Android shadow
   },
   clusterText: {
     color: "#ffffff",
