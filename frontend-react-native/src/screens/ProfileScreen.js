@@ -19,6 +19,10 @@ import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, is
 
 
 export default function ProfileScreen({ navigation, user, onLogout }) {
+  // 디버그 로그
+  console.log('ProfileScreen - user:', user ? 'exists' : 'null');
+  console.log('ProfileScreen - onLogout:', onLogout ? 'exists' : 'null');
+  
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bio, setBio] = useState('');
@@ -711,6 +715,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
         </View>
 
         {/* 설정 */}
+        {onLogout && (
         <View style={styles.settingsSection}>
           <TouchableOpacity
             style={styles.logoutButton}
@@ -741,6 +746,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
             <Text style={styles.logoutText}>로그아웃</Text>
           </TouchableOpacity>
         </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -11,11 +11,14 @@ DATABASE_PATH = "users.db"
 
 def get_db_connection():
     """데이터베이스 연결을 반환합니다."""
-    return sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.execute("PRAGMA encoding='UTF-8'")
+    return conn
 
 
 def init_db():
     conn = sqlite3.connect(DATABASE_PATH)
+    conn.execute("PRAGMA encoding='UTF-8'")
     cursor = conn.cursor()
     
     # 기존 users 테이블 (school_verified, school_verified_at 제거)
@@ -424,7 +427,7 @@ def create_dummy_data(cursor, conn):
 
 
 def get_user_by_email(email: str):
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, email, name, hashed_password, phone_number, gender, school_email
@@ -446,7 +449,7 @@ def get_user_by_email(email: str):
 
 
 def create_user(user_data: UserCreate, hashed_password: str):
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(
@@ -476,7 +479,7 @@ def create_user(user_data: UserCreate, hashed_password: str):
 
 
 def get_user_profile(user_id: int) -> Optional[UserProfile]:
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT p.user_id, p.sleep_type, p.home_time, p.cleaning_frequency, 
@@ -1438,8 +1441,7 @@ def restore_initial_data_if_exists():
         with open(backup_path, 'r', encoding='utf-8') as f:
             backup_data = json.load(f)
         
-        conn = sqlite3.connect(DATABASE_PATH)
-        conn.execute("PRAGMA encoding='UTF-8'")
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         # 데이터가 이미 있는지 확인
