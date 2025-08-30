@@ -39,17 +39,17 @@ import PhoneIcon from "../components/icons/PhoneIcon";
 const AlarmIcon = ({ size = 26, color = "#000000" }) => {
   return (
     <Svg width={size} height={25} viewBox="0 0 26 25" fill="none">
-      <Path 
-        d="M6.75 13.625C6.75 10.1731 9.54813 7.375 13 7.375C16.4519 7.375 19.25 10.1731 19.25 13.625V23.625H6.75V13.625Z" 
-        stroke={color} 
-        strokeWidth="2" 
+      <Path
+        d="M6.75 13.625C6.75 10.1731 9.54813 7.375 13 7.375C16.4519 7.375 19.25 10.1731 19.25 13.625V23.625H6.75V13.625Z"
+        stroke={color}
+        strokeWidth="2"
         strokeLinejoin="round"
       />
-      <Path 
-        d="M13.0002 1.125V3M20.4327 3.83L19.227 5.26625M24.387 10.6794L22.5402 11.005M1.61328 10.6794L3.46016 11.005M5.56828 3.83L6.77328 5.26625M1.75016 23.625H24.8752" 
-        stroke={color} 
-        strokeWidth="2" 
-        strokeLinecap="round" 
+      <Path
+        d="M13.0002 1.125V3M20.4327 3.83L19.227 5.26625M24.387 10.6794L22.5402 11.005M1.61328 10.6794L3.46016 11.005M5.56828 3.83L6.77328 5.26625M1.75016 23.625H24.8752"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </Svg>
@@ -563,7 +563,7 @@ export default function ChatScreen({ navigation, route }) {
     if (!otherUserData) return [];
 
     const profile = otherUserData.profile || otherUserData;
-    
+
     // UserProfileScreen과 동일한 로직 사용
     if (!profile || !isProfileComplete(profile)) {
       return []; // 프로필이 완성되지 않았으면 빈 배열 반환
@@ -583,7 +583,7 @@ export default function ChatScreen({ navigation, route }) {
         noise: "소음 기준: 밤 10시 이후 조용히",
         timestamp: new Date().toISOString()
       })}`;
-      
+
       await ApiService.sendMessage(actualRoomId, houseRuleMessage);
       setShowRulesGuide(false);
       setShowQuickActions(false);
@@ -627,7 +627,7 @@ export default function ChatScreen({ navigation, route }) {
 
       const votingMessage = `VOTING:${JSON.stringify(votingData)}`;
       await ApiService.sendMessage(actualRoomId, votingMessage);
-      
+
       // 모달 닫기 및 초기화
       setShowVotingModal(false);
       setVotingQuestion("");
@@ -667,7 +667,7 @@ export default function ChatScreen({ navigation, route }) {
 
       const guideMessage = `DISPUTE_GUIDE:${JSON.stringify(guideData)}`;
       await ApiService.sendMessage(actualRoomId, guideMessage);
-      
+
       // 모달 닫기 및 초기화
       setShowDisputeModal(false);
       setDisputeGuideTitle("");
@@ -706,14 +706,14 @@ export default function ChatScreen({ navigation, route }) {
       // 메시지에서 현재 투표 데이터 찾기
       const messageIndex = messages.findIndex(msg => msg.messageId === messageId);
       if (messageIndex === -1) return;
-      
+
       const message = messages[messageIndex];
       if (message.messageType !== 'voting') return;
 
       const votingData = JSON.parse(message.text);
-      
+
       // 이미 투표했는지 확인
-      const hasVoted = votingData.options.some(option => 
+      const hasVoted = votingData.options.some(option =>
         option.votes.includes(currentUser.id)
       );
 
@@ -722,7 +722,7 @@ export default function ChatScreen({ navigation, route }) {
         // 이미 투표한 경우 - 투표 변경
         updatedOptions = votingData.options.map(option => ({
           ...option,
-          votes: option.id === optionId 
+          votes: option.id === optionId
             ? [...option.votes.filter(userId => userId !== currentUser.id), currentUser.id]
             : option.votes.filter(userId => userId !== currentUser.id)
         }));
@@ -730,7 +730,7 @@ export default function ChatScreen({ navigation, route }) {
         // 처음 투표하는 경우
         updatedOptions = votingData.options.map(option => ({
           ...option,
-          votes: option.id === optionId 
+          votes: option.id === optionId
             ? [...option.votes, currentUser.id]
             : option.votes
         }));
@@ -753,7 +753,7 @@ export default function ChatScreen({ navigation, route }) {
       // 서버에 투표 업데이트 API 호출 (새 메시지가 아닌 업데이트)
       // 실제 구현에서는 투표 업데이트 전용 API를 사용해야 합니다
       // 예: await ApiService.updateVote(messageId, optionId, currentUser.id);
-      
+
     } catch (error) {
       console.error("투표 실패:", error);
       Alert.alert("오류", "투표에 실패했습니다.");
@@ -783,7 +783,7 @@ export default function ChatScreen({ navigation, route }) {
 
         // 메시지 전송 후 바로 새로고침하여 화면에 반영 (읽음 처리 없이)
         await loadMessagesWithoutMarkingAsRead();
-        
+
         // 메시지 전송 후 맨 아래로 스크롤
         setTimeout(() => {
           if (flatListRef.current) {
@@ -982,7 +982,7 @@ export default function ChatScreen({ navigation, route }) {
     // 같은 발신자의 연속 메시지인지 확인
     const isConsecutive = prevItem && prevItem.sender === item.sender;
     const isLastInGroup = !nextItem || nextItem.sender !== item.sender;
-    
+
     // 발신자가 바뀌는 경우 더 큰 여백 적용
     const senderChanged = prevItem && prevItem.sender !== item.sender;
 
@@ -1292,8 +1292,8 @@ export default function ChatScreen({ navigation, route }) {
                             {votingData.options.map((option) => {
                               const hasUserVoted = option.votes.includes(currentUser.id);
                               return (
-                                <TouchableOpacity 
-                                  key={option.id} 
+                                <TouchableOpacity
+                                  key={option.id}
                                   style={[
                                     styles.votingOption,
                                     hasUserVoted && styles.votingOptionSelected
@@ -1736,8 +1736,8 @@ export default function ChatScreen({ navigation, route }) {
                                 {votingData.options.map((option) => {
                                   const hasUserVoted = option.votes.includes(currentUser.id);
                                   return (
-                                    <TouchableOpacity 
-                                      key={option.id} 
+                                    <TouchableOpacity
+                                      key={option.id}
                                       style={[
                                         styles.votingOption,
                                         hasUserVoted && styles.votingOptionSelected
@@ -1957,7 +1957,7 @@ export default function ChatScreen({ navigation, route }) {
             </Svg>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.userInfo, showUserProfile && styles.userInfoExpanded]}
             onPress={() => {
               if (showUserProfile) {
@@ -2004,7 +2004,7 @@ export default function ChatScreen({ navigation, route }) {
                   {displayName}
                 </Text>
                 {showUserProfile && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.editButton}
                     onPress={() => {
                       setEditingName(displayName);
@@ -2013,11 +2013,11 @@ export default function ChatScreen({ navigation, route }) {
                   >
                     <View style={styles.editIconContainer}>
                       <Svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <Path 
-                          d="M1.00959 10.9368L1.36368 8.50894C1.38526 8.35027 1.45759 8.20269 1.57076 8.08894L8.43134 1.21902C8.52015 1.12893 8.63071 1.06328 8.75231 1.02844C8.87392 0.99359 9.00247 0.990719 9.12551 1.0201C9.75533 1.19421 10.3262 1.53569 10.7775 2.00827C11.2488 2.46266 11.5879 3.03645 11.7587 3.66844C11.7881 3.79148 11.7852 3.92002 11.7503 4.04163C11.7155 4.16324 11.6499 4.2738 11.5598 4.3626L4.69159 11.2238C4.57768 11.3366 4.42998 11.4092 4.27101 11.4303L1.84376 11.7844C1.7291 11.8011 1.61212 11.7905 1.50229 11.7536C1.39246 11.7167 1.29289 11.6544 1.21164 11.5718C1.13039 11.4891 1.06976 11.3885 1.03465 11.2781C0.999548 11.1677 0.990963 11.0505 1.00959 10.9362M7.13343 2.52569L10.2618 5.6541" 
-                          stroke="white" 
-                          strokeWidth="0.875" 
-                          strokeLinecap="round" 
+                        <Path
+                          d="M1.00959 10.9368L1.36368 8.50894C1.38526 8.35027 1.45759 8.20269 1.57076 8.08894L8.43134 1.21902C8.52015 1.12893 8.63071 1.06328 8.75231 1.02844C8.87392 0.99359 9.00247 0.990719 9.12551 1.0201C9.75533 1.19421 10.3262 1.53569 10.7775 2.00827C11.2488 2.46266 11.5879 3.03645 11.7587 3.66844C11.7881 3.79148 11.7852 3.92002 11.7503 4.04163C11.7155 4.16324 11.6499 4.2738 11.5598 4.3626L4.69159 11.2238C4.57768 11.3366 4.42998 11.4092 4.27101 11.4303L1.84376 11.7844C1.7291 11.8011 1.61212 11.7905 1.50229 11.7536C1.39246 11.7167 1.29289 11.6544 1.21164 11.5718C1.13039 11.4891 1.06976 11.3885 1.03465 11.2781C0.999548 11.1677 0.990963 11.0505 1.00959 10.9362M7.13343 2.52569L10.2618 5.6541"
+                          stroke="white"
+                          strokeWidth="0.875"
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                         />
                       </Svg>
@@ -2108,9 +2108,9 @@ export default function ChatScreen({ navigation, route }) {
                 <Text style={styles.rulesDescription}>
                   채팅 속에서 바로 룸메이트 간 기본 규칙을 확인하거나 합의할 수 있는 기능이에요.
                 </Text>
-                
+
                 {/* 하우스 룰 카드 보내기 */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.ruleActionButton}
                   onPress={() => {
                     // 하우스 룰 카드 전송 기능
@@ -2128,7 +2128,7 @@ export default function ChatScreen({ navigation, route }) {
                 </TouchableOpacity>
 
                 {/* 투표/합의 기능 */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.ruleActionButton}
                   onPress={() => {
                     // 투표/합의 기능
@@ -2146,7 +2146,7 @@ export default function ChatScreen({ navigation, route }) {
                 </TouchableOpacity>
 
                 {/* 가이드 호출 */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.ruleActionButton}
                   onPress={() => {
                     // 분쟁 해결 가이드 팝업
@@ -2377,7 +2377,7 @@ export default function ChatScreen({ navigation, route }) {
       {showUserProfile && (
         <View style={styles.expandedUserProfileOverlay}>
           {/* 블러 배경 - 클릭 시 닫힘 */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.blurBackground}
             onPress={() => {
               Animated.timing(expandAnimation, {
@@ -2407,9 +2407,9 @@ export default function ChatScreen({ navigation, route }) {
               <Text style={styles.expandedUserInfo}>
                 {(() => {
                   if (!otherUserProfile) return '';
-                  
+
                   const info = [];
-                  
+
                   // UserProfileScreen과 동일한 나이 계산 로직
                   const getAgeGroup = (age) => {
                     if (!age) return '';
@@ -2420,28 +2420,28 @@ export default function ChatScreen({ navigation, route }) {
                     if (age >= 36 && age <= 39) return '30대 후반';
                     return `${Math.floor(age / 10)}0대`;
                   };
-                  
+
                   const userAge = otherUserProfile.profile?.age || otherUserProfile.age;
                   const ageGroup = getAgeGroup(userAge);
                   if (ageGroup) info.push(ageGroup);
-                  
+
                   // 성별
                   const getGenderText = (gender) => {
                     if (gender === 'male') return '남성';
                     if (gender === 'female') return '여성';
                     return '';
                   };
-                  
+
                   const genderText = getGenderText(otherUserProfile.gender);
                   if (genderText) info.push(genderText);
-                  
+
                   // UserProfileScreen과 동일한 학교 이름 추출 로직
                   const getSchoolNameFromEmail = (schoolEmail) => {
                     if (!schoolEmail) return '';
-                    
+
                     const domain = schoolEmail.split('@')[1];
                     if (!domain) return '';
-                    
+
                     const schoolPatterns = {
                       'snu.ac.kr': '서울대학교',
                       'korea.ac.kr': '고려대학교',
@@ -2454,32 +2454,32 @@ export default function ChatScreen({ navigation, route }) {
                       'konkuk.ac.kr': '건국대학교',
                       'dankook.ac.kr': '단국대학교',
                     };
-                    
+
                     if (schoolPatterns[domain]) {
                       return schoolPatterns[domain];
                     }
-                    
+
                     let schoolName = domain
                       .replace('.ac.kr', '')
                       .replace('.edu', '')
                       .replace('university', '')
                       .replace('univ', '')
                       .replace('.', '');
-                    
+
                     if (schoolName && schoolName.length > 0) {
                       return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
                     }
-                    
+
                     return '';
                   };
-                  
+
                   const schoolText = getSchoolNameFromEmail(otherUserProfile.school_email);
                   if (schoolText) info.push(schoolText);
-                  
+
                   return info.join(', ');
                 })()}
               </Text>
-              
+
               {/* 말풍선 영역 - UserProfileScreen과 동일한 디자인 */}
               <View style={styles.speechBubbleContainer}>
                 {/* 위쪽 삼각형 꼬리 (UserProfileScreen과 반대 방향) */}
@@ -2501,7 +2501,7 @@ export default function ChatScreen({ navigation, route }) {
                 ))}
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.expandedDetailButton}
                 onPress={() => {
                   setShowUserProfile(false);
@@ -2580,7 +2580,7 @@ export default function ChatScreen({ navigation, route }) {
                         )}
                       </View>
                     ))}
-                    
+
                     {votingOptions.length < 6 && (
                       <TouchableOpacity
                         onPress={addVotingOption}
@@ -3423,7 +3423,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     marginVertical: 8,
-    marginBottom: 12,
+    marginBottom: 27,
     gap: 6,
   },
   expandedUserTag: {
@@ -3676,7 +3676,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 8,
   },
-  
+
   // 모달 공통 스타일
   modalOverlay: {
     flex: 1,
@@ -3704,7 +3704,7 @@ const styles = StyleSheet.create({
     color: "#666",
     fontWeight: "600",
   },
-  
+
   // 투표 모달 스타일
   votingModalContainer: {
     width: "100%",
@@ -3816,7 +3816,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  
+
   // 분쟁 해결 가이드 모달 스타일
   disputeModalContainer: {
     width: "100%",
