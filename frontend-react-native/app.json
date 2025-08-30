@@ -28,7 +28,7 @@
       "edgeToEdgeEnabled": true,
       "config": {
         "googleMaps": {
-          "apiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyAwZAUct7Q9wmN7BWFw4nZeHB_ClNab8t4"
         }
       },
       "permissions": [

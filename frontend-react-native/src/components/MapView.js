@@ -120,7 +120,7 @@ const PropertyMapView = forwardRef(({
 }, ref) => {
 
   // 디버깅: MapView가 받는 properties 개수 확인
-  console.log('🗺️ MapView 받은 properties 개수:', properties.length);
+  // console.log('🗺️ MapView 받은 properties 개수:', properties.length);
   const [region, setRegion] = useState(
     initialRegion || {
       latitude: 37.35, // 기본값: 서울이 화면 중앙에 오도록 조정
