@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
 import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
+import HomeIcon from "./HomeIcon";
 import LocationIcon from "./LocationIcon";
+import PropertyPinMarker from "./PropertyPinMarker";
+import ClusterPinMarker from "./ClusterPinMarker";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import BuildingClusterView from "./BuildingClusterView";
-import { normalizePrice } from '../utils/priceUtils';
+import { normalizePrice, formatPrice } from '../utils/priceUtils';
 
 const { width, height } = Dimensions.get("window");
 
@@ -23,11 +26,10 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
   // 선택 상태가 변경될 때 크기 조정
   React.useEffect(() => {
     if (markerScales.current[markerId]) {
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: isSelected ? 1.1 : 1,
+        duration: 150,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }).start();
     }
   }, [isSelected, markerId]);
@@ -35,17 +37,15 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
   const handlePress = () => {
     // 클릭 애니메이션
     Animated.sequence([
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: 1.2,
+        duration: 100,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }),
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: 1,
+        duration: 100,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }),
     ]).start();
 
@@ -73,29 +73,22 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
       onPress={handlePress}
       tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
+      stopPropagation={true}
     >
-      <View style={{
-          width: 100,
-          height: 100,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <Animated.View style={[
-          styles.houseMarkerContainer,
-          {
-            transform: [{ scale: markerScales.current[markerId] }],
-            backgroundColor: isSelected ? "#FF0000" : "#FF6600",
-            borderColor: isSelected ? "#ffffff" : "#000000",
-            borderWidth: isSelected ? 2 : 1.5,
-          }
-        ]}>
-          <Text style={{
-            color: isSelected ? "#ffffff" : "#000000",
-            fontSize: 12,
-            fontWeight: 'bold'
-          }}>📍</Text>
-        </Animated.View>
-      </View>
+      <Animated.View style={[
+        styles.houseMarkerContainer,
+        {
+          transform: [{ scale: markerScales.current[markerId] }],
+          backgroundColor: isSelected ? "#0E9B73" : "#10B585",
+          borderColor: "#ffffff",
+          borderWidth: 2,
+        }
+      ]}>
+        <HomeIcon
+          size={20}
+          color="#ffffff"
+        />
+      </Animated.View>
     </Marker>
   );
 };
@@ -294,34 +287,27 @@ const PropertyMapView = forwardRef(({
           }}
           tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
+          stopPropagation={true}
         >
-          <View style={{
-              width: Math.max(100, Math.min(130, 100 + pointCount / 20)),
-              height: Math.max(100, Math.min(130, 100 + pointCount / 20)),
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Animated.View style={[
-              styles.clusterMarkerContainer,
-              {
-                transform: [{ scale: markerScales.current[clusterId] }],
-                backgroundColor: '#10B585',
-                width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
-                height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
-                borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
-              }
-            ]}>
-            <Ionicons
-              name="business"
+          <Animated.View style={[
+            styles.clusterMarkerContainer,
+            {
+              transform: [{ scale: markerScales.current[clusterId] }],
+              backgroundColor: '#10B585',
+              width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+              height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+              borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
+            }
+          ]}>
+            <HomeIcon
               size={Math.max(20, Math.min(30, Math.round((56 + pointCount / 20) * 0.4)))}
               color="#FFFFFF"
             />
             <Text style={[
               styles.clusterText,
-              { fontSize: Math.max(11, Math.min(20, Math.round((56 + pointCount / 20) * 0.22))) } // 핀 크기의 22%
+              { fontSize: Math.max(11, Math.min(16, Math.round((56 + pointCount / 20) * 0.22))) }
             ]}>{pointCount}</Text>
-            </Animated.View>
-          </View>
+          </Animated.View>
         </Marker>
       );
     }
@@ -396,37 +382,32 @@ const PropertyMapView = forwardRef(({
           onPress={handleMarkerPress}
           tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
+          stopPropagation={true}
         >
-          <View style={{
-              width: 100,
-              height: 100,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Animated.View style={[
-              styles.houseMarkerContainer,
-              {
-                transform: [{ scale: markerScales.current[markerId] }],
-                backgroundColor: isSelected ? '#000' : '#10B585',
-                borderColor: isSelected ? '#000' : '#fff',
-                borderWidth: 2,
-              }
-            ]}>
-              <Ionicons
-                name="home"
-                size={22}
-                color="#FFFFFF"
+          <Animated.View style={{
+            transform: [{ scale: markerScales.current[markerId] }],
+          }}>
+            {hasMultiple ? (
+              <ClusterPinMarker
+                count={group.count}
+                isSelected={isSelected}
+                size="small"
               />
-              {hasMultiple && (
-                <View style={[
-                  styles.countBadge,
-                  { backgroundColor: isSelected ? '#FF6600' : '#000' }
-                ]}>
-                  <Text style={styles.countBadgeText}>{group.count}</Text>
-                </View>
-              )}
-            </Animated.View>
-          </View>
+            ) : (
+              <PropertyPinMarker
+                price={group.properties && group.properties[0] ? 
+                  formatPrice(group.properties[0].deposit, group.properties[0].monthly_rent) : 
+                  '\ub9e4\ubb3c'
+                }
+                isSelected={isSelected}
+                roomType={group.properties && group.properties[0] ? 
+                  group.properties[0].room_type : 
+                  '\uc6d0\ub8f8'
+                }
+                size="medium"
+              />
+            )}
+          </Animated.View>
         </Marker>
       );
     }
@@ -849,6 +830,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#ffffff",
+    overflow: 'visible',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3, // Android shadow
   },
   searchMarker: {
     width: 32,
@@ -896,6 +886,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#ffffff",
+    overflow: 'visible',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3, // Android shadow
   },
   clusterText: {
     color: "#ffffff",
