@@ -1,22 +1,21 @@
 import { getLocalApiUrl } from '../utils/networkUtils';
 
 // 동적으로 API URL을 설정하는 함수
-let API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+let API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://uni-con-production.up.railway.app';
 
-// 앱 시작 시 자동으로 로컬 API URL 감지
+// 앱 시작 시 자동으로 로컬 API URL 감지 (개발 환경에서만)
 const initializeApiUrl = async () => {
   try {
-    // 환경변수가 설정되어 있지 않으면 자동 감지 시도
-    if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
-      const detectedUrl = await getLocalApiUrl();
-      API_BASE_URL = detectedUrl;
-      console.log('Auto-detected API URL:', API_BASE_URL);
-    } else {
+    if (process.env.EXPO_PUBLIC_API_BASE_URL) {
       console.log('Using configured API URL:', API_BASE_URL);
+    } else {
+      // 환경변수가 없으면 Railway 프로덕션 URL 사용
+      API_BASE_URL = 'https://uni-con-production.up.railway.app';
+      console.log('Using production API URL:', API_BASE_URL);
     }
   } catch (error) {
     console.error('Failed to initialize API URL:', error);
-    console.log('Falling back to default URL:', API_BASE_URL);
+    console.log('Falling back to production URL:', API_BASE_URL);
   }
 };
 
