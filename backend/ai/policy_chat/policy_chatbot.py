@@ -34,9 +34,18 @@ class PolicyChatbot:
             current_count = self.vector_store.get_policy_count()
             logger.info(f"Current vector store has {current_count} policies")
             
-            # DB 정책 수 확인
+            # DB 정책 수 확인 (테이블 존재 여부 먼저 확인)
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                
+                # policies 테이블이 존재하는지 확인
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='policies'")
+                table_exists = cursor.fetchone() is not None
+                
+                if not table_exists:
+                    logger.warning("policies table does not exist yet, skipping vector store initialization")
+                    return
+                    
                 cursor.execute("SELECT COUNT(*) FROM policies")
                 db_count = cursor.fetchone()[0]
             
@@ -60,30 +69,46 @@ class PolicyChatbot:
                 cursor = conn.cursor()
                 
                 cursor.execute("""
-                    SELECT id, title, organization, category, target, content, region, details
+                    SELECT id, title, description, content, category, url, tags, 
+                           target_age_min, target_age_max, target_gender, target_location
                     FROM policies WHERE is_active = 1
                 """)
                 
                 policies = []
                 for row in cursor.fetchall():
-                    # Parse details JSON if it exists
-                    details = {}
+                    # Parse tags if it exists
+                    tags = []
                     try:
-                        if row['details']:
-                            import json
-                            details = json.loads(row['details'])
+                        if row['tags']:
+                            tags = row['tags'].split(',')
                     except:
-                        details = {}
+                        tags = []
+                    
+                    # Create target string from age/gender/location
+                    target_parts = []
+                    if row['target_age_min'] or row['target_age_max']:
+                        if row['target_age_min'] and row['target_age_max']:
+                            target_parts.append(f"{row['target_age_min']}-{row['target_age_max']}세")
+                        elif row['target_age_min']:
+                            target_parts.append(f"{row['target_age_min']}세 이상")
+                        elif row['target_age_max']:
+                            target_parts.append(f"{row['target_age_max']}세 이하")
+                    
+                    if row['target_gender']:
+                        target_parts.append(row['target_gender'])
+                    
+                    if row['target_location']:
+                        target_parts.append(row['target_location'])
                     
                     policy = {
                         'id': row['id'],
                         'title': row['title'],
-                        'organization': row['organization'],
+                        'description': row['description'] or '',
                         'category': row['category'],
-                        'target': row['target'],
+                        'target': ', '.join(target_parts) if target_parts else '',
                         'content': row['content'] or '',
-                        'region': row['region'],
-                        'details': details
+                        'url': row['url'] or '',
+                        'tags': tags
                     }
                     policies.append(policy)
             
