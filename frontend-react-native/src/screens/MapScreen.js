@@ -43,6 +43,7 @@ export default function MapScreen({ navigation, user }) {
   const [favorites, setFavorites] = useState([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [initialRegion, setInitialRegion] = useState(null);
+  const [searchPin, setSearchPin] = useState(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const locationButtonAnim = useRef(new Animated.Value(0)).current;
   const mapViewRef = useRef(null);
@@ -490,6 +491,7 @@ export default function MapScreen({ navigation, user }) {
     if (!query.trim()) {
       setRooms(allRooms);
       setShowRecentSearches(false);
+      setSearchPin(null); // 검색 핀 제거
       console.log(`✅ 전체 매물 표시: ${allRooms.length}개 결과`);
       return;
     }
@@ -656,6 +658,14 @@ export default function MapScreen({ navigation, user }) {
         latitudeDelta,
         longitudeDelta,
       }, 1000);
+
+      // 검색 핀 설정
+      setSearchPin({
+        latitude: googleResult.latitude,
+        longitude: googleResult.longitude,
+        title: query,
+        address: googleResult.address
+      });
 
       console.log('✅ Google API로 지역 검색 성공:', googleResult.address);
       console.log('📍 줌 레벨:', { latitudeDelta, longitudeDelta });
@@ -952,6 +962,7 @@ export default function MapScreen({ navigation, user }) {
           navigation={navigation}
           onBuildingModalStateChange={setShowBuildingModal}
           onMarkerSelectionChange={handleMarkerSelectionChange}
+          searchPin={searchPin}
           favorites={favorites}
           onToggleFavorite={handleFavoriteToggle}
         />

@@ -69,28 +69,56 @@ export default function MatchResultsScreen({ navigation }) {
         roomId = newRoom.room_id;
       }
 
-      // 메시지 전송
-      if (message && message.trim()) {
-        await ApiService.sendMessage(roomId, message.trim());
+      // 1. 궁합 점수 메시지 전송 (CompatibilityMessageCard 형태)
+      const compatibilityMessage = `COMPATIBILITY_MESSAGE:${JSON.stringify({
+        compatibility_score: user.compatibility_score || 0.8,
+        message: message && message.trim() ? message.trim() : '안녕하세요! 혹시 룸메 구하시나요?'
+      })}`;
+      await ApiService.sendMessage(roomId, compatibilityMessage);
+
+      // 2. 현재 사용자 프로필 카드 전송
+      try {
+        const currentUserProfile = await ApiService.getUserProfile();
+        const currentUser = await ApiService.getUserById(currentUserProfile.user_id);
+
+        if (currentUser) {
+          // 사용자 태그 생성
+          const generateUserTags = (profile) => {
+            const tags = [];
+            if (profile) {
+              // 수면 패턴
+              if (profile.sleep_type === 'early_bird') tags.push('종달새');
+              else if (profile.sleep_type === 'night_owl') tags.push('올빼미');
+
+              // 흡연 여부
+              if (profile.smoking_status === 'non_smoker_strict' || profile.smoking_status === 'non_smoker_ok') {
+                tags.push('비흡연');
+              } else if (profile.smoking_status === 'smoker_indoor_no' || profile.smoking_status === 'smoker_indoor_yes') {
+                tags.push('흡연');
+              }
+            }
+            return tags;
+          };
+
+          const userProfileCardMessage = `USER_PROFILE:${JSON.stringify({
+            user_id: currentUser.id || currentUser.user_id,
+            name: currentUser.name,
+            nickname: currentUser.nickname || currentUser.name,
+            ageGroup: getAgeGroup(currentUser.profile?.age),
+            gender: getGenderText(currentUser.gender),
+            school: getSchoolNameFromEmail(currentUser.school_email),
+            bio: currentUser.user_info?.bio || '안녕하세요!',
+            tags: generateUserTags(currentUser.profile),
+            compatibility_score: user.compatibility_score || 0.85 // 실제 궁합 점수 사용
+          })}`;
+          await ApiService.sendMessage(roomId, userProfileCardMessage);
+        }
+      } catch (error) {
+        console.error('현재 사용자 프로필 전송 실패:', error);
       }
 
-      // 채팅 화면으로 이동 (MainTabs를 통해 네비게이션해서 TabBar 숨김)
-      navigation.navigate('MainTabs', {
-        screen: '홈',
-        params: {
-          screen: 'Chat',
-          params: {
-            roomId: roomId,
-            otherUser: {
-              user_id: user.user_id,
-              name: user.name,
-              university: user.university,
-              age: user.age,
-              gender: user.gender
-            }
-          }
-        }
-      });
+      // 채팅방 ID 반환 (자동 이동 제거)
+      return roomId;
     } catch (error) {
       console.error('채팅방 생성/찾기 실패:', error);
       Alert.alert('오류', '채팅방을 만드는데 실패했습니다. 다시 시도해주세요.');
@@ -200,6 +228,9 @@ export default function MatchResultsScreen({ navigation }) {
       user={user}
       index={index}
       onPress={handleSendMessage}
+      roomId={null}
+      showToggle={false}
+      showProfileButton={false}
     />
   );
 
@@ -550,7 +581,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 63,
+    top: 80,
     height: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',

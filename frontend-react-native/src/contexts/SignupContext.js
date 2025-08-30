@@ -28,6 +28,7 @@ export const SignupProvider = ({ children }) => {
     
     // ID 인증
     idVerified: false,
+    idPhoto: null,
     
     // 학교 인증
     schoolEmail: '',
@@ -70,6 +71,7 @@ export const SignupProvider = ({ children }) => {
         carrier: '통신사',
         phoneVerified: false,
         idVerified: false,
+        idPhoto: null,
         schoolEmail: '',
       });
       await AsyncStorage.removeItem('@signup_data');
@@ -131,6 +133,7 @@ export const SignupProvider = ({ children }) => {
   const updateIDVerificationData = async (data) => {
     const idData = {
       idVerified: data.idVerified,
+      ...(data.idPhoto !== undefined && { idPhoto: data.idPhoto }),
     };
     
     const updatedData = { ...signupData, ...idData };
@@ -139,7 +142,10 @@ export const SignupProvider = ({ children }) => {
     // AsyncStorage에 저장
     try {
       await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
-      console.log('[신분증 인증] ID 인증 상태:', { idVerified: data.idVerified });
+      console.log('[신분증 인증] ID 인증 상태:', { 
+        idVerified: data.idVerified,
+        ...(data.idPhoto && { idPhotoSaved: true })
+      });
     } catch (error) {
       console.error('신분증 인증 데이터 저장 실패:', error);
     }

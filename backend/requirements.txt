@@ -6,6 +6,7 @@ bcrypt==4.0.1
 python-multipart
 sqlalchemy
 PyJWT==2.8.0
+python-jose[cryptography]
 python-dotenv
 playwright
 beautifulsoup4
@@ -14,8 +15,17 @@ schedule
 
 # AI Dependencies for Policy Chatbot
 langchain
+langchain-core
 langchain-google-genai
 openai
 faiss-cpu
 numpy
 langgraph
+google-generativeai
+
+# Computer Vision for Contract Analysis
+opencv-python-headless
+
+# Additional Dependencies
+typing-extensions
+urllib3

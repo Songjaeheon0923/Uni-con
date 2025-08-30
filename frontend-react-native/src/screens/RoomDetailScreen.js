@@ -281,6 +281,14 @@ export default function RoomDetailScreen({ route, navigation }) {
     navigation.navigate("FavoritedUsers", { roomId: id });
   };
 
+  const handleShareRoom = () => {
+    // 채팅 목록 화면을 공유 모드로 이동
+    navigation.navigate('ChatList', {
+      isShareMode: true,
+      roomData: room
+    });
+  };
+
   const handleViewContract = async () => {
     try {
       // ex.png 이미지의 URI 가져오기
@@ -346,7 +354,7 @@ export default function RoomDetailScreen({ route, navigation }) {
               <HeartOutlineIcon size={20} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleShareRoom}>
             <ShareIcon size={23} />
           </TouchableOpacity>
         </View>

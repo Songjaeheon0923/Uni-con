@@ -216,7 +216,11 @@ const PolicyDetailScreen = ({ navigation, route }) => {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* 제목 */}
         <Text style={styles.title}>{policyData?.title || "정책 정보"}</Text>
 
@@ -325,8 +329,8 @@ const PolicyDetailScreen = ({ navigation, route }) => {
 
       {/* 하단 신청 버튼 */}
       <LinearGradient
-        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.7)', 'rgba(255,255,255,1)']}
-        locations={[0, 0.5, 1]}
+        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.8)', 'rgba(255,255,255,1)']}
+        locations={[0, 0.3, 1]}
         style={styles.bottomContainer}
       >
         <TouchableOpacity style={styles.applyButton} onPress={handleApplyPress}>
@@ -365,9 +369,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
     paddingVertical: 20,
-    paddingBottom: 100,
+    paddingBottom: 140,
   },
   title: {
     fontSize: 24,
@@ -457,8 +463,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 60,
+    paddingTop: 25,
+    paddingBottom: 50,
   },
   applyButton: {
     backgroundColor: "#000000",

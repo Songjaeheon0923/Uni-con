@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
-import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "./HomeIcon";
+import LocationIcon from "./LocationIcon";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import BuildingClusterView from "./BuildingClusterView";
@@ -115,6 +116,7 @@ const PropertyMapView = forwardRef(({
   onMarkerSelectionChange, // 마커 선택 상태 변경 콜백 추가
   favorites = [],
   onToggleFavorite,
+  searchPin = null, // 검색 핀 데이터
 }, ref) => {
 
   // 디버깅: MapView가 받는 properties 개수 확인
@@ -131,6 +133,7 @@ const PropertyMapView = forwardRef(({
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [buildingProperties, setBuildingProperties] = useState([]);
   const [selectedMarkerId, setSelectedMarkerId] = useState(null);
+  const [searchPinPosition, setSearchPinPosition] = useState(null);
   const mapRef = useRef(null);
 
   // forwardRef로 외부 ref에도 mapRef를 연결
@@ -151,6 +154,20 @@ const PropertyMapView = forwardRef(({
       console.log('🗺️ 초기 지역이 Google API로 업데이트됨:', initialRegion);
     }
   }, [initialRegion]);
+
+  // searchPin 위치를 화면 좌표로 변환
+  useEffect(() => {
+    if (searchPin && mapRef.current) {
+      mapRef.current.pointForCoordinate({
+        latitude: searchPin.latitude,
+        longitude: searchPin.longitude,
+      }).then((point) => {
+        setSearchPinPosition(point);
+      });
+    } else {
+      setSearchPinPosition(null);
+    }
+  }, [searchPin, region]);
   const markerScales = useRef({});
   const markerClickTime = useRef(0);
 
@@ -615,6 +632,11 @@ const PropertyMapView = forwardRef(({
         scrollEnabled={true}
         zoomEnabled={true}
         customMapStyle={naverMapStyle}
+        moveOnMarkerPress={false}
+        animationEnabled={false}
+        onRegionChange={(newRegion) => {
+          setRegion(newRegion);
+        }}
         onRegionChangeComplete={(newRegion) => {
           setRegion(newRegion);
         }}
@@ -630,11 +652,12 @@ const PropertyMapView = forwardRef(({
         {clusteredMarkers.map((cluster, index) => (
           <ClusterMarker
             key={cluster.properties.cluster
-              ? `cluster-${cluster.id || index}`
-              : `building-${index}`}
+              ? `cluster-${cluster.id || index}-${region.latitude}`
+              : `building-${index}-${region.longitude}`}
             cluster={cluster}
           />
         ))}
+
       </MapView>
 
       {/* 건물 내 매물 리스트 모달 */}
@@ -661,7 +684,25 @@ const PropertyMapView = forwardRef(({
           />
         </>
       )}
+
+      {/* 검색 핀 오버레이 */}
+      {searchPinPosition && (
+        <View
+          style={[
+            styles.searchPinOverlay,
+            {
+              left: searchPinPosition.x - 16,
+              top: searchPinPosition.y - 16,
+            },
+          ]}
+        >
+          <View style={styles.searchMarker}>
+            <LocationIcon width={20} height={20} color="#333333" />
+          </View>
+        </View>
+      )}
       </View>
+
     </>
   );
 });
@@ -829,6 +870,25 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3, // Android shadow
   },
+  searchMarker: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+    overflow: 'hidden',
+  },
   selectedMarkerStyle: {
     backgroundColor: "#0E9B73",
     borderColor: "#ffffff",
@@ -917,5 +977,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: 'bold',
+  },
+  searchPinOverlay: {
+    position: 'absolute',
+    zIndex: 1000,
+    pointerEvents: 'none',
   },
 });

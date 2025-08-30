@@ -22,47 +22,67 @@ import RobotIcon from "../components/icons/RobotIcon";
 
 // 타이핑 애니메이션 컴포넌트
 const TypingIndicator = () => {
-  const dot1Anim = useRef(new Animated.Value(0)).current;
-  const dot2Anim = useRef(new Animated.Value(0)).current;
-  const dot3Anim = useRef(new Animated.Value(0)).current;
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const animateDot = (animation, delay) => {
-      Animated.loop(
+    const createAnimation = (dot, delay) => {
+      return Animated.loop(
         Animated.sequence([
-          Animated.timing(animation, {
-            toValue: -10,
+          Animated.delay(delay),
+          Animated.timing(dot, {
+            toValue: -8,
             duration: 400,
-            delay,
-            easing: Easing.ease,
+            easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
-          Animated.timing(animation, {
+          Animated.timing(dot, {
             toValue: 0,
             duration: 400,
-            easing: Easing.ease,
+            easing: Easing.in(Easing.quad),
             useNativeDriver: true,
           }),
+          Animated.delay(600 - delay),
         ])
-      ).start();
+      );
     };
 
-    animateDot(dot1Anim, 0);
-    animateDot(dot2Anim, 150);
-    animateDot(dot3Anim, 300);
+    const anim1 = createAnimation(dot1, 0);
+    const anim2 = createAnimation(dot2, 200);
+    const anim3 = createAnimation(dot3, 400);
+
+    anim1.start();
+    anim2.start();
+    anim3.start();
+
+    return () => {
+      anim1.stop();
+      anim2.stop();
+      anim3.stop();
+    };
   }, []);
 
   return (
     <View style={styles.typingIndicator}>
       <View style={styles.typingDots}>
         <Animated.View
-          style={[styles.typingDot, { transform: [{ translateY: dot1Anim }] }]}
+          style={[
+            styles.typingDot, 
+            { transform: [{ translateY: dot1 }] }
+          ]}
         />
         <Animated.View
-          style={[styles.typingDot, { transform: [{ translateY: dot2Anim }] }]}
+          style={[
+            styles.typingDot, 
+            { transform: [{ translateY: dot2 }] }
+          ]}
         />
         <Animated.View
-          style={[styles.typingDot, { transform: [{ translateY: dot3Anim }] }]}
+          style={[
+            styles.typingDot, 
+            { transform: [{ translateY: dot3 }] }
+          ]}
         />
       </View>
       <Text style={styles.typingText}>답변 생성 중</Text>

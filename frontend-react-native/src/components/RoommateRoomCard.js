@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatPrice, formatArea, getRoomType, formatFloor } from '../utils/priceUtils';
 import FavoriteButton from './FavoriteButton';
@@ -41,7 +41,7 @@ const getNearestStation = (address) => {
   return "안암역 10분 거리";
 };
 
-const RoomMessageCard = ({ roomData, onPress, isFavorited = false, onFavoriteToggle, maxWidth = 280 }) => {
+const RoommateRoomCard = ({ roomData }) => {
   if (!roomData) {
     return null;
   }
@@ -60,13 +60,12 @@ const RoomMessageCard = ({ roomData, onPress, isFavorited = false, onFavoriteTog
         borderWidth: 1,
         borderColor: '#e0e0e0',
         width: '100%',
-        maxWidth: maxWidth,
+        maxWidth: 270,
       }}
     >
-      {/* 상단 섹션: 이미지 + 텍스트 정보 + 찜 버튼 */}
+      {/* 상단 섹션: 이미지 + 텍스트 정보 + 찜 개수 */}
       <View style={{
         flexDirection: 'row',
-        marginBottom: 10,
       }}>
         {/* 이미지 */}
         <Image
@@ -125,14 +124,14 @@ const RoomMessageCard = ({ roomData, onPress, isFavorited = false, onFavoriteTog
           </View>
         </View>
 
-        {/* 찜 하트와 개수 */}
+        {/* 찜 하트와 개수 (RoomMessageCard와 동일한 디자인) */}
         <View style={{
           alignItems: 'center',
           justifyContent: 'flex-start',
         }}>
           <FavoriteButton
-            isFavorited={isFavorited}
-            onPress={onFavoriteToggle}
+            isFavorited={false}
+            onPress={() => {}}
             size={22}
             heartSize={11}
           />
@@ -147,45 +146,8 @@ const RoomMessageCard = ({ roomData, onPress, isFavorited = false, onFavoriteTog
           </Text>
         </View>
       </View>
-
-      {/* 하단 섹션: 매물 확인하기 버튼 */}
-      <TouchableOpacity
-        style={{
-          backgroundColor: '#000000',
-          borderRadius: 25,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingVertical: 12,
-          paddingHorizontal: 20,
-          position: 'relative',
-          width: '100%',
-        }}
-        onPress={onPress}
-      >
-        <Text style={{
-          color: '#FFFFFF',
-          fontSize: 11,
-          fontWeight: '700',
-        }}>
-          매물 확인하기
-        </Text>
-        <View style={{
-          position: 'absolute',
-          right: 3,
-          width: 28,
-          height: 28,
-          borderRadius: 25,
-          backgroundColor: '#FF6600',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <Ionicons name="arrow-forward" size={25} color="#FFFFFF" />
-        </View>
-      </TouchableOpacity>
     </View>
   );
 };
 
-
-export default RoomMessageCard;
+export default RoommateRoomCard;

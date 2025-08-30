@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Alert,
   FlatList,
   TextInput,
@@ -17,16 +17,6 @@ import { Ionicons } from "@expo/vector-icons";
 import ApiService from "../services/api";
 import { generatePersonalityType, generateSubTags, getDefaultPersonalityData, isProfileComplete } from '../utils/personalityUtils';
 
-// 인증 체크 컴포넌트
-const VerificationCheck = ({ verified = true }) => (
-  <View style={styles.verificationCheck}>
-    <Ionicons 
-      name={verified ? "checkmark-circle" : "close-circle"} 
-      size={20} 
-      color={verified ? "#FF6600" : "#F44336"} 
-    />
-  </View>
-);
 
 export default function ProfileScreen({ navigation, user, onLogout }) {
   const [favorites, setFavorites] = useState([]);
@@ -34,7 +24,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
   const [bio, setBio] = useState('');
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [isEditingInfo, setIsEditingInfo] = useState(false);
-  
+
   // 내 정보 데이터
   const [infoData, setInfoData] = useState({
     currentLocation: '',
@@ -44,22 +34,22 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
     lifestyle: '',
     roommate: ''
   });
-  
+
   // 자기소개 데이터
   const [introduction, setIntroduction] = useState('');
   const [isEditingIntroduction, setIsEditingIntroduction] = useState(false);
-  
+
   // 사용자 프로필 데이터
   const [userProfile, setUserProfile] = useState(null);
-  
+
   // 개성 유형 데이터
   const [personalityData, setPersonalityData] = useState(getDefaultPersonalityData());
-  
+
   // refs
   const scrollViewRef = useRef(null);
   const introductionInputRef = useRef(null);
   const bioInputRef = useRef(null);
-  
+
   // 나이대 계산 함수
   const getAgeGroup = (age) => {
     if (!age) return '';
@@ -70,7 +60,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
     if (age >= 36 && age <= 39) return '30대 후반';
     return `${Math.floor(age / 10)}0대`;
   };
-  
+
   // 성별 변환 함수
   const getGenderText = (gender) => {
     if (gender === 'male') return '남성';
@@ -81,15 +71,15 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
   // 학교 이메일에서 학교명 추출 함수
   const getSchoolNameFromEmail = (schoolEmail) => {
     if (!schoolEmail) return '';
-    
+
     // @를 기준으로 도메인 추출
     const domain = schoolEmail.split('@')[1];
     if (!domain) return '';
-    
+
     // 일반적인 학교 도메인 패턴 매칭
     const schoolPatterns = {
       'snu.ac.kr': '서울대학교',
-      'korea.ac.kr': '고려대학교', 
+      'korea.ac.kr': '고려대학교',
       'yonsei.ac.kr': '연세대학교',
       'kaist.ac.kr': '카이스트',
       'postech.ac.kr': '포스텍',
@@ -99,12 +89,12 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
       'konkuk.ac.kr': '건국대학교',
       'dankook.ac.kr': '단국대학교',
     };
-    
+
     // 정확한 매칭이 있으면 사용
     if (schoolPatterns[domain]) {
       return schoolPatterns[domain];
     }
-    
+
     // 없으면 도메인에서 학교명 추출 시도 (university, univ 등 제거)
     let schoolName = domain
       .replace('.ac.kr', '')
@@ -112,15 +102,15 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
       .replace('university', '')
       .replace('univ', '')
       .replace('.', '');
-    
+
     // 첫글자 대문자로 변환하고 '대학교' 추가
     if (schoolName && schoolName.length > 0) {
       return schoolName.charAt(0).toUpperCase() + schoolName.slice(1) + '대학교';
     }
-    
+
     return '';
   };
-  
+
   // 사용자 정보 (로그인된 사용자 또는 기본값)
   const userData = user ? {
     id: user.id,
@@ -141,7 +131,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
     loadUserInfo();
     loadUserProfile();
   }, []);
-  
+
   // 사용자 프로필이 변경될 때 개성 유형 데이터 업데이트
   useEffect(() => {
     if (userProfile && isProfileComplete(userProfile)) {
@@ -153,7 +143,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
       setPersonalityData(getDefaultPersonalityData());
     }
   }, [userProfile]);
-  
+
   // 사용자 프로필 로드
   const loadUserProfile = async () => {
     try {
@@ -238,14 +228,14 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
       loadFavorites();
       // 사용자 프로필 새로고침 (성향 테스트 완료 시 반영)
       loadUserProfile();
-      
+
       // AsyncStorage에서 찜 변경 감지
       const checkFavoriteChanges = async () => {
         try {
           const AsyncStorage = require('@react-native-async-storage/async-storage').default;
           const lastChanged = await AsyncStorage.getItem('favoriteChanged');
           const lastLoaded = await AsyncStorage.getItem('favoriteLastLoaded');
-          
+
           if (lastChanged && lastChanged !== lastLoaded) {
             loadFavorites();
             await AsyncStorage.setItem('favoriteLastLoaded', lastChanged);
@@ -254,7 +244,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
           console.log('Storage check failed:', error);
         }
       };
-      
+
       checkFavoriteChanges();
     }, [userData.id])
   );
@@ -277,8 +267,8 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
       '이 방을 찜 목록에서 제거하시겠습니까?',
       [
         { text: '취소', style: 'cancel' },
-        { 
-          text: '삭제', 
+        {
+          text: '삭제',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -309,7 +299,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
         </View>
         <Text style={styles.favoriteArea}>{item.area}㎡ • 위험도 {item.risk_score}/10</Text>
       </View>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.removeButton}
         onPress={() => handleRemoveFavorite(item.room_id)}
       >
@@ -339,7 +329,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
   );
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
@@ -349,9 +339,9 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
         <Text style={styles.headerTitle}>내 정보</Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
-        style={styles.container} 
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -361,15 +351,92 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
           <View style={styles.profileImageContainer}>
             <Ionicons name="person-circle" size={150} color="#ddd" />
           </View>
-          
-          {/* 이름과 인증 */}
+
+          {/* 이름 */}
           <View style={styles.nameContainer}>
-            <View style={styles.nameRow}>
-              <Text style={styles.userName}>{userData.name}</Text>
-              <VerificationCheck verified={true} />
-            </View>
+            <Text style={styles.userName}>{userData.name}</Text>
           </View>
-          
+
+          {/* 기본 정보 */}
+          <View style={styles.basicInfoRow}>
+            <Text style={styles.basicInfoText}>
+              {userProfile ?
+                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}${getSchoolNameFromEmail(userProfile.school_email) ? `, ${getSchoolNameFromEmail(userProfile.school_email)}` : ''}` :
+                '정보 로딩 중...'
+              }
+            </Text>
+          </View>
+
+          {/* 한줄 소개 - 말풍선 스타일 */}
+          <View style={styles.bioSection}>
+            {isEditingBio ? (
+              <View style={styles.editingContainer}>
+                <TextInput
+                  ref={bioInputRef}
+                  style={styles.bioInput}
+                  value={bio}
+                  onChangeText={setBio}
+                  placeholder="한줄 소개를 입력해주세요"
+                  maxLength={40}
+                  multiline={false}
+                  returnKeyType="done"
+                  onSubmitEditing={async () => {
+                    const success = await saveBio();
+                    if (success) {
+                      setIsEditingBio(false);
+                    }
+                  }}
+                />
+                <View style={styles.editingActions}>
+                  <Text style={styles.characterCount}>({bio.length}/40)</Text>
+                  <TouchableOpacity
+                    style={styles.bioSaveButton}
+                    onPress={async () => {
+                      const success = await saveBio();
+                      if (success) {
+                        setIsEditingBio(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.bioSaveButtonText}>저장</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.bioDisplayContainer}>
+                <TouchableOpacity
+                  style={styles.bioBox}
+                  onPress={() => {
+                    setIsEditingBio(true);
+                    setTimeout(() => {
+                      bioInputRef.current?.focus();
+                    }, 100);
+                  }}
+                >
+                  <Text style={styles.bioBoxText}>
+                    {bio || '먼지 없는 집 선호합니다. 깨끗한 집 약속드려요 :)'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.editIconButton}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setIsEditingBio(true);
+                    setTimeout(() => {
+                      bioInputRef.current?.focus();
+                    }, 100);
+                  }}
+                >
+                  <Image 
+                    source={require('../../assets/pen.png')} 
+                    style={styles.penIcon}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
           {/* 태그 컨테이너 */}
           <View style={styles.tagContainer}>
             {userProfile && isProfileComplete(userProfile) ? (
@@ -377,8 +444,8 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
               <>
                 {/* 메인 태그와 버튼 */}
                 <View style={styles.tagHeader}>
-                  <Text style={styles.mainTagText}>{personalityData.mainType}</Text>
-                  <TouchableOpacity 
+                  <Text style={styles.mainTagText}>[ {personalityData.mainType} ]</Text>
+                  <TouchableOpacity
                     style={styles.retestButton}
                     onPress={() => {
                       if (navigation && navigation.getParent) {
@@ -391,7 +458,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                     <Text style={styles.retestButtonText}>다시 테스트하기</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* 서브 태그들 */}
                 <View style={styles.subTagsContainer}>
                   <View style={styles.subTagsWrapper}>
@@ -410,7 +477,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                 <Text style={styles.incompleteProfileSubtitle}>
                   성향 테스트를 완료하면 나와 잘 맞는{'\n'}룸메이트를 찾을 수 있어요
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.personalityTestButton}
                   onPress={() => {
                     if (navigation && navigation.navigate) {
@@ -425,89 +492,17 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
               </View>
             )}
           </View>
-          
-          {/* 기본 정보 */}
-          <View style={styles.basicInfoRow}>
-            <Text style={styles.basicInfoText}>
-              {userProfile ? 
-                `${getAgeGroup(userProfile.age)}${getGenderText(userProfile.gender) ? `, ${getGenderText(userProfile.gender)}` : ''}${getSchoolNameFromEmail(userProfile.school_email) ? `, ${getSchoolNameFromEmail(userProfile.school_email)}` : ''}` :
-                '정보 로딩 중...'
-              }
-            </Text>
-          </View>
 
-          {/* 한줄 소개 */}
-          <View style={styles.bioSection}>
-            <View style={styles.bioHeader}>
-              <Text style={styles.bioLabel}>한줄 소개</Text>
-              <TouchableOpacity 
-                style={[styles.editBioButton, isEditingBio && styles.saveButton]}
-                onPress={async () => {
-                  if (isEditingBio) {
-                    const success = await saveBio();
-                    if (success) {
-                      setIsEditingBio(false);
-                      console.log('한줄 소개 저장 완료');
-                    }
-                  } else {
-                    setIsEditingBio(true);
-                    setTimeout(() => {
-                      bioInputRef.current?.focus();
-                    }, 100);
-                  }
-                }}
-              >
-                <Text style={[styles.editBioButtonText, isEditingBio && styles.saveButtonText]}>
-                  {isEditingBio ? '저장하기' : '수정하기'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {isEditingBio ? (
-              <View>
-                <TextInput
-                  ref={bioInputRef}
-                  style={styles.bioInput}
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="한줄 소개를 입력해주세요"
-                  maxLength={40}
-                  multiline={false}
-                  returnKeyType="done"
-                  onSubmitEditing={async () => {
-                    const success = await saveBio();
-                    if (success) {
-                      setIsEditingBio(false);
-                    }
-                  }}
-                />
-                <Text style={styles.characterCount}>({bio.length}/40)</Text>
-              </View>
-            ) : (
-              <TouchableOpacity 
-                style={styles.bioTextContainer}
-                onPress={() => {
-                  setIsEditingBio(true);
-                  setTimeout(() => {
-                    bioInputRef.current?.focus();
-                  }, 100);
-                }}
-              >
-                <Text style={styles.bioText}>
-                  {bio || '한줄 소개를 입력해주세요'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            
-            {/* 구분선 */}
-            <View style={styles.divider} />
-          </View>
         </View>
+
+        {/* 구분선 */}
+        <View style={styles.divider} />
 
         {/* 내 정보 섹션 */}
         <View style={styles.infoSection}>
           <View style={styles.infoSectionHeader}>
             <Text style={styles.infoSectionTitle}>내 정보</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.editInfoButton, isEditingInfo && styles.saveButton]}
               onPress={async () => {
                 if (isEditingInfo) {
@@ -526,7 +521,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.infoContainer}>
             <View style={styles.infoTable}>
               <View style={styles.tableRow}>
@@ -549,7 +544,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.tableRow}>
                 <View style={styles.labelCell}>
                   <Text style={styles.tableLabel}>희망 거주 지역</Text>
@@ -570,7 +565,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.tableRow}>
                 <View style={styles.labelCell}>
                   <Text style={styles.tableLabel}>예산 범위</Text>
@@ -591,7 +586,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.tableRow}>
                 <View style={styles.labelCell}>
                   <Text style={styles.tableLabel}>입주 가능일 / 기간</Text>
@@ -613,7 +608,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.tableRow}>
                 <View style={styles.labelCell}>
                   <Text style={styles.tableLabel}>라이프스타일</Text>
@@ -635,7 +630,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.tableRow}>
                 <View style={styles.labelCell}>
                   <Text style={styles.tableLabel}>원하는 룸메이트</Text>
@@ -665,7 +660,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
         <View style={styles.introductionSection}>
           <View style={styles.introductionSectionHeader}>
             <Text style={styles.introductionSectionTitle}>자기소개</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.editIntroButton, isEditingIntroduction && styles.saveButton]}
               onPress={async () => {
                 if (isEditingIntroduction) {
@@ -690,7 +685,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.introductionContainer}>
             {isEditingIntroduction ? (
               <TextInput
@@ -717,7 +712,7 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
 
         {/* 설정 */}
         <View style={styles.settingsSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.logoutButton}
             onPress={() => {
               Alert.alert(
@@ -725,8 +720,8 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
                 '정말 로그아웃 하시겠습니까?',
                 [
                   { text: '취소', style: 'cancel' },
-                  { 
-                    text: '로그아웃', 
+                  {
+                    text: '로그아웃',
                     style: 'destructive',
                     onPress: async () => {
                       try {
@@ -755,7 +750,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    paddingTop: 100,
+    paddingTop: 120,
   },
   fixedHeaderContainer: {
     position: 'absolute',
@@ -763,8 +758,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FAFAFA',
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 80,
+    marginBottom: 10,
+    paddingBottom: 10,
     alignItems: 'center',
     zIndex: 1000,
   },
@@ -789,19 +785,11 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 8,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-  },
-  verificationCheck: {
-    marginLeft: 8,
   },
   tagContainer: {
     backgroundColor: '#E8E8E8',
@@ -820,7 +808,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   mainTagText: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#333',
     fontWeight: '600',
     flex: 1,
@@ -846,7 +834,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subTag: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -861,7 +849,7 @@ const styles = StyleSheet.create({
   basicInfoRow: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   basicInfoText: {
     fontSize: 16,
@@ -870,62 +858,92 @@ const styles = StyleSheet.create({
   },
   bioSection: {
     width: '100%',
-  },
-  bioHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  bioLabel: {
-    fontSize: 16,
+  // 하양 박스 + 연필 아이콘 스타일
+  bioDisplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  bioBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 9,
+    borderWidth: 0.8,
+    borderColor: '#C9C9C9',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bioBoxText: {
+    color: '#343434',
+    fontSize: 15,
+    fontFamily: 'Pretendard',
     fontWeight: '600',
-    color: '#333',
+    textAlign: 'center',
+    opacity: 0.8,
   },
-  editButton: {
-    padding: 4,
+  editIconButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  editBioButton: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+  penIcon: {
+    width: 32,
+    height: 32,
   },
-  editBioButtonText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+  // 편집 모드 스타일
+  editingContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  editingActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 8,
+    paddingHorizontal: 16,
+    gap: 8,
   },
   bioInput: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 14,
     color: '#333',
-    minHeight: 40,
+    textAlign: 'center',
+    width: '90%',
+    minHeight: 44,
   },
   characterCount: {
     fontSize: 12,
     color: '#999',
-    textAlign: 'right',
-    marginTop: 4,
   },
-  bioTextContainer: {
-    minHeight: 40,
-    justifyContent: 'center',
+  bioSaveButton: {
+    backgroundColor: '#FF6600',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  bioText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+  bioSaveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
   },
   divider: {
     height: 2,
     backgroundColor: '#D0D0D0',
     marginHorizontal: 0,
-    marginTop: 20,
-    marginBottom: 0,
+    marginTop: 0,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

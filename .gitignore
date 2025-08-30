@@ -122,11 +122,26 @@ yarn-error.log*
 .expo/
 expo-env.d.ts
 
+# EAS Build (keep eas.json but ignore build outputs)
+.easignore
+
 # Build artifacts
 dist/
 build/
 *.tar.gz
 *.zip
+*.apk
+*.ipa
+*.aab
+
+# Railway deployment files
+railway.json
+Procfile
+runtime.txt
+
+# Production environment files
+.env.production
+.env.staging
 
 # Documentation artifacts
 docs/_build/
