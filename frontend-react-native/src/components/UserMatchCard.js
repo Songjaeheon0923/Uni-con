@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CheckIcon from './CheckIcon';
+import PersonIcon from './icons/PersonIcon';
+import { useNavigation } from '@react-navigation/native';
 
 const { width: screenWidth } = Dimensions.get('window');
 const HORIZONTAL_MARGIN = 15; // 좌우 여백 고정값
 
-const UserMatchCard = ({ user, onPress, index }) => {
+const UserMatchCard = ({ user, onPress, index, roomId, showToggle = true, showProfileButton = true }) => {
+  const navigation = useNavigation();
   const [message, setMessage] = useState('안녕하세요! 혹시 룸메 구하시나요?');
   const [isSent, setIsSent] = useState(false);
+  const [showCompatibility, setShowCompatibility] = useState(false);
+  const [sentChatRoomId, setSentChatRoomId] = useState(null);
   // Helper functions
   const getCompatibilityText = (score) => {
     if (score >= 0.8) return '좋음';
@@ -69,6 +74,42 @@ const UserMatchCard = ({ user, onPress, index }) => {
     return '';
   };
 
+  // 실제 태그 데이터 생성 함수
+  const getUserTags = (user) => {
+    const tags = [];
+    
+    // profile 데이터가 있는 경우
+    if (user.profile) {
+      // 수면 패턴
+      if (user.profile.sleep_type === 'early_bird') tags.push('종달새');
+      else if (user.profile.sleep_type === 'night_owl') tags.push('올빼미');
+      
+      // 흡연 여부
+      if (user.profile.smoking_status === 'non_smoker_strict' || user.profile.smoking_status === 'non_smoker_ok') {
+        tags.push('비흡연');
+      } else if (user.profile.smoking_status === 'smoker_indoor_no' || user.profile.smoking_status === 'smoker_indoor_yes') {
+        tags.push('흡연');
+      }
+    }
+    
+    // tags 필드가 있는 경우
+    if (user.tags && Array.isArray(user.tags)) {
+      tags.push(...user.tags);
+    }
+    
+    // 태그가 없으면 기본값
+    if (tags.length === 0) {
+      // user_id를 기반으로 기본 태그 생성 (일관성 유지)
+      const seed = parseInt(user.user_id) || 1;
+      const sleepIndex = seed % 2;
+      tags.push(sleepIndex === 0 ? '올빼미' : '종달새');
+      const smokingIndex = (seed * 3) % 10 < 8 ? 1 : 0;
+      tags.push(smokingIndex === 1 ? '비흡연' : '흡연');
+    }
+    
+    return tags;
+  };
+
   const getLifestyleCompatibility = (matchingDetails) => {
     const categories = [
       {
@@ -104,13 +145,24 @@ const UserMatchCard = ({ user, onPress, index }) => {
   const secondRow = compatibility.slice(2, 4);
 
   return (
-    <View style={styles.userCard}>
-      {/* 프로필 이미지 */}
-      <View style={styles.profileImageBg}>
+    <View style={[styles.userCard, !showProfileButton && styles.userCardCompact]}>
+      {/* 프로필 이미지 - 토글 기능이 있을 때만 클릭 가능 */}
+      <TouchableOpacity 
+        style={styles.profileImageBg}
+        onPress={() => {
+          if (user.user_id) {
+            navigation.navigate('UserProfile', { 
+              userId: user.user_id.toString(),
+              roomId: roomId 
+            });
+          }
+        }}
+        activeOpacity={0.7}
+      >
         <View style={styles.profileImage}>
-          <Ionicons name="person" size={34} color="#595959" />
+          <PersonIcon size={34} color="#595959" />
         </View>
-      </View>
+      </TouchableOpacity>
 
       {/* 사용자 정보 */}
       <View style={styles.userInfoSection}>
@@ -122,14 +174,39 @@ const UserMatchCard = ({ user, onPress, index }) => {
         </View>
       </View>
 
-      {/* 매칭률 */}
-      <View style={styles.matchingSection}>
-        <Text style={[
-          styles.scorePercentage,
-          Math.round((user.compatibility_score || 0.8) * 100) === 100 && styles.scorePercentage100
-        ]}>{Math.round((user.compatibility_score || 0.8) * 100)}%</Text>
-        <Text style={styles.scoreLabel}>{getCompatibilityText(user.compatibility_score || 0.8)}</Text>
-      </View>
+      {/* 프로필/매칭률 토글 */}
+      <TouchableOpacity 
+        style={styles.matchingSection}
+        onPress={showToggle ? () => setShowCompatibility(!showCompatibility) : undefined}
+        activeOpacity={showToggle ? 0.7 : 1}
+        disabled={!showToggle}
+      >
+        {showToggle && showCompatibility ? (
+          <>
+            <Text style={[
+              styles.scorePercentage,
+              Math.round(user.compatibility_score ? user.compatibility_score * 100 : (user.matching_score || 80)) === 100 && styles.scorePercentage100
+            ]}>{Math.round(user.compatibility_score ? user.compatibility_score * 100 : (user.matching_score || 80))}%</Text>
+            <Text style={styles.scoreLabel}>{getCompatibilityText(user.compatibility_score || (user.matching_score || 80) / 100)}</Text>
+          </>
+        ) : showToggle ? (
+          <View style={styles.profileTagsContainer}>
+            {getUserTags(user).slice(0, 2).map((tag, idx) => (
+              <View key={idx} style={styles.profileTag}>
+                <Text style={styles.profileTagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <>
+            <Text style={[
+              styles.scorePercentage,
+              Math.round(user.compatibility_score ? user.compatibility_score * 100 : (user.matching_score || 80)) === 100 && styles.scorePercentage100
+            ]}>{Math.round(user.compatibility_score ? user.compatibility_score * 100 : (user.matching_score || 80))}%</Text>
+            <Text style={styles.scoreLabel}>{getCompatibilityText(user.compatibility_score || (user.matching_score || 80) / 100)}</Text>
+          </>
+        )}
+      </TouchableOpacity>
 
       {/* 메시지 (프로필 이미지 아래) */}
       <View style={styles.messageWrapper}>
@@ -187,6 +264,24 @@ const UserMatchCard = ({ user, onPress, index }) => {
         </View>
       </View>
 
+      {/* 프로필 확인하기 버튼 (조건부 표시) */}
+      {showProfileButton && (
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={() => {
+            navigation.navigate('UserProfile', {
+              userId: user.user_id?.toString(),
+              roomId: roomId || null
+            });
+          }}
+        >
+          <Text style={styles.profileButtonText}>프로필 확인하기</Text>
+          <View style={styles.profileArrowIcon}>
+            <Ionicons name="arrow-forward" size={25} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+      )}
+
       {/* 메시지 입력창 */}
       <View style={styles.messageInputContainer}>
         <TextInput
@@ -201,18 +296,36 @@ const UserMatchCard = ({ user, onPress, index }) => {
 
       {/* 보내기 버튼 또는 전송 완료 상태 */}
       {isSent ? (
-        <View style={styles.sentStatus}>
+        <TouchableOpacity 
+          style={styles.sentStatus}
+          onPress={() => {
+            if (sentChatRoomId) {
+              navigation.navigate('MainTabs', {
+                screen: '홈',
+                params: {
+                  screen: 'Chat',
+                  params: {
+                    chatRoomId: sentChatRoomId
+                  }
+                }
+              });
+            }
+          }}
+        >
           <Text style={styles.sentStatusText}>전송되었습니다</Text>
           <View style={styles.checkIconContainer}>
             <CheckIcon width={10} height={7} color="black" />
           </View>
-        </View>
+        </TouchableOpacity>
       ) : (
         <TouchableOpacity
           style={styles.sendButton}
           onPress={async () => {
             setIsSent(true);
-            await onPress(user, message);
+            const chatRoomId = await onPress(user, message);
+            if (chatRoomId) {
+              setSentChatRoomId(chatRoomId);
+            }
           }}
         >
           <Text style={styles.sendButtonText}>보내기</Text>
@@ -228,7 +341,7 @@ const UserMatchCard = ({ user, onPress, index }) => {
 const styles = StyleSheet.create({
   userCard: {
     width: screenWidth - (HORIZONTAL_MARGIN * 2),
-    height: 255,
+    height: 295,
     backgroundColor: 'white',
     position: 'relative',
     borderRadius: 18,
@@ -241,6 +354,9 @@ const styles = StyleSheet.create({
     marginLeft: HORIZONTAL_MARGIN,
     marginRight: HORIZONTAL_MARGIN,
     overflow: 'visible',
+  },
+  userCardCompact: {
+    height: 255, // 프로필 버튼이 없을 때 원래 높이로 복원
   },
   profileImageBg: {
     width: 53,
@@ -274,7 +390,7 @@ const styles = StyleSheet.create({
   userName: {
     color: '#474747',
     fontSize: 16,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '700',
     lineHeight: 28.96,
     wordWrap: 'break-word',
@@ -327,7 +443,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#10B585',
     fontSize: 32,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '800',
     lineHeight: 38,
     wordWrap: 'break-word',
@@ -345,16 +461,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: 'black',
     fontSize: 13,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '700',
     lineHeight: 18,
-    wordWrap: 'break-word',
     width: '100%',
     includeFontPadding: false,
-    paddingBottom: 0,
-    paddingTop: 0,
-    flexShrink: 1,
-    flexWrap: 'wrap',
+  },
+  profileTagsContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 6,
+  },
+  profileTag: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  profileTagText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'Pretendard',
+    fontWeight: '500',
   },
   messageWrapper: {
     position: 'absolute',
@@ -428,6 +556,34 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileButton: {
+    position: 'absolute',
+    left: 19,
+    top: 250,
+    width: 150,
+    height: 32,
+    backgroundColor: '#000000',
+    borderRadius: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: 'Pretendard',
+  },
+  profileArrowIcon: {
+    position: 'absolute',
+    right: 3,
+    width: 28,
+    height: 28,
+    borderRadius: 25,
+    backgroundColor: '#FF6600',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   messageInputContainer: {
     position: 'absolute',

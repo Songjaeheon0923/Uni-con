@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import { useSignup } from '../contexts/SignupContext';
+import VerificationProgressBar from '../components/VerificationProgressBar';
 
 export default function SignupStep2Screen({ navigation }) {
   const { signupData, updateStep2Data } = useSignup();
@@ -135,14 +136,10 @@ export default function SignupStep2Screen({ navigation }) {
         style={styles.keyboardAvoid}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* 헤더 - 뒤로가기 버튼과 로고 */}
+          {/* 헤더 - 로고만 */}
           <View style={styles.headerRow}>
-            <TouchableOpacity 
-              style={styles.backButton} 
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="chevron-back" size={24} color="#000" />
-            </TouchableOpacity>
+            {/* 왼쪽 여백 */}
+            <View style={styles.headerSpacer} />
             
             {/* 로고 */}
             <View style={styles.logoContainer}>
@@ -178,13 +175,7 @@ export default function SignupStep2Screen({ navigation }) {
           </View>
 
           {/* 진행 상태 표시 */}
-          <View style={styles.progressContainer}>
-            <Image 
-              source={require('../../assets/stage1.png')} 
-              style={styles.stageImage}
-              resizeMode="contain"
-            />
-          </View>
+          <VerificationProgressBar currentStep={1} />
 
           {/* 메인 컨텐츠 */}
           <View style={styles.content}>
@@ -426,17 +417,6 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
     height: 40,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  stageImage: {
-    width: 165,
-    height: 48,
   },
   content: {
     flex: 1,

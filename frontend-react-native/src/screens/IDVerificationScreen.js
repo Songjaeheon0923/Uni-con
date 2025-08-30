@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSignup } from '../contexts/SignupContext';
+import VerificationProgressBar from '../components/VerificationProgressBar';
 
 const { width } = Dimensions.get('window');
 
@@ -79,13 +80,7 @@ export default function IDVerificationScreen({ navigation }) {
         </View>
 
         {/* 진행 상태 표시 */}
-        <View style={styles.progressContainer}>
-          <Image 
-            source={require('../../assets/stage2.png')} 
-            style={styles.stageImage}
-            resizeMode="contain"
-          />
-        </View>
+        <VerificationProgressBar currentStep={2} />
 
         {/* 메인 컨텐츠 */}
         <View style={styles.content}>
@@ -193,17 +188,6 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  stageImage: {
-    width: 165,
-    height: 48,
   },
   content: {
     flex: 1,

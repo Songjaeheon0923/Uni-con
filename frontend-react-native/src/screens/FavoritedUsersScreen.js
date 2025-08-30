@@ -315,8 +315,8 @@ export default function FavoritedUsersScreen() {
           {/* 궁합 점수 오버레이 */}
           {showMatchScores && (
             <View style={styles.matchScoreOverlay}>
-              <Text style={styles.matchScoreOverlayText}>{user.matching_score || 0}%</Text>
-              <Text style={styles.matchScoreLabel}>{getMatchScoreLabel(user.matching_score || 0)}</Text>
+              <Text style={styles.matchScoreOverlayText}>{Math.round(user.matching_score || 0)}%</Text>
+              <Text style={styles.matchScoreLabel}>{getMatchScoreLabel(Math.round(user.matching_score || 0))}</Text>
             </View>
           )}
         </View>
@@ -370,6 +370,111 @@ export default function FavoritedUsersScreen() {
       });
     } catch (error) {
       console.error('UserProfile 네비게이션 실패:', error);
+    }
+  };
+
+  // 룸메이트 추천 메시지 전송 함수 (UserProfileScreen의 handleSendMessage와 동일)
+  const handleSendRoommateMessage = async (user, message) => {
+    if (!user || !user.user_id) {
+      console.error('handleSendRoommateMessage: user 정보가 없습니다');
+      return;
+    }
+
+    try {
+      // 기존 채팅방이 있는지 확인
+      const response = await ApiService.getChatRooms();
+      const chatRooms = Array.isArray(response) ? response : (response?.rooms || []);
+
+      const existingRoom = chatRooms.find(room =>
+        room.participants && room.participants.some(participant => participant.user_id === parseInt(user.user_id))
+      );
+
+      let chatRoomId;
+      if (existingRoom) {
+        // 기존 채팅방이 있으면 해당 채팅방 사용
+        chatRoomId = existingRoom.room_id;
+      } else {
+        // 새 채팅방 생성
+        const newRoom = await ApiService.createChatRoom(
+          'individual',
+          [parseInt(user.user_id)],
+          `${user?.nickname || user?.name || '사용자'}님과의 채팅`
+        );
+        chatRoomId = newRoom.room_id;
+      }
+
+      // 1. 텍스트 메시지 전송
+      if (message && message.trim()) {
+        await ApiService.sendMessage(chatRoomId, message.trim());
+      }
+
+      // 2. 매물 카드 전송 (roomId가 있는 경우에만) - 텍스트 바로 다음에
+      if (roomId && room) {
+        try {
+          const roomCardMessage = `ROOM_CARD:${JSON.stringify({
+            room_id: room.room_id || room.id || roomId,
+            transaction_type: room.transaction_type,
+            price_deposit: room.price_deposit,
+            price_monthly: room.price_monthly,
+            area: room.area,
+            rooms: room.rooms,
+            floor: room.floor,
+            address: room.address,
+            favorite_count: room.favorite_count || 0
+          })}`;
+          await ApiService.sendMessage(chatRoomId, roomCardMessage);
+        } catch (error) {
+          console.error('매물 정보 전송 실패:', error);
+        }
+      }
+
+      // 3. 현재 사용자 프로필 카드 전송 (마지막에)
+      try {
+        if (currentUserProfile) {
+          const currentUser = await ApiService.getUserById(currentUserProfile.user_id);
+
+          if (currentUser) {
+            // 사용자 태그 생성
+            const generateUserTags = (profile) => {
+              const tags = [];
+              if (profile) {
+                // 수면 패턴
+                if (profile.sleep_type === 'early_bird') tags.push('종달새');
+                else if (profile.sleep_type === 'night_owl') tags.push('올빼미');
+
+                // 흡연 여부
+                if (profile.smoking_status === 'non_smoker_strict' || profile.smoking_status === 'non_smoker_ok') {
+                  tags.push('비흡연');
+                } else if (profile.smoking_status === 'smoker_indoor_no' || profile.smoking_status === 'smoker_indoor_yes') {
+                  tags.push('흡연');
+                }
+              }
+              return tags;
+            };
+
+            const userProfileCardMessage = `USER_PROFILE:${JSON.stringify({
+              user_id: currentUser.id || currentUser.user_id,
+              name: currentUser.name,
+              nickname: currentUser.nickname || currentUser.name,
+              ageGroup: getAgeGroup(currentUser.profile?.age),
+              gender: getGenderText(currentUser.gender),
+              school: getSchoolNameFromEmail(currentUser.school_email),
+              bio: currentUser.user_info?.bio || '안녕하세요!',
+              tags: generateUserTags(currentUser.profile),
+              compatibility_score: 0.85 // 기본 궁합 점수
+            })}`;
+            await ApiService.sendMessage(chatRoomId, userProfileCardMessage);
+          }
+        }
+      } catch (error) {
+        console.error('현재 사용자 프로필 전송 실패:', error);
+      }
+
+      // 채팅방 ID 반환 (자동 이동 제거)
+      return chatRoomId;
+
+    } catch (error) {
+      console.error('룸메이트 추천 메시지 전송 실패:', error);
     }
   };
 
@@ -502,7 +607,9 @@ export default function FavoritedUsersScreen() {
               key={user.user_id || index}
               user={user}
               index={index}
-              onPress={handleUserPress}
+              onPress={handleSendRoommateMessage}
+              showToggle={false}
+              showProfileButton={false}
             />
           ))}
         </ScrollView>
@@ -526,7 +633,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    paddingTop: 60,
+    paddingTop: 80,
     backgroundColor: '#fff',
   },
   headerTitle: {

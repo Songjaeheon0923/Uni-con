@@ -1,7 +1,7 @@
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
 
-const PersonIcon = ({ size = 28, color = "black" }) => {
+const PersonIcon = ({ size = 34, color = "#595959" }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 28 28" fill="none">
       <Path 

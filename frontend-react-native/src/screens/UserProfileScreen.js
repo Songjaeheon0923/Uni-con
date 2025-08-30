@@ -11,6 +11,8 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from "@expo/vector-icons";
@@ -66,9 +68,114 @@ export default function UserProfileScreen({ route, navigation }) {
         chatRoomId = newRoom.room_id;
       }
 
-      // 메시지 전송
+      // 1. 텍스트 메시지 전송
       if (recommendationMessage && recommendationMessage.trim()) {
         await ApiService.sendMessage(chatRoomId, recommendationMessage.trim());
+      }
+
+      // 2. 매물 카드 전송 (roomId가 있는 경우에만) - 텍스트 바로 다음에
+      if (roomId) {
+        try {
+          const roomData = await ApiService.getRoomDetail(roomId);
+          if (roomData) {
+            const roomCardMessage = `ROOM_CARD:${JSON.stringify({
+              room_id: roomData.room_id || roomData.id,
+              transaction_type: roomData.transaction_type,
+              price_deposit: roomData.price_deposit,
+              price_monthly: roomData.price_monthly,
+              area: roomData.area,
+              rooms: roomData.rooms,
+              floor: roomData.floor,
+              address: roomData.address,
+              favorite_count: roomData.favorite_count || 0
+            })}`;
+            await ApiService.sendMessage(chatRoomId, roomCardMessage);
+          }
+        } catch (error) {
+          console.error('매물 정보 로드 실패:', error);
+        }
+      }
+
+      // 3. 현재 사용자 프로필 카드 전송 (마지막에)
+      try {
+        const currentUserProfile = await ApiService.getUserProfile();
+        const currentUser = await ApiService.getUserById(currentUserProfile.user_id);
+        
+        if (currentUser) {
+          // 나이대 계산
+          const getAgeGroup = (age) => {
+            if (!age) return '';
+            if (age >= 19 && age <= 23) return '20대 초반';
+            if (age >= 24 && age <= 27) return '20대 중반';
+            if (age >= 28 && age <= 30) return '20대 후반';
+            if (age >= 31 && age <= 35) return '30대 초반';
+            if (age >= 36 && age <= 39) return '30대 후반';
+            return `${Math.floor(age / 10)}0대`;
+          };
+
+          // 성별 텍스트
+          const getGenderText = (gender) => {
+            if (gender === 'male') return '남성';
+            if (gender === 'female') return '여성';
+            return '';
+          };
+
+          // 학교 이름 추출
+          const getSchoolNameFromEmail = (schoolEmail) => {
+            if (!schoolEmail) return '';
+            
+            const domain = schoolEmail.split('@')[1];
+            if (!domain) return '';
+            
+            const schoolPatterns = {
+              'snu.ac.kr': '서울대학교',
+              'korea.ac.kr': '고려대학교',
+              'yonsei.ac.kr': '연세대학교',
+              'kaist.ac.kr': '카이스트',
+              'postech.ac.kr': '포스텍',
+              'seoul.ac.kr': '서울시립대학교',
+              'hanyang.ac.kr': '한양대학교',
+              'cau.ac.kr': '중앙대학교',
+              'konkuk.ac.kr': '건국대학교',
+              'dankook.ac.kr': '단국대학교',
+            };
+            
+            return schoolPatterns[domain] || '';
+          };
+
+          // 사용자 태그 생성
+          const generateUserTags = (profile) => {
+            const tags = [];
+            if (profile) {
+              // 수면 패턴
+              if (profile.sleep_type === 'early_bird') tags.push('종달새');
+              else if (profile.sleep_type === 'night_owl') tags.push('올빼미');
+              
+              // 흡연 여부
+              if (profile.smoking_status === 'non_smoker_strict' || profile.smoking_status === 'non_smoker_ok') {
+                tags.push('비흡연');
+              } else if (profile.smoking_status === 'smoker_indoor_no' || profile.smoking_status === 'smoker_indoor_yes') {
+                tags.push('흡연');
+              }
+            }
+            return tags;
+          };
+
+          const userProfileCardMessage = `USER_PROFILE:${JSON.stringify({
+            user_id: currentUser.id || currentUser.user_id,
+            name: currentUser.name,
+            nickname: currentUser.nickname || currentUser.name,
+            ageGroup: getAgeGroup(currentUser.profile?.age),
+            gender: getGenderText(currentUser.gender),
+            school: getSchoolNameFromEmail(currentUser.school_email),
+            bio: currentUser.user_info?.bio || '안녕하세요!',
+            tags: generateUserTags(currentUser.profile),
+            compatibility_score: 0.85 // 기본 궁합 점수
+          })}`;
+          await ApiService.sendMessage(chatRoomId, userProfileCardMessage);
+        }
+      } catch (error) {
+        console.error('현재 사용자 프로필 로드 실패:', error);
       }
 
       // 전송 완료 상태로 변경
@@ -331,33 +438,68 @@ export default function UserProfileScreen({ route, navigation }) {
             }
             // 프로필이 미완성인 경우 빈 배열 유지 (태그 없음)
 
-            // 나와의 궁합 점수 계산 (내 프로필과 비교)
+            // API에서 궁합점수 가져오기 (roomId가 있으면 getRoomMatches를 우선 시도)
             try {
-              const myProfile = await ApiService.getUserProfile();
-              console.log("내 프로필:", myProfile);
-              console.log("다른 사용자 프로필:", userProfile.profile);
-              console.log("내 프로필 완성도:", isProfileComplete(myProfile));
-              console.log(
-                "다른 사용자 프로필 완성도:",
-                isProfileComplete(userProfile.profile)
-              );
-
-              if (
-                myProfile &&
-                userProfile.profile &&
-                isProfileComplete(myProfile) &&
-                isProfileComplete(userProfile.profile)
-              ) {
-                compatibilityData = calculateDetailedCompatibility(
-                  myProfile,
-                  userProfile.profile
+              let matchingUser = null;
+              
+              // roomId가 있으면 해당 방의 찜한 유저 목록에서 먼저 찾기
+              if (roomId) {
+                try {
+                  const roomMatchedUsers = await ApiService.getRoomMatches(roomId);
+                  console.log("방 찜한 사용자들:", roomMatchedUsers);
+                  matchingUser = roomMatchedUsers?.find(user => 
+                    user.user_id?.toString() === userId?.toString()
+                  );
+                  if (matchingUser) {
+                    console.log("방 찜한 사용자 목록에서 찾음:", matchingUser);
+                  }
+                } catch (roomError) {
+                  console.log("getRoomMatches 실패:", roomError);
+                }
+              }
+              
+              // 방 찜한 사용자에서 찾지 못했거나 roomId가 없으면 전체 매칭에서 찾기
+              if (!matchingUser) {
+                const allMatchingUsers = await ApiService.getMatches();
+                console.log("전체 매칭 사용자들:", allMatchingUsers);
+                matchingUser = allMatchingUsers?.find(user => 
+                  user.user_id?.toString() === userId?.toString()
                 );
-                console.log("계산된 궁합 점수:", compatibilityData);
+                if (matchingUser) {
+                  console.log("전체 매칭 사용자 목록에서 찾음:", matchingUser);
+                }
+              }
+              
+              if (matchingUser) {
+                let score;
+                
+                // matching_score 우선 사용 (방 찜한 사용자 데이터)
+                if (matchingUser.matching_score) {
+                  score = Math.round(matchingUser.matching_score);
+                  console.log("matching_score 사용:", score);
+                } else if (matchingUser.compatibility_score) {
+                  // compatibility_score가 0-1 범위라면 백분율로 변환
+                  const rawScore = matchingUser.compatibility_score;
+                  score = rawScore > 1 ? Math.round(rawScore) : Math.round(rawScore * 100);
+                  console.log("compatibility_score 사용:", score);
+                } else {
+                  console.log("궁합점수 필드를 찾을 수 없음");
+                  score = 80; // 기본값
+                }
+                
+                compatibilityData = {
+                  totalScore: score,
+                  sleepScore: score,
+                  cleaningScore: score,
+                  smokingScore: score,
+                  livingRangeScore: score
+                };
+                console.log("최종 궁합 점수:", compatibilityData);
               } else {
-                console.log("프로필 조건 미충족 - 기본 궁합 점수 사용");
+                console.log("매칭 사용자 목록에서 해당 사용자를 찾을 수 없음 - 기본 궁합 점수 사용");
               }
             } catch (error) {
-              console.log("내 프로필 로드 실패, 기본 궁합 점수 사용:", error);
+              console.log("API 궁합 점수 로드 실패, 기본 궁합 점수 사용:", error);
             }
           }
         } catch (apiError) {
@@ -489,7 +631,11 @@ export default function UserProfileScreen({ route, navigation }) {
   console.log("user.tags:", user?.tags);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <SafeAreaView style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => {
@@ -782,6 +928,7 @@ export default function UserProfileScreen({ route, navigation }) {
       )}
 
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 

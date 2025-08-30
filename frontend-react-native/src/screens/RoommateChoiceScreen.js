@@ -14,7 +14,7 @@ import ApiService from '../services/api';
 export default function RoommateChoiceScreen({ navigation, user }) {
   const [userProfile, setUserProfile] = useState(null);
   const [hasCompletedTest, setHasCompletedTest] = useState(false);
-  
+
   const userData = user || {
     id: "1",
     name: "유빈",
@@ -29,7 +29,7 @@ export default function RoommateChoiceScreen({ navigation, user }) {
     try {
       const profile = await ApiService.getUserProfile();
       setUserProfile(profile);
-      
+
       // 프로필이 완성되어 있는지 확인 (한번이라도 테스트를 했는지)
       const isComplete = profile && profile.is_complete;
       setHasCompletedTest(isComplete);
@@ -49,8 +49,8 @@ export default function RoommateChoiceScreen({ navigation, user }) {
       '성향 검사를 건너뛰고 바로 룸메이트를 찾아보시겠어요?\n검사 없이도 다른 사용자들을 확인할 수 있습니다.',
       [
         { text: '취소', style: 'cancel' },
-        { 
-          text: '건너뛰기', 
+        {
+          text: '건너뛰기',
           onPress: () => {
             // 매칭 결과 화면으로 바로 이동
             navigation.navigate('MatchResults');
@@ -63,8 +63,8 @@ export default function RoommateChoiceScreen({ navigation, user }) {
   return (
     <View style={styles.container}>
       {/* 뒤로가기 버튼 */}
-      <TouchableOpacity 
-        style={styles.backButton} 
+      <TouchableOpacity
+        style={styles.backButton}
         onPress={() => navigation.goBack()}
       >
         <Svg width="21" height="24" viewBox="0 0 21 24" fill="none">
@@ -82,7 +82,7 @@ export default function RoommateChoiceScreen({ navigation, user }) {
 
       {/* 일러스트레이션 영역 */}
       <View style={styles.illustrationContainer}>
-        <Image 
+        <Image
           source={require('../../assets/roommate-character.png')}
           style={styles.illustration}
           resizeMode="contain"
@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F2',
     overflow: 'hidden',
     borderRadius: 40,
+    marginTop: 15,
   },
   backButton: {
     position: 'absolute',

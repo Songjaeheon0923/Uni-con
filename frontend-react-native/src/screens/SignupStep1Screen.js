@@ -23,6 +23,9 @@ export default function SignupStep1Screen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
 
   const validateForm = () => {
     if (!email.trim()) {
@@ -70,15 +73,8 @@ export default function SignupStep1Screen({ navigation }) {
         style={styles.keyboardAvoid}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* 뒤로가기 버튼 */}
-          <View style={styles.backButtonContainer}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="chevron-back" size={24} color="#000" />
-            </TouchableOpacity>
-          </View>
+          {/* 상단 여백 */}
+          <View style={styles.backButtonContainer} />
 
           {/* 메인 컨텐츠 */}
           <View style={styles.content}>
@@ -99,20 +95,29 @@ export default function SignupStep1Screen({ navigation }) {
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
                 <TextInput
-                  style={[styles.inputContainer, { paddingHorizontal: 16 }]}
+                  style={[
+                    styles.inputContainer, 
+                    emailFocused && styles.inputContainerFocused,
+                    { paddingHorizontal: 16 }
+                  ]}
                   placeholder="Example@email.com"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
                 />
               </View>
 
               {/* 비밀번호 입력 */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>비밀번호</Text>
-                <View style={styles.inputContainer}>
+                <View style={[
+                  styles.inputContainer,
+                  passwordFocused && styles.inputContainerFocused
+                ]}>
                   <TextInput
                     style={styles.input}
                     placeholder="비밀번호 입력(영문, 숫자, 특수문자 포함 8-20자)"
@@ -121,6 +126,8 @@ export default function SignupStep1Screen({ navigation }) {
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
@@ -138,7 +145,10 @@ export default function SignupStep1Screen({ navigation }) {
               {/* 비밀번호 확인 */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>비밀번호 확인</Text>
-                <View style={styles.inputContainer}>
+                <View style={[
+                  styles.inputContainer,
+                  confirmPasswordFocused && styles.inputContainerFocused
+                ]}>
                   <TextInput
                     style={styles.input}
                     placeholder="비밀번호 재입력"
@@ -147,6 +157,8 @@ export default function SignupStep1Screen({ navigation }) {
                     secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    onFocus={() => setConfirmPasswordFocused(true)}
+                    onBlur={() => setConfirmPasswordFocused(false)}
                   />
                   <TouchableOpacity
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -191,7 +203,7 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 50,
     paddingBottom: 10,
   },
   backButton: {
@@ -228,7 +240,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   formContainer: {
-    gap: 20,
+    gap: 16,
   },
   inputGroup: {
     gap: 6,
@@ -254,7 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     fontSize: 14,
     color: "#333",
-    paddingVertical: 16,
+    paddingVertical: 0,
   },
   eyeIcon: {
     padding: 8,
@@ -265,11 +277,11 @@ const styles = StyleSheet.create({
   nextButton: {
     backgroundColor: "#000",
     borderRadius: 40,
-    paddingVertical: 16,
+    height: 56,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    marginTop: 40,
+    marginTop: 21,
   },
   greenArrowCircle: {
     position: "absolute",
@@ -288,5 +300,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  inputContainerFocused: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#000000',
   },
 });

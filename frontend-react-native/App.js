@@ -22,12 +22,9 @@ import PersonalityTestScreen from "./src/screens/PersonalityTestScreen";
 import PersonalityResultScreen from "./src/screens/PersonalityResultScreen";
 import MatchResultsScreen from "./src/screens/MatchResultsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
-import SignupScreen from "./src/screens/SignupScreen";
 import SignupStep1Screen from "./src/screens/SignupStep1Screen";
-import SignupStep2Screen from "./src/screens/SignupStep2Screen";
-import IDVerificationScreen from "./src/screens/IDVerificationScreen";
+import VerificationMainScreen from "./src/screens/VerificationMainScreen";
 import IDVerificationCompleteScreen from "./src/screens/IDVerificationCompleteScreen";
-import SchoolVerificationScreen from "./src/screens/SchoolVerificationScreen";
 import ChatScreen from "./src/screens/ChatScreen";
 import ContractVerificationScreen from "./src/screens/ContractVerificationScreen";
 import ContractCameraScreen from "./src/screens/ContractCameraScreen";
@@ -149,36 +146,74 @@ function HomeStack({ user }) {
 function AuthStack() {
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        transitionSpec: {
-          open: {
-            animation: 'timing',
-            config: {
-              duration: 500,
+      screenOptions={({ route }) => {
+        const routeName = route.name;
+
+        // 스플래시에서 로그인으로, 로그인에서 회원가입으로 갈 때는 fade 애니메이션 유지
+        if (routeName === 'Splash' || routeName === 'Login') {
+          return {
+            headerShown: false,
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 500,
+                },
+              },
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 500,
+                },
+              },
+            },
+            cardStyleInterpolator: ({ current }) => ({
+              cardStyle: {
+                opacity: current.progress,
+              },
+            }),
+          };
+        }
+
+        // 나머지 회원가입 관련 화면들은 슬라이드 애니메이션
+        return {
+          headerShown: false,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
             },
           },
-          close: {
-            animation: 'timing',
-            config: {
-              duration: 500,
-            },
+          cardStyleInterpolator: ({ current, next, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            };
           },
-        },
-        cardStyleInterpolator: ({ current }) => ({
-          cardStyle: {
-            opacity: current.progress,
-          },
-        }),
+        };
       }}
     >
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupStep1Screen} />
-      <Stack.Screen name="SignupStep2" component={SignupStep2Screen} />
-      <Stack.Screen name="IDVerification" component={IDVerificationScreen} />
+      <Stack.Screen name="SignupStep2" component={VerificationMainScreen} />
       <Stack.Screen name="IDVerificationComplete" component={IDVerificationCompleteScreen} />
-      <Stack.Screen name="SchoolVerification" component={SchoolVerificationScreen} />
     </Stack.Navigator>
   );
 }
@@ -193,8 +228,8 @@ function MapStack({ user }) {
       <Stack.Screen name="MapMain">
         {(props) => <MapScreen {...props} user={user} />}
       </Stack.Screen>
-      <Stack.Screen 
-        name="RoomDetail" 
+      <Stack.Screen
+        name="RoomDetail"
         component={RoomDetailScreen}
         options={{
           headerShown: false,
@@ -220,8 +255,8 @@ function FavoriteStack({ user }) {
       <Stack.Screen name="FavoriteMain">
         {(props) => <FavoriteRoomsScreen {...props} user={user} />}
       </Stack.Screen>
-      <Stack.Screen 
-        name="RoomDetail" 
+      <Stack.Screen
+        name="RoomDetail"
         component={RoomDetailScreen}
         options={{
           headerShown: false,

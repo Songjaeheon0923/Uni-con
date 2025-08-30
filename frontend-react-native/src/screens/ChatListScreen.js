@@ -19,6 +19,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import ApiService from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import PersonIcon from '../components/icons/PersonIcon';
 
 
 const FILTER_OPTIONS = [
@@ -151,7 +152,15 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
             style={styles.deleteButton}
             onPress={handleDelete}
           >
-            <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
+            <Svg width="33" height="38" viewBox="0 0 37 42" fill="none">
+              <Path
+                d="M22.458 19.0139V31.6806M14.208 19.0139V31.6806M5.95801 10.5694V35.9028C5.95801 37.0226 6.3926 38.0965 7.16619 38.8883C7.93978 39.6802 8.98899 40.125 10.083 40.125H26.583C27.677 40.125 28.7262 39.6802 29.4998 38.8883C30.2734 38.0965 30.708 37.0226 30.708 35.9028V10.5694M1.83301 10.5694H34.833M8.02051 10.5694L12.1455 2.125H24.5205L28.6455 10.5694"
+                stroke="white"
+                strokeWidth="2.6875"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
           </TouchableOpacity>
         </View>
       )}
@@ -206,7 +215,9 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
           >
             {item.isIndividual ? (
               <View style={styles.profileImageContainer}>
-                <Ionicons name="person-circle" size={80} color="#ddd" />
+                <View style={styles.avatarCircle}>
+                  <PersonIcon size={33} color="#595959" />
+                </View>
                 {/* 읽지 않은 메시지 수 배지 */}
                 {item.unreadCount > 0 && (
                   <View style={styles.unreadBadge}>
@@ -264,8 +275,9 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
                 ellipsizeMode="tail"
               >
                 {item.lastMessage || '메시지 없음'}
-              </Text>
-              <View style={styles.timeStatusContainer}>
+                {(item.userStatus || item.time) && (
+                  <Text style={styles.dotSeparator}> • </Text>
+                )}
                 {item.userStatus ? (
                   <Text style={[
                     styles.timeLabel,
@@ -273,10 +285,10 @@ const SwipeableChatItem = ({ item, navigation, onDelete, user, setIsAnyItemSwipi
                   ]}>
                     {formatUserStatus(item.userStatus)}
                   </Text>
-                ) : (
-                  <Text style={styles.timeLabel}>{item.time || ''}</Text>
-                )}
-              </View>
+                ) : item.time ? (
+                  <Text style={styles.timeLabel}>{item.time}</Text>
+                ) : null}
+              </Text>
             </View>
           </View>
 
@@ -290,10 +302,11 @@ export default function ChatListScreen({ navigation, route }) {
   const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [chats, setChats] = useState([]);
+  const [allChats, setAllChats] = useState([]); // 필터링 전 전체 채팅방 목록
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAnyItemSwiping, setIsAnyItemSwiping] = useState(false); // 아이템 스와이프 상태
-  
+
   // 공유 모드 관련 state
   const [isShareMode, setIsShareMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState([]);
@@ -303,7 +316,7 @@ export default function ChatListScreen({ navigation, route }) {
   useEffect(() => {
     // 실제 채팅방 로드
     loadChatRooms();
-    
+
     // route params로 공유 모드인지 확인
     if (route?.params?.isShareMode && route?.params?.roomData) {
       setIsShareMode(true);
@@ -318,6 +331,11 @@ export default function ChatListScreen({ navigation, route }) {
       loadChatRooms();
     }, [])
   );
+
+  // 필터가 변경될 때마다 채팅방 목록 다시 로드
+  useEffect(() => {
+    loadChatRooms();
+  }, [selectedFilter]);
 
   // 실제 API에서 채팅방 로드 + 더미 데이터와 합치기
   const loadChatRooms = async () => {
@@ -358,12 +376,18 @@ export default function ChatListScreen({ navigation, route }) {
             otherUser: otherUser,
             roomType: room.room_type,
             participants: room.participants,
+            lastMessageTime: room.last_message_time, // 필터링용 원본 시간
+            rawLastMessage: room.last_message, // 필터링용 원본 메시지
           };
         }));
       }
 
-      // 실제 채팅방만 표시
-      setChats(realChats);
+      // 전체 채팅방 목록 저장 (필터 표시용)
+      setAllChats(realChats);
+
+      // 필터링 적용
+      const filteredChats = applyFilter(realChats, selectedFilter);
+      setChats(filteredChats);
 
     } catch (error) {
       console.error('채팅방 목록 로드 실패:', error);
@@ -532,7 +556,13 @@ export default function ChatListScreen({ navigation, route }) {
 
     if (hours < 1) return '방금';
     if (hours < 24) return `${hours}시간`;
-    return `${days}일`;
+    if (days === 1) return '1일';
+    if (days < 7) return `${days}일`;
+
+    // 7일 이상일 경우 날짜 형식으로 표시
+    const month = messageTime.getMonth() + 1;
+    const date = messageTime.getDate();
+    return `${month}/${date}`;
   };
 
   const formatUserStatus = (userStatus) => {
@@ -560,21 +590,92 @@ export default function ChatListScreen({ navigation, route }) {
 
   const formatLastMessage = (message) => {
     if (!message) return '대화를 시작해보세요';
-    
+
     // ROOM_SHARE 메시지인지 확인
     if (message.startsWith('ROOM_SHARE:')) {
-      return '📍 매물을 공유했습니다';
+      return '매물을 공유했습니다';
     }
-    
+
+    // ROOM_CARD 메시지인지 확인
+    if (message.startsWith('ROOM_CARD:')) {
+      return '매물 정보를 공유했습니다';
+    }
+
+    // USER_PROFILE 메시지인지 확인
+    if (message.startsWith('USER_PROFILE:')) {
+      return '프로필을 공유했습니다';
+    }
+
+    if (message.startsWith('HOUSE_RULES:')) {
+      return '주택 규칙을 공유했습니다';
+    }
+
+    if (message.startsWith('VOTING:')) {
+      return '투표를 공유했습니다';
+    }
+
+    if (message.startsWith('DISPUTE_GUIDE:')) {
+      return '분쟁 안내를 공유했습니다';
+    }
+
     return message;
+  };
+
+  // 필터링 함수
+  const applyFilter = (chats, filterType) => {
+    if (filterType === 'all') {
+      return chats;
+    }
+
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    return chats.filter(chat => {
+      // 최근 3일 이내의 채팅방만 필터링 대상
+      if (!chat.lastMessageTime) return false;
+
+      const messageTime = new Date(chat.lastMessageTime);
+      if (messageTime < threeDaysAgo) return false;
+
+      const rawMessage = chat.rawLastMessage || '';
+
+      switch (filterType) {
+        case 'room': // 매물추천
+          return rawMessage.startsWith('ROOM_SHARE:');
+
+        case 'roommate': // 룸메제안
+          return rawMessage.startsWith('USER_PROFILE:') || rawMessage.startsWith('ROOM_CARD:');
+
+        case 'request': // 채팅신청
+          // 일반 텍스트 메시지 (특수 메시지가 아닌 경우)
+          return !rawMessage.startsWith('ROOM_SHARE:') &&
+                 !rawMessage.startsWith('ROOM_CARD:') &&
+                 !rawMessage.startsWith('USER_PROFILE:');
+
+        case 'landlord': // 집주인포함
+          // 이 필터는 추가 조건이 필요할 수 있습니다 (집주인 여부를 판단하는 로직)
+          return true; // 현재는 모든 채팅방 표시
+
+        default:
+          return true;
+      }
+    });
+  };
+
+  // 각 필터별 안읽은 메시지 여부 확인
+  const hasUnreadInFilter = (chats, filterType) => {
+    if (!chats || chats.length === 0) return false;
+
+    const filteredChats = applyFilter(chats, filterType);
+    return filteredChats.some(chat => chat.hasUnread);
   };
 
   // 공유 모드에서 채팅방 선택/해제
   const toggleChatSelection = (chatId) => {
     if (!isShareMode) return;
-    
-    setSelectedChats(prev => 
-      prev.includes(chatId) 
+
+    setSelectedChats(prev =>
+      prev.includes(chatId)
         ? prev.filter(id => id !== chatId)
         : [...prev, chatId]
     );
@@ -589,11 +690,14 @@ export default function ChatListScreen({ navigation, route }) {
       for (const chatId of selectedChats) {
         await ApiService.shareRoom(chatId, roomData);
       }
-      
-      navigation.goBack();
-      setTimeout(() => {
-        Alert.alert('완료', '매물 정보가 공유되었습니다.');
-      }, 500);
+
+      // 공유 모드 종료하고 채팅방 목록 새로고침
+      setIsShareMode(false);
+      setSelectedChats([]);
+      setRoomData(null);
+
+      // 채팅방 목록 새로고침하여 공유된 매물 카드 표시
+      loadChatRooms();
     } catch (error) {
       console.error('매물 공유 실패:', error);
       Alert.alert('오류', '매물 공유에 실패했습니다.');
@@ -615,11 +719,28 @@ export default function ChatListScreen({ navigation, route }) {
           <View style={styles.avatarSection}>
             <View style={styles.profileImageContainer}>
               {item.isIndividual ? (
-                <Ionicons name="person-circle" size={80} color="#ddd" />
+                <View style={[
+                  styles.avatarCircle,
+                  selectedChats.includes(item.id) && styles.selectedAvatarCircle
+                ]}>
+                  <PersonIcon size={33} color="#595959" />
+                </View>
               ) : (
                 <View style={styles.groupProfileContainer}>
-                  <Ionicons name="person-circle" size={56} color="#ddd" style={styles.groupProfile1} />
-                  <Ionicons name="person-circle" size={56} color="#bbb" style={styles.groupProfile2} />
+                  <View style={[
+                    styles.avatarCircle,
+                    styles.groupProfile1,
+                    selectedChats.includes(item.id) && styles.selectedAvatarCircle
+                  ]}>
+                    <PersonIcon size={33} color="#595959" />
+                  </View>
+                  <View style={[
+                    styles.avatarCircle,
+                    styles.groupProfile2,
+                    selectedChats.includes(item.id) && styles.selectedAvatarCircle
+                  ]}>
+                    <PersonIcon size={33} color="#595959" />
+                  </View>
                 </View>
               )}
             </View>
@@ -648,8 +769,9 @@ export default function ChatListScreen({ navigation, route }) {
             <View style={styles.messageTimeLine}>
               <Text style={styles.messageText} numberOfLines={1} ellipsizeMode="tail">
                 {item.lastMessage || '메시지 없음'}
-              </Text>
-              <View style={styles.timeStatusContainer}>
+                {(item.userStatus || item.time) && (
+                  <Text style={styles.dotSeparator}> • </Text>
+                )}
                 {item.userStatus ? (
                   <Text style={[
                     styles.timeLabel,
@@ -657,16 +779,16 @@ export default function ChatListScreen({ navigation, route }) {
                   ]}>
                     {formatUserStatus(item.userStatus)}
                   </Text>
-                ) : (
-                  <Text style={styles.timeLabel}>{item.time || ''}</Text>
-                )}
-              </View>
+                ) : item.time ? (
+                  <Text style={styles.timeLabel}>{item.time}</Text>
+                ) : null}
+              </Text>
             </View>
           </View>
         </TouchableOpacity>
       );
     }
-    
+
     return (
       <SwipeableChatItem
         item={item}
@@ -679,23 +801,30 @@ export default function ChatListScreen({ navigation, route }) {
     );
   };
 
-  const renderFilterButton = (filter) => (
-    <TouchableOpacity
-      key={filter.id}
-      style={[
-        styles.filterButton,
-        selectedFilter === filter.id && styles.selectedFilterButton
-      ]}
-      onPress={() => setSelectedFilter(filter.id)}
-    >
-      <Text style={[
-        styles.filterButtonText,
-        selectedFilter === filter.id && styles.selectedFilterButtonText
-      ]}>
-        {filter.title}
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderFilterButton = (filter) => {
+    const hasUnread = hasUnreadInFilter(allChats, filter.id);
+
+    return (
+      <TouchableOpacity
+        key={filter.id}
+        style={[
+          styles.filterButton,
+          selectedFilter === filter.id && styles.selectedFilterButton
+        ]}
+        onPress={() => setSelectedFilter(filter.id)}
+      >
+        <Text style={[
+          styles.filterButtonText,
+          selectedFilter === filter.id && styles.selectedFilterButtonText
+        ]}>
+          {filter.title}
+        </Text>
+        {hasUnread && (
+          <View style={styles.filterUnreadIndicator} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -776,14 +905,14 @@ export default function ChatListScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F2F2',
   },
   header: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingTop: 30,
     paddingBottom: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#F2F2F2',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -791,7 +920,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 20,
+    top: 30,
   },
   headerTitle: {
     fontSize: 18,
@@ -802,7 +931,7 @@ const styles = StyleSheet.create({
   confirmButton: {
     position: 'absolute',
     right: 20,
-    top: 20,
+    top: 30,
   },
   confirmButtonText: {
     fontSize: 16,
@@ -820,7 +949,7 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     paddingHorizontal: 14,
-    marginTop: 20,
+    marginTop: 23,
     marginBottom: 18,
   },
   filterScrollContent: {
@@ -828,15 +957,18 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     paddingHorizontal: 13,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 20,
     marginRight: 6,
+    marginTop: 3,
     borderWidth: 0.5,
     borderColor: 'rgba(153, 153, 153, 0.7)',
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
   },
   selectedFilterButton: {
-    backgroundColor: '#616161',
-    borderColor: '#616161',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   filterButtonText: {
     fontSize: 12,
@@ -847,6 +979,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#FFFFFF',
+  },
+  filterUnreadIndicator: {
+    position: 'absolute',
+    top: -2,
+    right: -1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
   },
   chatListContainer: {
     flex: 1,
@@ -881,40 +1022,65 @@ const styles = StyleSheet.create({
   // 채팅방 셀 스타일
   chatRow: {
     flexDirection: 'row',
-    backgroundColor: '#F8F8F8',
-    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#F0F0F0',
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 10,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   // 아바타 섹션
   avatarSection: {
     marginRight: 12,
-    width: 80,
-    height: 80,
+    width: 52,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  avatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#F2F2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedAvatarCircle: {
+    backgroundColor: '#FFFFFF',
+  },
   groupProfileContainer: {
-    width: 80,
-    height: 80,
+    width: 52,
+    height: 52,
     position: 'relative',
   },
   groupProfile1: {
     position: 'absolute',
     left: 0,
-    top: 10,
+    top: 0,
     zIndex: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   groupProfile2: {
     position: 'absolute',
     right: 0,
-    top: 10,
+    top: 12,
     zIndex: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
 
   // 콘텐츠 섹션
@@ -978,7 +1144,7 @@ const styles = StyleSheet.create({
   // 세 번째 줄: 메시지와 시간
   messageTimeLine: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
   },
@@ -986,7 +1152,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Pretendard',
     flex: 1,
-    marginRight: 8,
+  },
+  dotSeparator: {
+    fontSize: 15,
+    color: '#929292',
+    fontFamily: 'Pretendard',
   },
   boldMessage: {
     fontWeight: '500',
@@ -1031,19 +1201,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   deleteButton: {
-    width: 80,
-    height: '100%',
-    backgroundColor: '#FF3B30',
+    width: 70,
+    height: 70,
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 9,
+    borderRadius: 35,
+    alignSelf: 'center',
   },
 
   // 프로필 이미지 컨테이너와 배지 스타일
   profileImageContainer: {
     position: 'relative',
-    width: 80,
-    height: 80,
+    width: 52,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },

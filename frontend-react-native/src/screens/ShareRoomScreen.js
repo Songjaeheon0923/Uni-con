@@ -55,10 +55,13 @@ const ShareRoomScreen = ({ navigation, route }) => {
         await ApiService.shareRoom(chatId, roomData);
       }
       
-      navigation.goBack();
-      setTimeout(() => {
-        Alert.alert('완료', '매물 정보가 공유되었습니다.');
-      }, 500);
+      // 채팅 리스트로 이동
+      navigation.navigate('MainTabs', {
+        screen: '홈',
+        params: {
+          screen: 'ChatList'
+        }
+      });
     } catch (error) {
       console.error('매물 공유 실패:', error);
       Alert.alert('오류', '매물 공유에 실패했습니다.');

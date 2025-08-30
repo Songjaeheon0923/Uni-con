@@ -155,16 +155,14 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
 
   const renderRoomCard = ({ item }) => (
     <View style={styles.cardContainer}>
-      <View style={styles.roomCard}>
-        <TouchableOpacity onPress={() => handleRoomPress(item)}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: getRoomImage(item.room_id) }}
-              style={styles.roomImage}
-              defaultSource={{ uri: 'https://via.placeholder.com/116x116/f0f0f0/666?text=매물' }}
-            />
-          </View>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: getRoomImage(item.room_id) }}
+            style={styles.roomImage}
+            defaultSource={{ uri: 'https://via.placeholder.com/116x116/f0f0f0/666?text=매물' }}
+          />
+        </View>
 
         <View style={styles.infoContainer}>
           <View style={styles.contentHeader}>
@@ -209,19 +207,25 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
               style={styles.shareButton}
-              onPress={() => handleShareRoom(item)}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleShareRoom(item);
+              }}
             >
               <Text style={styles.shareButtonText}>공유하기</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.roommateButton}
-              onPress={() => handleFindRoommate(item)}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleFindRoommate(item);
+              }}
             >
               <Text style={styles.roommateButtonText}>룸메이트 찾기</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 
