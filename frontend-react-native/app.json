@@ -16,11 +16,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.unicon.weroom",
       "config": {
-        "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyAwZAUct7Q9wmN7BWFw4nZeHB_ClNab8t4"
       }
     },
     "android": {
       "package": "com.unicon.weroom",
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
