@@ -4,10 +4,12 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import HomeIcon from "./HomeIcon";
 import LocationIcon from "./LocationIcon";
+import PropertyPinMarker from "./PropertyPinMarker";
+import ClusterPinMarker from "./ClusterPinMarker";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import BuildingClusterView from "./BuildingClusterView";
-import { normalizePrice } from '../utils/priceUtils';
+import { normalizePrice, formatPrice } from '../utils/priceUtils';
 
 const { width, height } = Dimensions.get("window");
 
@@ -24,11 +26,10 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
   // 선택 상태가 변경될 때 크기 조정
   React.useEffect(() => {
     if (markerScales.current[markerId]) {
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: isSelected ? 1.1 : 1,
+        duration: 150,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }).start();
     }
   }, [isSelected, markerId]);
@@ -36,17 +37,15 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
   const handlePress = () => {
     // 클릭 애니메이션
     Animated.sequence([
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: 1.2,
+        duration: 100,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }),
-      Animated.spring(markerScales.current[markerId], {
+      Animated.timing(markerScales.current[markerId], {
         toValue: 1,
+        duration: 100,
         useNativeDriver: true,
-        tension: 40,
-        friction: 7,
       }),
     ]).start();
 
@@ -74,33 +73,22 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
       onPress={handlePress}
       tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
+      stopPropagation={true}
     >
-      <View
-        collapsable={false}
-        style={{
-          width: 100,  // 44px * 1.2 scale + padding for animation
-          height: 100,
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'visible',
-        }}>
-        <Animated.View style={[
-          styles.houseMarkerContainer,
-          {
-            transform: [{ scale: markerScales.current[markerId] }],
-            backgroundColor: isSelected ? "#FF0000" : "#FF6600",
-            borderColor: isSelected ? "#ffffff" : "#000000",
-            borderWidth: isSelected ? 2 : 1.5,
-            overflow: 'visible',
-          }
-        ]}>
-          <Text style={{
-            color: isSelected ? "#ffffff" : "#000000",
-            fontSize: 12,
-            fontWeight: 'bold'
-          }}>📍</Text>
-        </Animated.View>
-      </View>
+      <Animated.View style={[
+        styles.houseMarkerContainer,
+        {
+          transform: [{ scale: markerScales.current[markerId] }],
+          backgroundColor: isSelected ? "#0E9B73" : "#10B585",
+          borderColor: "#ffffff",
+          borderWidth: 2,
+        }
+      ]}>
+        <HomeIcon
+          size={20}
+          color="#ffffff"
+        />
+      </Animated.View>
     </Marker>
   );
 };
@@ -297,39 +285,29 @@ const PropertyMapView = forwardRef(({
             // 클러스터 확대
             handleClusterPress(cluster);
           }}
-          tracksViewChanges={true}
+          tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
+          stopPropagation={true}
         >
-          <View
-            collapsable={false}
-            style={{
-              // 애니메이션을 위한 외부 컨테이너 (충분한 여유 공간 확보)
-              width: Math.max(100, Math.min(130, 100 + pointCount / 20)), // scale 1.2 + border 3px*2 + 충분한 여유
-              height: Math.max(100, Math.min(130, 100 + pointCount / 20)),
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'visible',
-            }}>
-            <Animated.View style={[
-              styles.clusterMarkerContainer,
-              {
-                transform: [{ scale: markerScales.current[clusterId] }],
-                backgroundColor: '#10B585',
-                width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
-                height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
-                borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
-              }
-            ]}>
+          <Animated.View style={[
+            styles.clusterMarkerContainer,
+            {
+              transform: [{ scale: markerScales.current[clusterId] }],
+              backgroundColor: '#10B585',
+              width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+              height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+              borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
+            }
+          ]}>
             <HomeIcon
-              size={Math.max(26, Math.min(45, Math.round((56 + pointCount / 20) * 0.5)))} // 핀 크기의 50%
+              size={Math.max(20, Math.min(30, Math.round((56 + pointCount / 20) * 0.4)))}
               color="#FFFFFF"
             />
             <Text style={[
               styles.clusterText,
-              { fontSize: Math.max(11, Math.min(20, Math.round((56 + pointCount / 20) * 0.22))) } // 핀 크기의 22%
+              { fontSize: Math.max(11, Math.min(16, Math.round((56 + pointCount / 20) * 0.22))) }
             ]}>{pointCount}</Text>
-            </Animated.View>
-          </View>
+          </Animated.View>
         </Marker>
       );
     }
@@ -402,42 +380,34 @@ const PropertyMapView = forwardRef(({
         <Marker
           coordinate={{ latitude: group.latitude, longitude: group.longitude }}
           onPress={handleMarkerPress}
-          tracksViewChanges={true}
+          tracksViewChanges={false}
           anchor={{ x: 0.5, y: 0.5 }}
+          stopPropagation={true}
         >
-          <View
-            collapsable={false}
-            style={{
-              width: 100,  // 44px * 1.2 = 52.8px + badge overflow(10px) + padding
-              height: 100,
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'visible',
-            }}>
-            <Animated.View style={[
-              styles.houseMarkerContainer,
-              {
-                transform: [{ scale: markerScales.current[markerId] }],
-                backgroundColor: isSelected ? '#000' : '#10B585',
-                borderColor: isSelected ? '#000' : '#fff',
-                borderWidth: 2,
-                overflow: 'visible',
-              }
-            ]}>
-              <HomeIcon
-                size={24}
-                color="#FFFFFF"
+          <Animated.View style={{
+            transform: [{ scale: markerScales.current[markerId] }],
+          }}>
+            {hasMultiple ? (
+              <ClusterPinMarker
+                count={group.count}
+                isSelected={isSelected}
+                size="small"
               />
-              {hasMultiple && (
-                <View style={[
-                  styles.countBadge,
-                  { backgroundColor: isSelected ? '#FF6600' : '#000' }
-                ]}>
-                  <Text style={styles.countBadgeText}>{group.count}</Text>
-                </View>
-              )}
-            </Animated.View>
-          </View>
+            ) : (
+              <PropertyPinMarker
+                price={group.properties && group.properties[0] ? 
+                  formatPrice(group.properties[0].deposit, group.properties[0].monthly_rent) : 
+                  '\ub9e4\ubb3c'
+                }
+                isSelected={isSelected}
+                roomType={group.properties && group.properties[0] ? 
+                  group.properties[0].room_type : 
+                  '\uc6d0\ub8f8'
+                }
+                size="medium"
+              />
+            )}
+          </Animated.View>
         </Marker>
       );
     }
