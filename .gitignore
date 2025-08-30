@@ -70,10 +70,13 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Database files
+# Database files (runtime only)
 *.db
 *.sqlite
 *.sqlite3
+
+# Allow initial data backup
+!backend/database/initial_data.json
 
 
 # Log files
