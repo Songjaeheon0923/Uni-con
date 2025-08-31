@@ -935,14 +935,14 @@ export default function MapScreen({ navigation, user }) {
         )}
 
         {/* 더보기 버튼 */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.moreButton}
           onPress={() => setIsFilterExpanded(!isFilterExpanded)}
         >
-          <Ionicons 
-            name={isFilterExpanded ? "chevron-up" : "chevron-down"} 
-            size={12} 
-            color="#666" 
+          <Ionicons
+            name={isFilterExpanded ? "chevron-up" : "chevron-down"}
+            size={12}
+            color="#666"
           />
         </TouchableOpacity>
 

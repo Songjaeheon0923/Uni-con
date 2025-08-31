@@ -54,7 +54,8 @@
         {
           "cameraPermission": "이 앱은 신분증 인증을 위해 카메라 접근이 필요합니다."
         }
-      ]
+      ],
+      "react-native-edge-to-edge"
     ],
     "extra": {
       "eas": {

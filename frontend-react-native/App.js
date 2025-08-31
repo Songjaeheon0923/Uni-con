@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AppState, Text } from "react-native";
 import { NavigationContainer, getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "react-native";
 
 // 전역 폰트 설정
 Text.defaultProps = Text.defaultProps || {};
@@ -485,6 +486,7 @@ function MainApp() {
 
 function AppContent() {
   const { user, isLoading, isAuthenticated, handleUnauthorized, validateToken, checkAuthState } = useAuth();
+  
 
   useEffect(() => {
     // API 서비스에 401 에러 핸들러 등록
