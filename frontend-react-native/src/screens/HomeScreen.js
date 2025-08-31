@@ -109,7 +109,8 @@ export default function HomeScreen({ navigation, user }) {
         }
       }
     } catch (error) {
-      console.error("위치 가져오기 실패:", error);
+      // 에뮬레이터에서는 위치 서비스가 제한적이므로 에러 무시
+      console.log("위치 서비스 사용 불가 (에뮬레이터 환경)");
       // 실패 시 기본값 유지
     }
   };

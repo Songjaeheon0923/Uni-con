@@ -72,11 +72,9 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
       }}
       onPress={handlePress}
       tracksViewChanges={false}
-      anchor={{ x: 0.5, y: 0.5 }}
+      anchor={{ x: 0.5, y: 1 }}
     >
       <View style={{
-          width: 100,
-          height: 100,
           alignItems: 'center',
           justifyContent: 'center',
         }}>
@@ -293,11 +291,9 @@ const PropertyMapView = forwardRef(({
             handleClusterPress(cluster);
           }}
           tracksViewChanges={false}
-          anchor={{ x: 0.5, y: 0.5 }}
+          anchor={{ x: 0.5, y: 1 }}
         >
           <View style={{
-              width: Math.max(100, Math.min(130, 100 + pointCount / 20)),
-              height: Math.max(100, Math.min(130, 100 + pointCount / 20)),
               alignItems: 'center',
               justifyContent: 'center',
             }}>
@@ -395,11 +391,9 @@ const PropertyMapView = forwardRef(({
           coordinate={{ latitude: group.latitude, longitude: group.longitude }}
           onPress={handleMarkerPress}
           tracksViewChanges={false}
-          anchor={{ x: 0.5, y: 0.5 }}
+          anchor={{ x: 0.5, y: 1 }}
         >
           <View style={{
-              width: 100,
-              height: 100,
               alignItems: 'center',
               justifyContent: 'center',
             }}>
