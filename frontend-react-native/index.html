@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>e:room - 대학생 룸메이트 매칭</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 30px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        .btn-container {
+            width: 100%;
+            max-width: 300px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .features {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .feature {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .feature-text {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">e:r</div>
+        <h1>e:room</h1>
+        <p>안전한 대학생 룸메이트 매칭 플랫폼</p>
+        
+        <div class="btn-container">
+            <a href="exp://exp.host/@weroom/frontend-react-native" class="btn btn-primary" id="expoBtn">
+                Expo Go로 열기
+            </a>
+            <button class="btn btn-secondary" onclick="openWebApp()">
+                웹 버전으로 계속
+            </button>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🏠</div>
+                <div class="feature-text">안전한 매물</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">👥</div>
+                <div class="feature-text">룸메이트 매칭</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💬</div>
+                <div class="feature-text">실시간 채팅</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Expo Go 설치 여부 확인
+        function checkExpoInstalled() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            // Expo Go 앱이 없으면 설치 페이지로 리디렉션
+            document.getElementById('expoBtn').addEventListener('click', function(e) {
+                setTimeout(() => {
+                    if (isIOS) {
+                        window.location.href = 'https://apps.apple.com/app/expo-go/id982107779';
+                    } else if (isAndroid) {
+                        window.location.href = 'https://play.google.com/store/apps/details?id=host.exp.exponent';
+                    }
+                }, 1500);
+            });
+        }
+        
+        // 웹 앱 열기
+        function openWebApp() {
+            // Railway 백엔드와 연결된 웹 버전으로 리디렉션
+            alert('웹 버전 준비 중입니다.\n개발 서버: expo start --web 실행 필요');
+            // window.location.href = 'https://weroom-web.vercel.app';
+        }
+        
+        checkExpoInstalled();
+        
+        // PWA 설치 프롬프트
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
+</body>
+</html>

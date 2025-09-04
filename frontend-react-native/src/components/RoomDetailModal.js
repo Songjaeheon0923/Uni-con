@@ -347,6 +347,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    fontFamily: 'Pretendard',
   },
   closeButton: {
     padding: 4,
@@ -374,11 +375,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
+    fontFamily: 'Pretendard',
   },
   roomAddress: {
     fontSize: 14,
     color: '#666',
     marginBottom: 8,
+    fontFamily: 'Pretendard',
   },
   priceContainer: {
     flexDirection: 'row',
@@ -390,20 +393,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FF6600',
     marginRight: 8,
+    fontFamily: 'Pretendard',
   },
   price: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+    fontFamily: 'Pretendard-Black',
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 0.5,
   },
   roomArea: {
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+    fontFamily: 'Pretendard',
   },
   riskScore: {
     fontSize: 14,
     color: '#666',
+    fontFamily: 'Pretendard',
   },
   favoriteSection: {
     flexDirection: 'row',
@@ -426,6 +436,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 8,
     fontWeight: '500',
+    fontFamily: 'Pretendard',
   },
   showFavoritesButton: {
     flexDirection: 'row',
@@ -435,6 +446,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FF6600',
     marginRight: 4,
+    fontFamily: 'Pretendard',
   },
   favoriteUsersList: {
     paddingVertical: 16,
@@ -444,6 +456,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 12,
+    fontFamily: 'Pretendard',
   },
   favoriteUserCard: {
     flexDirection: 'row',
@@ -477,10 +490,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 2,
+    fontFamily: 'Pretendard',
   },
   userDetail: {
     fontSize: 12,
     color: '#666',
+    fontFamily: 'Pretendard',
   },
   compatibilityScoreContainer: {
     flexDirection: 'row',
@@ -492,6 +507,7 @@ const styles = StyleSheet.create({
     color: '#FF6600',
     fontWeight: '600',
     marginLeft: 4,
+    fontFamily: 'Pretendard',
   },
   chatButton: {
     padding: 8,
@@ -511,10 +527,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 14,
     color: '#666',
+    fontFamily: 'Pretendard',
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '500',
     color: '#333',
+    fontFamily: 'Pretendard',
   },
 });

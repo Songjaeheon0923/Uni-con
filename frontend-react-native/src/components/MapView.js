@@ -1,7 +1,22 @@
 import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
-import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from "react-native-maps";
-import { Platform } from "react-native";
+import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal, Platform } from "react-native";
+
+// 플랫폼별 조건부 import
+let MapView, Marker, PROVIDER_GOOGLE, PROVIDER_DEFAULT;
+if (Platform.OS === 'web') {
+  // 웹용 대체 컴포넌트
+  MapView = require('./MapView.web').default;
+  Marker = View;
+  PROVIDER_GOOGLE = null;
+  PROVIDER_DEFAULT = null;
+} else {
+  // 네이티브용 실제 컴포넌트
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
+  PROVIDER_DEFAULT = Maps.PROVIDER_DEFAULT;
+}
 import { Ionicons } from "@expo/vector-icons";
 import LocationIcon from "./LocationIcon";
 import * as Location from "expo-location";

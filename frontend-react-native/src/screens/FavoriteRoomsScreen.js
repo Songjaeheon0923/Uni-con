@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../services/api';
 import { formatPrice, formatArea, getRoomType, formatFloor } from '../utils/priceUtils';
+import FavoriteButton from '../components/FavoriteButton';
 
 const { width } = Dimensions.get('window');
 
@@ -192,15 +193,13 @@ const FavoriteRoomsScreen = ({ navigation, user }) => {
               </View>
             </View>
             <View style={styles.heartContainer}>
-              <TouchableOpacity
-                style={styles.heartButton}
+              <FavoriteButton
+                isFavorited={true}
                 onPress={(e) => {
                   e.stopPropagation();
                   removeFavorite(item.room_id);
                 }}
-              >
-                <Ionicons name="heart" size={16} color="#FC6339" />
-              </TouchableOpacity>
+              />
               <Text style={styles.heartCount}>{item.favorite_count}</Text>
             </View>
           </View>
@@ -343,6 +342,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     color: '#666',
+    fontFamily: 'Pretendard',
   },
   emptyContainer: {
     flex: 1,
@@ -355,11 +355,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    fontFamily: 'Pretendard',
   },
   emptySubtext: {
     marginTop: 8,
     fontSize: 14,
     color: '#666',
+    fontFamily: 'Pretendard',
   },
   roomCard: {
     width: width - 72,
@@ -405,29 +407,11 @@ const styles = StyleSheet.create({
     gap: 3.43,
     marginRight: 8,
   },
-  heartButton: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#ffffff',
-    borderRadius: 9999,
-    borderWidth: 0.5,
-    borderColor: '#D9D9D9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
   heartCount: {
     textAlign: 'center',
     color: '#595959',
     fontSize: 12.57,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '300',
     lineHeight: 14.86,
     letterSpacing: 0.07,
@@ -441,8 +425,8 @@ const styles = StyleSheet.create({
   price: {
     color: 'rgba(0, 0, 0, 0.80)',
     fontSize: 18,
-    fontFamily: 'Pretendard',
-    fontWeight: '600',
+    fontFamily: 'Pretendard_700',
+    fontWeight: 'bold',
   },
   roomDetailsContainer: {
     alignSelf: 'stretch',
@@ -463,7 +447,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     color: 'black',
     fontSize: 14,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '400',
     lineHeight: 22.4,
   },
@@ -479,7 +463,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     color: 'black',
     fontSize: 14,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '400',
     lineHeight: 22.4,
   },
@@ -503,7 +487,7 @@ const styles = StyleSheet.create({
   shareButtonText: {
     color: 'white',
     fontSize: 12,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '600',
     lineHeight: 19.2,
   },
@@ -519,7 +503,7 @@ const styles = StyleSheet.create({
   roommateButtonText: {
     color: 'white',
     fontSize: 12,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '600',
     lineHeight: 19.2,
   },

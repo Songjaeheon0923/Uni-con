@@ -344,34 +344,43 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
         <Text style={styles.headerTitle}>내 정보</Text>
         <TouchableOpacity
           style={styles.headerLogoutButton}
-          onPress={() => {
-            Alert.alert(
-              '로그아웃',
-              '정말 로그아웃 하시겠습니까?',
-              [
-                { text: '취소', style: 'cancel' },
-                {
-                  text: '로그아웃',
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      if (onLogout) {
-                        await ApiService.logout();
-                        onLogout();
-                      } else {
-                        console.log('로그아웃 함수가 없음');
-                        await ApiService.logout();
-                      }
-                    } catch (error) {
-                      console.error('로그아웃 실패:', error);
-                      if (onLogout) {
-                        onLogout();
-                      }
-                    }
+          onPress={async () => {
+            // 웹 환경에서는 confirm 사용
+            const confirmLogout = Platform.OS === 'web' 
+              ? window.confirm('정말 로그아웃 하시겠습니까?')
+              : await new Promise((resolve) => {
+                  Alert.alert(
+                    '로그아웃',
+                    '정말 로그아웃 하시겠습니까?',
+                    [
+                      { text: '취소', style: 'cancel', onPress: () => resolve(false) },
+                      { text: '로그아웃', style: 'destructive', onPress: () => resolve(true) }
+                    ]
+                  );
+                });
+
+            if (confirmLogout) {
+              try {
+                if (onLogout) {
+                  await ApiService.logout();
+                  onLogout();
+                } else {
+                  console.log('로그아웃 함수가 없음');
+                  await ApiService.logout();
+                  // 웹에서 페이지 새로고침으로 대체
+                  if (Platform.OS === 'web') {
+                    window.location.reload();
                   }
                 }
-              ]
-            );
+              } catch (error) {
+                console.error('로그아웃 실패:', error);
+                if (onLogout) {
+                  onLogout();
+                } else if (Platform.OS === 'web') {
+                  window.location.reload();
+                }
+              }
+            }
           }}
         >
           <Ionicons name="log-out-outline" size={24} color="#666" />
@@ -753,35 +762,51 @@ export default function ProfileScreen({ navigation, user, onLogout }) {
         <View style={styles.settingsSection}>
           <TouchableOpacity
             style={styles.logoutButton}
-            onPress={() => {
-              Alert.alert(
-                '로그아웃',
-                '정말 로그아웃 하시겠습니까?',
-                [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '로그아웃',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        if (onLogout) {
-                          await ApiService.logout();
-                          onLogout();
-                        } else {
-                          // onLogout이 없는 경우 기본 동작
-                          console.log('로그아웃 함수가 없음');
-                          await ApiService.logout();
-                        }
-                      } catch (error) {
-                        console.error('로그아웃 실패:', error);
-                        if (onLogout) {
-                          onLogout();
-                        }
-                      }
+            onPress={async () => {
+              // 웹 환경에서는 confirm 사용
+              const confirmLogout = Platform.OS === 'web' 
+                ? window.confirm('정말 로그아웃 하시겠습니까?')
+                : await new Promise((resolve) => {
+                    Alert.alert(
+                      '로그아웃',
+                      '정말 로그아웃 하시겠습니까?',
+                      [
+                        { text: '취소', style: 'cancel', onPress: () => resolve(false) },
+                        { text: '로그아웃', style: 'destructive', onPress: () => resolve(true) }
+                      ]
+                    );
+                  });
+
+              if (confirmLogout) {
+                try {
+                  console.log('ProfileScreen - 로그아웃 버튼 클릭됨');
+                  console.log('ProfileScreen - onLogout 함수 존재:', !!onLogout);
+                  
+                  if (onLogout) {
+                    console.log('ProfileScreen - ApiService.logout() 호출 중...');
+                    await ApiService.logout();
+                    console.log('ProfileScreen - ApiService.logout() 완료, onLogout() 호출 중...');
+                    onLogout();
+                    console.log('ProfileScreen - onLogout() 완료');
+                  } else {
+                    // onLogout이 없는 경우 기본 동작
+                    console.log('ProfileScreen - 로그아웃 함수가 없음');
+                    await ApiService.logout();
+                    // 웹에서 페이지 새로고침으로 대체
+                    if (Platform.OS === 'web') {
+                      window.location.reload();
                     }
                   }
-                ]
-              );
+                } catch (error) {
+                  console.error('ProfileScreen - 로그아웃 실패:', error);
+                  if (onLogout) {
+                    console.log('ProfileScreen - 에러 발생, 강제 로그아웃 실행');
+                    onLogout();
+                  } else if (Platform.OS === 'web') {
+                    window.location.reload();
+                  }
+                }
+              }
             }}
           >
             <Ionicons name="log-out-outline" size={20} color="#ff4757" />

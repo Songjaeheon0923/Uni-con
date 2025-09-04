@@ -220,6 +220,8 @@ const PolicyDetailScreen = ({ navigation, route }) => {
         style={styles.content} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
       >
         {/* 제목 */}
         <Text style={styles.title}>{policyData?.title || "정책 정보"}</Text>

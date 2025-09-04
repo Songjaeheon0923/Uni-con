@@ -85,6 +85,7 @@ const RoommateRoomCard = ({ roomData }) => {
             fontWeight: '700',
             color: '#000000',
             marginBottom: 3,
+            fontFamily: 'Pretendard',
           }}>
             {priceText}
           </Text>
@@ -92,6 +93,7 @@ const RoommateRoomCard = ({ roomData }) => {
             fontSize: 10,
             color: '#666666',
             marginBottom: 2,
+            fontFamily: 'Pretendard',
           }}>
             {subInfoText}
           </Text>
@@ -99,6 +101,7 @@ const RoommateRoomCard = ({ roomData }) => {
             fontSize: 10,
             color: '#666666',
             marginBottom: 6,
+            fontFamily: 'Pretendard',
           }}>
             {addressText}
           </Text>
@@ -118,6 +121,7 @@ const RoommateRoomCard = ({ roomData }) => {
               color: '#fff',
               marginLeft: 3,
               fontWeight: '600',
+              fontFamily: 'Pretendard',
             }}>
               집주인 인증
             </Text>
@@ -141,6 +145,7 @@ const RoommateRoomCard = ({ roomData }) => {
             fontWeight: '500',
             marginTop: 3,
             textAlign: 'center',
+            fontFamily: 'Pretendard',
           }}>
             {roomData.favorite_count || 0}
           </Text>

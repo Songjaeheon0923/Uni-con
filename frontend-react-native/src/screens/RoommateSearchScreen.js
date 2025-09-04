@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    fontFamily: 'Pretendard',
   },
   content: {
     flex: 1,
@@ -127,6 +128,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 28,
     marginBottom: 40,
+    fontFamily: 'Pretendard',
   },
   illustrationContainer: {
     marginBottom: 40,
@@ -165,12 +167,14 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 10,
     textAlign: 'center',
+    fontFamily: 'Pretendard',
   },
   descriptionText: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
     lineHeight: 20,
+    fontFamily: 'Pretendard',
   },
   featuresContainer: {
     alignSelf: 'stretch',
@@ -185,6 +189,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     marginLeft: 10,
+    fontFamily: 'Pretendard',
   },
   startButton: {
     backgroundColor: '#e0e0e0',
@@ -202,6 +207,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginRight: 8,
+    fontFamily: 'Pretendard',
   },
   buttonIcon: {
     color: '#333',
@@ -210,5 +216,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'center',
+    fontFamily: 'Pretendard',
   },
 });

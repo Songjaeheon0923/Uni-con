@@ -12,8 +12,11 @@
 export const normalizePrice = (price, roomId, transactionType) => {
   if (!price || !roomId) return price;
   
+  // roomId를 문자열로 변환하여 안전하게 처리
+  const roomIdStr = String(roomId);
+  
   // 국토교통부 실거래가 API 데이터 (real_api_로 시작)
-  if (roomId.startsWith('real_api_')) {
+  if (roomIdStr.startsWith('real_api_')) {
     if (transactionType === '매매') {
       // 매매는 원 단위로 저장됨 → 만원 단위로 변환
       return Math.floor(price / 10000);
