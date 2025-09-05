@@ -1,6 +1,6 @@
-# 🚀 팀원용 개발환경 설정 가이드
+# 🚀 개발환경 설정 가이드
 
-다른 팀원이 프로젝트를 clone하여 실행하는 방법입니다.
+프로젝트를 로컬에서 실행하거나 배포하는 방법입니다.
 
 ## 📋 사전 요구사항
 
@@ -160,6 +160,56 @@ python main.py  # 서버 실행하면 자동으로 다시 생성됩니다
 
 또는 회원가입으로 새 계정을 만드세요!
 
+## 🌐 Railway 배포 (프로덕션)
+
+### 백엔드 배포 상태
+✅ **배포 완료**: https://uni-con-production.up.railway.app
+- FastAPI 백엔드가 Railway에 배포되어 실행 중
+- 자동 HTTPS 제공
+- GitHub main 브랜치와 자동 연동
+
+### 프론트엔드 웹 배포
+✅ **배포 완료**: Railway에서 웹 버전 실행 가능
+
+#### 웹 버전 빌드 및 배포
+```bash
+cd frontend-react-native
+npm run build:web  # dist 폴더에 웹 빌드 생성
+```
+
+#### Railway 배포 설정 파일
+- `nixpacks.toml`: Railway 빌드 시스템 설정
+- `railway.json`: Railway 서비스 설정
+- 웹 빌드 의존성 자동 설치 (`react-dom`, `react-native-web`, `@expo/metro-runtime`)
+
+### 환경변수 설정 (프로덕션)
+Railway 대시보드에서 설정:
+```
+# 프론트엔드
+EXPO_PUBLIC_API_BASE_URL=https://uni-con-production.up.railway.app
+
+# 백엔드 (자동 설정됨)
+DATABASE_URL=파일 경로 자동 설정
+```
+
+## 📱 플랫폼별 지도 컴포넌트
+
+프로젝트는 플랫폼에 따라 자동으로 적절한 지도 컴포넌트를 사용합니다:
+
+### 파일 구조
+```
+src/components/
+├── MapView.js          # 메인 컴포넌트 (자동 플랫폼 감지)
+├── MapView.native.js   # 모바일용 (iOS, Android)
+└── MapView.web.js      # 웹용
+```
+
+### 사용되는 라이브러리
+- **모바일**: `react-native-maps` (Google Maps)
+- **웹**: `react-native-web-maps` (웹 호환 지도)
+
+Expo가 자동으로 플랫폼을 감지하여 적절한 파일을 로드합니다.
+
 ## 🆘 도움이 필요할 때
 
 1. **GitHub Issues**: 버그나 문제 보고
@@ -168,4 +218,6 @@ python main.py  # 서버 실행하면 자동으로 다시 생성됩니다
 
 ---
 
-**💡 팁**: 개발 중에는 백엔드 서버와 Expo 서버를 항상 켜두세요!
+**💡 팁**: 
+- 개발 중에는 백엔드 서버와 Expo 서버를 항상 켜두세요!
+- Railway 배포는 GitHub main 브랜치에 push하면 자동으로 업데이트됩니다!
