@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "npm run serve",
+    "dev": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
-    "serve": "npx serve dist -s"
+    "serve": "serve dist -s"
   },
   "dependencies": {
     "@expo/cli": "^0.24.21",
@@ -36,7 +37,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-webview": "13.13.5",
-    "supercluster": "^8.0.1"
+    "supercluster": "^8.0.1",
+    "serve": "^14.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
