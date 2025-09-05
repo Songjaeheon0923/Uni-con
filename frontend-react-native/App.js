@@ -1,12 +1,17 @@
-import { useEffect } from "react";
-import { AppState, Text } from "react-native";
+import { useEffect, useState } from "react";
+import { AppState, Text, Platform } from "react-native";
+import * as Font from 'expo-font';
+
 import { NavigationContainer, getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "react-native";
 
-// 전역 폰트 설정
+// 전역 폰트 설정 - 더 굵은 SemiBold를 기본으로 사용
 Text.defaultProps = Text.defaultProps || {};
-Text.defaultProps.style = { fontFamily: 'Pretendard' };
+Text.defaultProps.style = { 
+  fontFamily: 'Pretendard',
+  fontWeight: '600' // SemiBold weight를 기본으로 사용
+};
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -527,6 +532,66 @@ function AppContent() {
 }
 
 export default function App() {
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  useEffect(() => {
+    async function loadFonts() {
+      try {
+        await Font.loadAsync({
+          'Pretendard': require('./assets/fonts/Pretendard-Regular.otf'),
+          'Pretendard_400': require('./assets/fonts/Pretendard-Regular.otf'),
+          'Pretendard_500': require('./assets/fonts/Pretendard-Medium.otf'),
+          'Pretendard_600': require('./assets/fonts/Pretendard-SemiBold.otf'),
+          'Pretendard_700': require('./assets/fonts/Pretendard-Bold.otf'),
+          'Pretendard_800': require('./assets/fonts/Pretendard-ExtraBold.otf'),
+          'Pretendard_900': require('./assets/fonts/Pretendard-Black.otf'),
+          'Pretendard-Bold': require('./assets/fonts/Pretendard-Bold.otf'),
+          'Pretendard-Medium': require('./assets/fonts/Pretendard-Medium.otf'),
+          'Pretendard-SemiBold': require('./assets/fonts/Pretendard-SemiBold.otf'),
+          'Pretendard-Light': require('./assets/fonts/Pretendard-Light.otf'),
+          'Pretendard-Black': require('./assets/fonts/Pretendard-Black.otf'),
+        });
+        
+        // 웹에서 스크롤 문제 해결을 위한 전역 CSS 추가
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          const style = document.createElement('style');
+          style.textContent = `
+            html, body, #root {
+              height: 100%;
+              overflow-x: hidden;
+              -webkit-overflow-scrolling: touch;
+              scroll-behavior: smooth;
+            }
+            
+            * {
+              -webkit-overflow-scrolling: touch;
+            }
+            
+            .expo-scroll-view {
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+            }
+            
+            [data-focusable="true"] {
+              overflow-y: auto !important;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+        
+        setFontsLoaded(true);
+      } catch (error) {
+        console.warn('Font loading error:', error);
+        setFontsLoaded(true); // 폰트 로딩 실패해도 앱은 실행
+      }
+    }
+    loadFonts();
+  }, []);
+
+  if (!fontsLoaded) {
+    return null; // 폰트 로딩 중에는 아무것도 렌더링하지 않음
+  }
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

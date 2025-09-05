@@ -646,6 +646,8 @@ const PolicyChatbotScreen = ({ navigation, route }) => {
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
           ListFooterComponent={() =>
             messages.length === 1 ? renderSuggestedQuestions() : null
           }

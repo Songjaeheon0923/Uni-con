@@ -407,6 +407,8 @@ export default function MatchResultsScreen({ navigation }) {
         style={{ marginTop: 243 }}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
       >
         {/* 매칭 결과 카드 컴포넌트 */}
         {matches.map(renderUserCard)}
@@ -638,8 +640,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#1C1C1C',
     fontSize: 24,
-    fontFamily: 'Pretendard',
-    fontWeight: '600',
+    fontFamily: 'Pretendard_700',
+    fontWeight: 'bold',
     lineHeight: 33.6,
   },
   resultDescription: {
@@ -692,7 +694,7 @@ const styles = StyleSheet.create({
   chatButtonText: {
     color: 'white',
     fontSize: 15,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '600',
     textAlign: 'center',
     includeFontPadding: false,
@@ -759,7 +761,7 @@ const styles = StyleSheet.create({
   userName: {
     color: '#474747',
     fontSize: 16,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '700',
     lineHeight: 28.96,
     wordWrap: 'break-word',
@@ -796,7 +798,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#10B585',
     fontSize: 32,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '800',
     lineHeight: 38,
     wordWrap: 'break-word',
@@ -814,7 +816,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: 'black',
     fontSize: 13,
-    fontFamily: 'Pretendard Variable',
+    fontFamily: 'Pretendard',
     fontWeight: '700',
     lineHeight: 18,
     wordWrap: 'break-word',

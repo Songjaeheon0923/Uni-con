@@ -1,67 +1,19 @@
 import React, { useState, useEffect, useRef, forwardRef, useMemo } from "react";
-import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal, Platform } from "react-native";
-
-// 플랫폼별 조건부 import
-let MapView, Marker, PROVIDER_GOOGLE, PROVIDER_DEFAULT;
-if (Platform.OS === 'web') {
-  // 웹용 대체 컴포넌트
-  MapView = require('./MapView.web').default;
-  Marker = View;
-  PROVIDER_GOOGLE = null;
-  PROVIDER_DEFAULT = null;
-} else {
-  // 네이티브용 실제 컴포넌트
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
-  PROVIDER_DEFAULT = Maps.PROVIDER_DEFAULT;
-}
+import { View, StyleSheet, Text, Dimensions, Animated, TouchableOpacity, Modal } from "react-native";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import LocationIcon from "./LocationIcon";
 import * as Location from "expo-location";
 import Supercluster from "supercluster";
 import BuildingClusterView from "./BuildingClusterView";
 import { normalizePrice } from '../utils/priceUtils';
-import Svg, { Circle } from 'react-native-svg';
 
 const { width, height } = Dimensions.get("window");
-
-// SVG 기반 원형 마커 컴포넌트 (Android 전용)
-const SvgCircleMarker = ({ size = 50, backgroundColor = "#10B585", borderColor = "#ffffff", borderWidth = 2, children, style }) => {
-  const radius = (size - borderWidth * 2) / 2;
-  const center = size / 2;
-  
-  return (
-    <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
-      <Svg width={size} height={size} style={{ position: 'absolute' }}>
-        <Circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill={backgroundColor}
-          stroke={borderColor}
-          strokeWidth={borderWidth}
-        />
-      </Svg>
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        {children}
-      </View>
-    </View>
-  );
-};
 
 // PropertyMarker 컴포넌트를 MapView 밖으로 이동
 const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerScales }) => {
   const isSelected = selectedPropertyId === property.id;
   const markerId = `property-${property.id}`;
-  const [rendering, setRendering] = useState(true);
-
-  // 초기 렌더링 후 tracksViewChanges를 false로 설정
-  useEffect(() => {
-    const timer = setTimeout(() => setRendering(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
 
   // 애니메이션 스케일 초기화
   if (!markerScales.current[markerId]) {
@@ -119,51 +71,31 @@ const PropertyMarker = ({ property, selectedPropertyId, onMarkerPress, markerSca
         longitude: lng,
       }}
       onPress={handlePress}
-      tracksViewChanges={rendering}
-      anchor={{ x: 0.5, y: 1 }}
-      zIndex={1000}
+      tracksViewChanges={false}
+      anchor={{ x: 0.5, y: 0.5 }}
     >
-      {Platform.OS === 'android' ? (
-        <Animated.View
-          style={{
-            transform: [{ scale: markerScales.current[markerId] }],
-          }}
-        >
-          <SvgCircleMarker
-            size={50}
-            backgroundColor={isSelected ? "#FF0000" : "#FF6600"}
-            borderColor={isSelected ? "#ffffff" : "#000000"}
-            borderWidth={isSelected ? 2 : 1.5}
-          >
-            <Ionicons
-              name="location"
-              size={20}
-              color={isSelected ? "#ffffff" : "#000000"}
-            />
-          </SvgCircleMarker>
-        </Animated.View>
-      ) : (
-        <Animated.View
-          collapsable={false}
-          renderToHardwareTextureAndroid={true}
-          needsOffscreenAlphaCompositing={true}
-          style={[
+      <View style={{
+          width: 100,
+          height: 100,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <Animated.View style={[
           styles.houseMarkerContainer,
           {
             transform: [{ scale: markerScales.current[markerId] }],
             backgroundColor: isSelected ? "#FF0000" : "#FF6600",
             borderColor: isSelected ? "#ffffff" : "#000000",
             borderWidth: isSelected ? 2 : 1.5,
-            overflow: 'visible'
           }
         ]}>
-          <Ionicons
-            name="location"
-            size={20}
-            color={isSelected ? "#ffffff" : "#000000"}
-          />
+          <Text style={{
+            color: isSelected ? "#ffffff" : "#000000",
+            fontSize: 12,
+            fontWeight: 'bold'
+          }}>📍</Text>
         </Animated.View>
-      )}
+      </View>
     </Marker>
   );
 };
@@ -237,7 +169,7 @@ const PropertyMapView = forwardRef(({
   // 찜한 매물만 필터링
   const filteredProperties = useMemo(() => {
     if (!showFavoritesOnly) return properties;
-    return properties.filter(property =>
+    return properties.filter(property => 
       favorites.includes(property.room_id || property.id)
     );
   }, [properties, favorites, showFavoritesOnly]);
@@ -324,13 +256,6 @@ const PropertyMapView = forwardRef(({
   const ClusterMarker = ({ cluster }) => {
     const [longitude, latitude] = cluster.geometry.coordinates;
     const { cluster: isCluster, point_count: pointCount, buildingGroup } = cluster.properties;
-    const [rendering, setRendering] = useState(true);
-
-    // 초기 렌더링 후 tracksViewChanges를 false로 설정
-    useEffect(() => {
-      const timer = setTimeout(() => setRendering(false), 500);
-      return () => clearTimeout(timer);
-    }, []);
 
     // 실제 클러스터인지 확인 (point_count가 있거나 cluster가 true인 경우)
     const isRealCluster = isCluster === true || (pointCount && pointCount > 1);
@@ -367,68 +292,36 @@ const PropertyMapView = forwardRef(({
             // 클러스터 확대
             handleClusterPress(cluster);
           }}
-          tracksViewChanges={rendering}
-          anchor={{ x: 0.5, y: 1 }}
+          tracksViewChanges={false}
+          anchor={{ x: 0.5, y: 0.5 }}
         >
-          {Platform.OS === 'android' ? (
-            <Animated.View
-              style={{
+          <View style={{
+              width: Math.max(100, Math.min(130, 100 + pointCount / 20)),
+              height: Math.max(100, Math.min(130, 100 + pointCount / 20)),
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Animated.View style={[
+              styles.clusterMarkerContainer,
+              {
                 transform: [{ scale: markerScales.current[clusterId] }],
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <SvgCircleMarker
-                size={Math.max(56, Math.min(90, 56 + pointCount / 20))}
-                backgroundColor='#10B585'
-                borderColor='#ffffff'
-                borderWidth={2}
-              >
-                <Ionicons
-                  name="business"
-                  size={Math.max(20, Math.min(30, Math.round((56 + pointCount / 20) * 0.4)))}
-                  color="#FFFFFF"
-                />
-                <Text style={[
-                  styles.clusterText,
-                  { fontSize: Math.max(11, Math.min(20, Math.round((56 + pointCount / 20) * 0.22))) }
-                ]}>{pointCount}</Text>
-              </SvgCircleMarker>
+                backgroundColor: '#10B585',
+                width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+                height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
+                borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20))
+              }
+            ]}>
+            <Ionicons
+              name="business"
+              size={Math.max(20, Math.min(30, Math.round((56 + pointCount / 20) * 0.4)))}
+              color="#FFFFFF"
+            />
+            <Text style={[
+              styles.clusterText,
+              { fontSize: Math.max(11, Math.min(20, Math.round((56 + pointCount / 20) * 0.22))) } // 핀 크기의 22%
+            ]}>{pointCount}</Text>
             </Animated.View>
-          ) : (
-            <View
-              collapsable={false}
-              style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-              <Animated.View
-                collapsable={false}
-                renderToHardwareTextureAndroid={true}
-                needsOffscreenAlphaCompositing={true}
-                style={[
-                styles.clusterMarkerContainer,
-                {
-                  transform: [{ scale: markerScales.current[clusterId] }],
-                  backgroundColor: '#10B585',
-                  width: Math.max(56, Math.min(90, 56 + pointCount / 20)),
-                  height: Math.max(56, Math.min(90, 56 + pointCount / 20)),
-                  borderRadius: Math.max(28, Math.min(45, 28 + pointCount / 20)),
-                  overflow: 'visible'
-                }
-              ]}>
-              <Ionicons
-                name="business"
-                size={Math.max(20, Math.min(30, Math.round((56 + pointCount / 20) * 0.4)))}
-                color="#FFFFFF"
-              />
-              <Text style={[
-                styles.clusterText,
-                { fontSize: Math.max(11, Math.min(20, Math.round((56 + pointCount / 20) * 0.22))) }
-              ]}>{pointCount}</Text>
-              </Animated.View>
-            </View>
-          )}
+          </View>
         </Marker>
       );
     }
@@ -501,75 +394,39 @@ const PropertyMapView = forwardRef(({
         <Marker
           coordinate={{ latitude: group.latitude, longitude: group.longitude }}
           onPress={handleMarkerPress}
-          tracksViewChanges={rendering}
-          anchor={{ x: 0.5, y: 1 }}
+          tracksViewChanges={false}
+          anchor={{ x: 0.5, y: 0.5 }}
         >
-          {Platform.OS === 'android' ? (
-            <Animated.View
-              style={{
+          <View style={{
+              width: 100,
+              height: 100,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Animated.View style={[
+              styles.houseMarkerContainer,
+              {
                 transform: [{ scale: markerScales.current[markerId] }],
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <SvgCircleMarker
-                size={50}
-                backgroundColor={isSelected ? '#000' : '#10B585'}
-                borderColor={isSelected ? '#000' : '#fff'}
-                borderWidth={2}
-              >
-                <Ionicons
-                  name="home"
-                  size={22}
-                  color="#FFFFFF"
-                />
-              </SvgCircleMarker>
+                backgroundColor: isSelected ? '#000' : '#10B585',
+                borderColor: isSelected ? '#000' : '#fff',
+                borderWidth: 2,
+              }
+            ]}>
+              <Ionicons
+                name="home"
+                size={22}
+                color="#FFFFFF"
+              />
               {hasMultiple && (
                 <View style={[
                   styles.countBadge,
-                  { backgroundColor: isSelected ? '#FF6600' : '#000', position: 'absolute', top: 2, right: 2 }
+                  { backgroundColor: isSelected ? '#FF6600' : '#000' }
                 ]}>
                   <Text style={styles.countBadgeText}>{group.count}</Text>
                 </View>
               )}
             </Animated.View>
-          ) : (
-            <View
-              collapsable={false}
-              style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-              <Animated.View
-                collapsable={false}
-                renderToHardwareTextureAndroid={true}
-                needsOffscreenAlphaCompositing={true}
-                style={[
-                styles.houseMarkerContainer,
-                {
-                  transform: [{ scale: markerScales.current[markerId] }],
-                  backgroundColor: isSelected ? '#000' : '#10B585',
-                  borderColor: isSelected ? '#000' : '#fff',
-                  borderWidth: 2,
-                  overflow: 'visible'
-                }
-              ]}>
-                <Ionicons
-                  name="home"
-                  size={22}
-                  color="#FFFFFF"
-                />
-                {hasMultiple && (
-                  <View style={[
-                    styles.countBadge,
-                    { backgroundColor: isSelected ? '#FF6600' : '#000' }
-                  ]}>
-                    <Text style={styles.countBadgeText}>{group.count}</Text>
-                  </View>
-                )}
-              </Animated.View>
-            </View>
-          )}
+          </View>
         </Marker>
       );
     }
@@ -724,7 +581,7 @@ const PropertyMapView = forwardRef(({
       <View style={styles.container}>
         <MapView
         ref={mapRef}
-        provider={Platform.OS === 'android' ? undefined : PROVIDER_GOOGLE}
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={region}
         showsUserLocation={false}
@@ -984,16 +841,14 @@ const styles = StyleSheet.create({
     height: height,
   },
   houseMarkerContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#10B585",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#ffffff",
-    overflow: 'visible',
-    backfaceVisibility: 'hidden',
   },
   searchMarker: {
     width: 32,
@@ -1012,7 +867,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 3,
-    overflow: 'visible',
+    overflow: 'hidden',
   },
   selectedMarkerStyle: {
     backgroundColor: "#0E9B73",
@@ -1041,8 +896,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#ffffff",
-    overflow: 'visible',
-    backfaceVisibility: 'hidden',
   },
   clusterText: {
     color: "#ffffff",
@@ -1079,8 +932,8 @@ const styles = StyleSheet.create({
   },
   countBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -5,
+    right: -5,
     backgroundColor: '#10B585',
     borderRadius: 10,
     minWidth: 20,

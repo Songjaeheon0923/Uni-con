@@ -334,7 +334,7 @@ export default function RoomDetailScreen({ route, navigation }) {
   if (!room) return null;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -362,7 +362,10 @@ export default function RoomDetailScreen({ route, navigation }) {
 
       <ScrollView
         style={styles.scrollContainer}
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
       >
         {/* 이미지 갤러리 */}
         <View style={styles.imageContainer}>
@@ -619,6 +622,7 @@ export default function RoomDetailScreen({ route, navigation }) {
               <TouchableOpacity
                 style={styles.contractViewButton}
                 onPress={handleViewContract}
+                activeOpacity={0.7}
               >
                 <Text style={styles.contractViewText}>이 계약서 검증하기</Text>
                 <View style={styles.contractArrowIcon}>
@@ -672,7 +676,7 @@ export default function RoomDetailScreen({ route, navigation }) {
           </View>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -740,6 +744,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: 'Pretendard',
   },
   playButton: {
     position: "absolute",
@@ -781,6 +786,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#595959",
     paddingHorizontal: 10,
+    fontFamily: 'Pretendard',
     paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
@@ -802,17 +808,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#FFF",
     fontWeight: "800",
+    fontFamily: 'Pretendard',
   },
   price: {
     fontSize: 28,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#333",
+    fontFamily: 'Pretendard_700',
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
     color: "#333",
     lineHeight: 24,
+    fontFamily: 'Pretendard',
     marginBottom: 20,
   },
   basicDetails: {
@@ -835,6 +844,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     lineHeight: 20,
+    fontFamily: 'Pretendard',
     flex: 1,
   },
   basicInfoTable: {
@@ -867,6 +877,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#333",
+    fontFamily: 'Pretendard',
     marginBottom: 16,
   },
   infoTable: {
@@ -882,12 +893,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     width: 100,
+    fontFamily: 'Pretendard',
     marginRight: 20,
   },
   tableValue: {
     fontSize: 14,
     color: "#333",
     flex: 1,
+    fontFamily: 'Pretendard',
     fontWeight: "500",
   },
   landlordSection: {
@@ -924,6 +937,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#FFF",
     fontWeight: "800",
+    fontFamily: 'Pretendard',
   },
   landlordProfile: {
     flexDirection: "row",
@@ -943,17 +957,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
+    fontFamily: 'Pretendard',
     marginBottom: 4,
   },
   landlordPhone: {
     fontSize: 14,
     color: "#666",
     marginBottom: 4,
+    fontFamily: 'Pretendard',
   },
   landlordSubtext: {
     fontSize: 12,
     color: "#999",
     marginBottom: 8,
+    fontFamily: 'Pretendard',
   },
   landlordCallButton: {
     alignSelf: "flex-start",
@@ -962,6 +979,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#595959",
     fontWeight: "500",
+    fontFamily: 'Pretendard',
   },
   contractSection: {
     padding: 15,
@@ -986,6 +1004,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#000",
+    fontFamily: 'Pretendard',
     marginBottom: 20,
   },
   contractPreview: {
@@ -1009,6 +1028,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     minHeight: 52,
     width: 260,
+    cursor: 'pointer',
+    zIndex: 999,
   },
   contractViewText: {
     fontSize: 16,
@@ -1017,6 +1038,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     marginRight: -22, // Co mpensate for arrow icon width
+    fontFamily: 'Pretendard',
   },
   contractArrowIcon: {
     width: 43,
@@ -1037,6 +1059,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     marginLeft: 8,
+    fontFamily: 'Pretendard',
   },
   favoritedUsersSubtitle: {
     flexDirection: "row",
@@ -1046,6 +1069,7 @@ const styles = StyleSheet.create({
   favoritedUsersSubtext: {
     fontSize: 14,
     color: "#666",
+    fontFamily: 'Pretendard',
   },
   bottomSpacing: {
     height: 100,
@@ -1077,6 +1101,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: 'Pretendard',
   },
   bottomCallButton: {
     flex: 1,
@@ -1084,11 +1109,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 100,
     alignItems: "center",
+    cursor: 'pointer',
+    zIndex: 999,
   },
   bottomCallButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: 'Pretendard',
   },
   mainInfoBox: {
     backgroundColor: "#F2F2F2",
@@ -1112,6 +1140,7 @@ const styles = StyleSheet.create({
     color: "#333",
     fontWeight: "500",
     flex: 1,
+    fontFamily: 'Pretendard',
   },
   buttonContent: {
     flexDirection: "row",

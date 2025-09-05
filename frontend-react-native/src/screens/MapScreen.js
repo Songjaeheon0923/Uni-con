@@ -37,6 +37,12 @@ export default function MapScreen({ navigation, user }) {
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState(null);
+  
+  // 필터 관련 상태 추가
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [selectedFilterValues, setSelectedFilterValues] = useState({});
+  const [mapKey, setMapKey] = useState(0);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [recentSearches, setRecentSearches] = useState(['안암동 2가', '안암동 1가', '보문역', '성신여대입구역']);
   const [showRecentSearches, setShowRecentSearches] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
@@ -689,10 +695,7 @@ export default function MapScreen({ navigation, user }) {
     }
   };
 
-  const [activeFilter, setActiveFilter] = useState(null);
-  const [selectedFilterValues, setSelectedFilterValues] = useState({});
-  const [mapKey, setMapKey] = useState(0);
-  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  // 필터 상태들을 미리 이동 - 기존 것은 삭제됨
 
   const FilterButton = ({ option }) => {
     const hasSelection = selectedFilterValues[option.id];
@@ -1368,15 +1371,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#000',
+    fontFamily: 'Pretendard',
   },
   cardSubInfo: {
     fontSize: 12,
     color: '#888',
+    fontFamily: 'Pretendard',
   },
   cardAddress: {
     fontSize: 12,
     color: '#888',
     marginBottom: 4,
+    fontFamily: 'Pretendard',
   },
   verifiedBadge: {
     flexDirection: 'row',
@@ -1394,6 +1400,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 4,
     fontWeight: '600',
+    fontFamily: 'Pretendard',
   },
   cardLikeCount: {
     alignItems: 'center',
@@ -1402,6 +1409,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     fontWeight: '500',
+    fontFamily: 'Pretendard',
   },
   cardIcons: {
     flexDirection: 'row',
