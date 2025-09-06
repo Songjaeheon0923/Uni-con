@@ -20,15 +20,15 @@
   
   ## 📱 메인 앱 화면들
   
-  <div style="overflow-x: auto; white-space: nowrap;">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="200" height="400">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200" height="400">
+  <div style="overflow-x: auto; white-space: nowrap; padding: 10px 0;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="200" height="400" style="display: inline-block; margin-right: 15px; vertical-align: top;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200" height="400" style="display: inline-block; vertical-align: top;">
   </div>
 
 
