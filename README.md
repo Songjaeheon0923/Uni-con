@@ -27,8 +27,6 @@
     <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200"/>
     <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200"/>
     <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="200"/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
   </nobr>
 
 
@@ -48,7 +46,7 @@
 </div>
 
 - **실시간 매물 검색**: 서울 열린데이터 API 연동을 통한 실제 부동산 정보 제공
-- **스마트 가격 표시**: 보증금/월세 자동 포맷팅 및 평수 환산 (㎡ → 평) 제공
+- **스마트 가격 표시**: 보증금/월세 자동 포맷팅
 - **지하철 거리 계산**: 알고리즘 기반 최단거리 지하철역 자동 탐지 및 표시
 - **관심매물 시스템**: 실시간 찜하기 기능으로 백엔드 동기화 및 즉시 반영
 - **고급 필터링**: 매물 유형, 가격대, 면적, 거래 방식별 다중 조건 검색
@@ -100,7 +98,6 @@
 - **리치 카드 시스템**: `USER_PROFILE:`, `ROOM_SHARE:`, `COMPATIBILITY_MESSAGE:` 전용 파싱으로 풍부한 콘텐츠 표시
 - **임베디드 프로필**: 채팅 내 성향 특성 포함 사용자 프로필 카드 직접 공유
 - **매물 추천 기능**: 이미지와 상세 정보가 포함된 부동산 정보 채팅 내 공유
-- **플로팅 액션**: 자주 사용하는 기능들의 빠른 접근 버튼 제공
 
 ### 📢 정책 공지 & AI 챗봇
 <div align="center">
