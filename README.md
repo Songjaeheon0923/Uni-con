@@ -134,6 +134,7 @@
 
 
 
+
 ## 🏗️ 기술 스택
 
 ### Frontend (React Native + Expo)
@@ -270,9 +271,26 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
 
 ## 👥 Team
 
-- **이성민** - *PM & Developer* - [@danlee-dev](https://github.com/danlee-dev)
-- **송재헌** - *Developer* - [@Songjaeheon0923](https://github.com/Songjaeheon0923)
-- **문유빈** - *Designer*
+### 🔧 송재헌 - *팀장 & 풀스택 개발자* - [@Songjaeheon0923](https://github.com/Songjaeheon0923)
+**담당 영역:**
+- **사용자 인증 시스템**: JWT 기반 로그인/회원가입 페이지 및 백엔드 인증 로직 구현
+- **마이페이지**: 사용자 프로필 관리 및 설정 페이지 전반적인 개발
+- **AI 룸메이트 매칭**: 6요소 성향 분석 알고리즘 설계 및 매칭 화면 구현
+- **AI 계약서 분석**: OCR 및 LLM을 활용한 계약서 위험도 분석 시스템 개발
+- **실시간 채팅 시스템**: WebSocket 기반 채팅 로직, UI/UX 및 기능별 네비게이션 구현
+- **배포**: railway와 expo를 활용하여 BE와 FE 별도로 서버 구축 
+
+### 🗺️ 이성민 - *백엔드 & 데이터 엔지니어* - [@danlee-dev](https://github.com/danlee-dev)
+**담당 영역:**
+- **지도 시스템**: Google Maps API 연동 및 하이브리드 지도 페이지 구현
+- **매물 데이터**: 서울 열린데이터 API 크롤링, 매물 상세 페이지 및 데이터베이스 구축
+- **정책 정보 시스템**: RAG 기반 AI 챗봇, 정책 크롤링 및 벡터 검색 시스템 개발
+- **상세 UI 수정**: figma 디자인에 맞춰 상세 디자인 수정
+
+### 🎨 문유빈 - *UI/UX 디자이너*
+**담당 영역:**
+- **브랜딩**: 로고 및 앱 아이콘 디자인
+- **UI/UX 디자인**: Figma를 통한 전체 앱 인터페이스 및 사용자 경험 설계
 
 
 <div align="center">
