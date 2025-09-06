@@ -18,36 +18,51 @@
 <div align="center">
 
   
-  <!-- 앱 스크린샷 갤러리 -->
-  <details>
-    <summary><strong>📱 로그인 화면</strong> - 간편한 이메일 로그인</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>🏠 메인 화면</strong> - 모든 기능이 한눈에</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>🗺️ 지도 검색</strong> - 위치 기반 매물 탐색</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>👥 룸메이트 매칭</strong> - AI 기반 맞춤 매칭</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>💬 실시간 채팅</strong> - 안전한 소통 공간</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="300"/>
-  </details>
+  ## 📱 앱 사용 흐름 (App Flow)
+  
+  ### 🎯 **시작부터 매칭까지, 한 번에 체험해보세요!**
+  
+  <table style="border: none;">
+    <tr>
+      <td align="center" style="border: none;">
+        <h4>1️⃣ 스플래시 & 로그인</h4>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/>
+        <br/>➡️<br/>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/>
+      </td>
+      <td align="center" style="border: none;">
+        <h4>2️⃣ 메인 화면</h4>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
+        <br/><small>모든 기능이 한눈에</small>
+      </td>
+      <td align="center" style="border: none;">
+        <h4>3️⃣ 지도에서 방 찾기</h4>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="200"/>
+        <br/><small>위치 기반 매물 검색</small>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="border: none;">
+        <h4>4️⃣ 룸메이트 매칭</h4>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
+        <br/><small>AI 기반 맞춤 추천</small>
+      </td>
+      <td align="center" style="border: none;">
+        <h4>5️⃣ 실시간 채팅</h4>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="200"/>
+        <br/><small>안전한 소통 공간</small>
+      </td>
+      <td align="center" style="border: none;">
+        <h4>6️⃣ 마이페이지</h4>
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200"/>
+        <br/><small>내 정보 관리</small>
+      </td>
+    </tr>
+  </table>
+  
+  ---
+  
+  ## 🔍 **상세 기능 살펴보기**
 
   <details>
     <summary><strong>📋 계약서 분석</strong> - AI 계약서 검토</summary>
