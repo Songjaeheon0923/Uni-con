@@ -20,25 +20,11 @@
   
   ## 📱 메인 앱 화면들
   
-  <div style="width: 700px; height: 400px; overflow-x: auto; overflow-y: hidden; border: 2px solid #ddd; border-radius: 15px; margin: 20px auto; -webkit-overflow-scrolling: touch;">
-    <div style="width: 1000px; height: 100%; display: flex; gap: 15px; padding: 20px;">
-      <div style="width: 220px; height: 360px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" style="width: 200px; height: 350px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </div>
-      <div style="width: 220px; height: 360px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" style="width: 200px; height: 350px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </div>
-      <div style="width: 220px; height: 360px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" style="width: 200px; height: 350px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </div>
-      <div style="width: 220px; height: 360px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" style="width: 200px; height: 350px; object-fit: cover; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
-      </div>
-    </div>
-  </div>
-  
-  <p style="text-align: center; color: #666; font-size: 14px; margin-top: 10px;">
-    ← 옆으로 슬라이드해서 다른 화면을 확인하세요 →
+  <p align="center">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" width="200" style="display: inline-block; margin: 0 10px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200" style="display: inline-block; margin: 0 10px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200" style="display: inline-block; margin: 0 10px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200" style="display: inline-block; margin: 0 10px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
   </p>
 
   <details>
