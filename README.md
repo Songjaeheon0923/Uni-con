@@ -20,44 +20,20 @@
   
   ## 📱 메인 앱 화면들
   
-  <div style="overflow-x: auto;">
-    <table>
+  <div style="overflow-x: auto; white-space: nowrap;">
+    <table style="table-layout: fixed; width: 2000px;">
       <tr>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="250" style="min-width: 250px;"></td>
-        <td><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="250" style="min-width: 250px;"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="250"></td>
+        <td style="width: 250px;"><img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="250"></td>
       </tr>
     </table>
   </div>
-
-  <details>
-    <summary><strong>🗺️ 지도 검색</strong> - 위치 기반 매물 탐색</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>👥 룸메이트 매칭</strong> - AI 기반 맞춤 매칭</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>💬 실시간 채팅</strong> - 안전한 소통 공간</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="300"/>
-  </details>
-
-  <details>
-    <summary><strong>📋 계약서 분석</strong> - AI 계약서 검토</summary>
-    <br/>
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="300"/>
-  </details>
 
 
 </div>
