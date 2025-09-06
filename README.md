@@ -4,7 +4,7 @@
   <table style="border: none;">
     <tr>
       <td align="center" style="vertical-align: middle; padding-right: 20px;">
-        <img src="frontend-react-native/assets/logo.svg" alt="Uni-con Logo" width="200"/>
+        <img src="frontend-react-native/assets/logo.svg" alt="Uni-con Logo" width="200" style="background-color: white; border-radius: 8px; padding: 10px;"/>
       </td>
       <td align="center" style="vertical-align: middle; padding-left: 20px;">
         <img src="frontend-react-native/assets/icon.png" alt="Uni-con Icon" width="100"/>
