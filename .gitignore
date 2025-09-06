@@ -148,3 +148,8 @@ runtime.txt
 
 # Documentation artifacts
 docs/_build/
+
+# Submission folder
+Uni-con_submit/
+
+nul
