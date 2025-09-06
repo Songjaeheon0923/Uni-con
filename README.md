@@ -20,22 +20,26 @@
   
   ## 📱 메인 앱 화면들
   
-  <table style="border: none; border-collapse: collapse;">
-    <tr>
-      <td style="border: none; padding: 10px;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" width="200"/>
-      </td>
-      <td style="border: none; padding: 10px;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200"/>
-      </td>
-      <td style="border: none; padding: 10px;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
-      </td>
-      <td style="border: none; padding: 10px;">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200"/>
-      </td>
-    </tr>
-  </table>
+  <div style="width: 350px; height: 600px; overflow-x: auto; overflow-y: hidden; border: 2px solid #ddd; border-radius: 15px; margin: 20px auto; -webkit-overflow-scrolling: touch;">
+    <div style="width: 1400px; height: 100%; display: flex;">
+      <div style="width: 350px; height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" style="max-width: 100%; max-height: 100%; object-fit: contain;"/>
+      </div>
+      <div style="width: 350px; height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" style="max-width: 100%; max-height: 100%; object-fit: contain;"/>
+      </div>
+      <div style="width: 350px; height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" style="max-width: 100%; max-height: 100%; object-fit: contain;"/>
+      </div>
+      <div style="width: 350px; height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" style="max-width: 100%; max-height: 100%; object-fit: contain;"/>
+      </div>
+    </div>
+  </div>
+  
+  <p style="text-align: center; color: #666; font-size: 14px; margin-top: 10px;">
+    ← 옆으로 슬라이드해서 다른 화면을 확인하세요 →
+  </p>
 
   <details>
     <summary><strong>🗺️ 지도 검색</strong> - 위치 기반 매물 탐색</summary>
