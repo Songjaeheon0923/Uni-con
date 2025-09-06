@@ -18,43 +18,73 @@
 <div align="center">
 
   
-  <!-- 앱 스크린샷 슬라이드 -->
-  <table>
-    <tr>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200"/>
-        <br/>
-        <sub>로그인 화면</sub>
-      </td>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
-        <br/>
-        <sub>메인 화면</sub>
-      </td>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="200"/>
-        <br/>
-        <sub>지도 검색</sub>
-      </td>
-    </tr>
-    <tr>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
-        <br/>
-        <sub>룸메이트 매칭</sub>
-      </td>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="200"/>
-        <br/>
-        <sub>실시간 채팅</sub>
-      </td>
-      <td align="center">
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
-        <br/>
-        <sub>계약서 분석</sub>
-      </td>
-    </tr>
-  </table>
+  <!-- 앱 스크린샷 슬라이더 -->
+  <div style="max-width: 600px; margin: 0 auto;">
+    <div style="overflow: hidden; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+      <div style="display: flex; animation: slide 18s infinite;">
+        <div style="min-width: 100%; text-align: center; padding: 20px;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="250"/>
+          <br/><br/>
+          <strong>로그인 화면</strong>
+          <br/>
+          <sub>간편한 이메일 로그인</sub>
+        </div>
+        <div style="min-width: 100%; text-align: center; padding: 20px;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="250"/>
+          <br/><br/>
+          <strong>메인 화면</strong>
+          <br/>
+          <sub>모든 기능이 한눈에</sub>
+        </div>
+        <div style="min-width: 100%; text-align: center; padding: 20px;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="250"/>
+          <br/><br/>
+          <strong>지도 검색</strong>
+          <br/>
+          <sub>위치 기반 매물 탐색</sub>
+        </div>
+        <div style="min-width: 100%; text-align: center; padding: 20px;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="250"/>
+          <br/><br/>
+          <strong>룸메이트 매칭</strong>
+          <br/>
+          <sub>AI 기반 맞춤 매칭</sub>
+        </div>
+        <div style="min-width: 100%; text-align: center; padding: 20px;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="250"/>
+          <br/><br/>
+          <strong>실시간 채팅</strong>
+          <br/>
+          <sub>안전한 소통 공간</sub>
+        </div>
+        <div style="min-width: 100%; text-align: center; padding: 20px;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="250"/>
+          <br/><br/>
+          <strong>계약서 분석</strong>
+          <br/>
+          <sub>AI 계약서 검토</sub>
+        </div>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 10px; color: #666;">
+      <small>자동 슬라이드 진행 중 ⏸️ 마우스를 올려서 일시정지</small>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slide {
+      0%, 16.66% { transform: translateX(0); }
+      16.67%, 33.33% { transform: translateX(-100%); }
+      33.34%, 50% { transform: translateX(-200%); }
+      50.01%, 66.67% { transform: translateX(-300%); }
+      66.68%, 83.34% { transform: translateX(-400%); }
+      83.35%, 100% { transform: translateX(-500%); }
+    }
+    
+    div[style*="animation: slide"]:hover {
+      animation-play-state: paused;
+    }
+  </style>
 
 
 </div>
