@@ -42,16 +42,18 @@
 ## 🏗️ 기술 스택
 
 ### Frontend (React Native + Expo)
-- **React Native**: 크로스 플랫폼 모바일 앱 개발
-- **Expo**: 빠른 개발과 배포를 위한 플랫폼
+- **React Native 0.79.5**: 크로스 플랫폼 모바일 앱 개발
+- **Expo 53.0.22**: 빠른 개발과 배포를 위한 플랫폼
 - **React Navigation**: 네비게이션 관리
 - **AsyncStorage**: 로컬 데이터 저장
 - **React Native Maps**: 지도 기능 구현
+- **React Native Web**: 웹 플랫폼 지원
+- **Expo EAS**: 앱 빌드 및 배포 자동화
 
 ### Backend (FastAPI + Python)
 - **FastAPI**: 고성능 웹 API 프레임워크
 - **SQLAlchemy**: ORM을 통한 데이터베이스 관리
-- **JWT**: 안전한 사용자 인증
+- **PyJWT 2.8.0**: 안전한 사용자 인증
 - **Pydantic**: 데이터 검증 및 직렬화
 - **Uvicorn**: ASGI 서버
 
@@ -67,6 +69,14 @@
 - **Vector Database**: AI 임베딩 저장소
 
 
+## 🚀 설치 및 실행
+
+### 필수 요구사항
+- Node.js 18.x 이상
+- Python 3.8 이상
+- Git
+- Expo Go 앱 (모바일 테스트용)
+
 ### 설치 방법
 
 1. **저장소 클론**
@@ -81,7 +91,7 @@ cd backend
 pip install -r requirements.txt
 cp .env.example .env
 # .env 파일에서 API 키 설정
-python main.py
+python main.py  # 서버가 http://localhost:8080 에서 실행됩니다
 ```
 
 3. **프론트엔드 설정**
@@ -89,13 +99,31 @@ python main.py
 cd frontend-react-native
 npm install
 cp .env.example .env
-# .env 파일에서 백엔드 URL 설정
+# .env 파일에서 EXPO_PUBLIC_API_BASE_URL을 실제 IP 주소로 설정
+# 예: EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080
 npx expo start
 ```
 
 4. **앱 실행**
-- Expo Go 앱을 설치하고 QR 코드 스캔
-- 또는 Android/iOS 시뮬레이터에서 실행
+- **모바일**: Expo Go 앱을 설치하고 QR 코드 스캔
+- **웹**: `w` 키를 눌러 웹 브라우저에서 실행
+- **Android**: `a` 키를 눌러 Android 에뮬레이터에서 실행
+- **iOS**: `i` 키를 눌러 iOS 시뮬레이터에서 실행 (Mac only)
+
+### 빌드 및 배포
+
+**APK 빌드**
+```bash
+cd frontend-react-native
+eas build --platform android --profile production-apk
+```
+
+**웹 배포**
+```bash
+cd frontend-react-native
+npm run build
+npm run serve
+```
 
 ## 📁 프로젝트 구조
 
@@ -124,16 +152,45 @@ Uni-con/
 
 ### 회원가입 & 인증
 - 📧 이메일 인증
-- 📱 휴대폰 인증 
-- 🆔 신분증 인증
+- 📱 휴대폰 인증 (MVP: 0000 입력으로 테스트)
+- 🆔 신분증 인증 (카메라 촬영)
 - 🎓 학교 이메일 인증
 
 ### 메인 기능
 - 🏠 매물 검색 및 상세보기
-- 🗺️ 지도 기반 탐색
+- 🗺️ 지도 기반 탐색 (Google Maps API)
 - 👥 룸메이트 추천 및 매칭
 - 💬 실시간 채팅
 - 📋 계약서 분석
+
+## 🔧 개발 가이드
+
+### 브랜치 전략
+- `main`: 프로덕션 배포용
+- `develop`: 개발 통합 브랜치
+- `web-version-improvements`: 웹 버전 개선 작업
+
+### 테스트 계정
+```
+이메일: testuser@example.com
+비밀번호: testpass
+```
+
+### 환경 변수 설정
+
+**Backend (.env)**
+```env
+DATABASE_URL=sqlite:///./users.db
+SECRET_KEY=your-secret-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+**Frontend (.env)**
+```env
+EXPO_PUBLIC_API_BASE_URL=http://your-ip:8080
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
+```
 
 
 ## 👥 Team
