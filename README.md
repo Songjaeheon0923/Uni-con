@@ -18,47 +18,75 @@
 <div align="center">
 
   
-  ## 📱 앱 사용 흐름 (App Flow)
-  
-  ### 🎯 **시작부터 매칭까지, 한 번에 체험해보세요!**
-  
-  <table style="border: none;">
-    <tr>
-      <td align="center" style="border: none;">
-        <h4>1️⃣ 스플래시 & 로그인</h4>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/>
-        <br/>➡️<br/>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/>
-      </td>
-      <td align="center" style="border: none;">
-        <h4>2️⃣ 메인 화면</h4>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
-        <br/><small>모든 기능이 한눈에</small>
-      </td>
-      <td align="center" style="border: none;">
-        <h4>3️⃣ 지도에서 방 찾기</h4>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="200"/>
-        <br/><small>위치 기반 매물 검색</small>
-      </td>
-    </tr>
-    <tr>
-      <td align="center" style="border: none;">
-        <h4>4️⃣ 룸메이트 매칭</h4>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
-        <br/><small>AI 기반 맞춤 추천</small>
-      </td>
-      <td align="center" style="border: none;">
-        <h4>5️⃣ 실시간 채팅</h4>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="200"/>
-        <br/><small>안전한 소통 공간</small>
-      </td>
-      <td align="center" style="border: none;">
-        <h4>6️⃣ 마이페이지</h4>
-        <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200"/>
-        <br/><small>내 정보 관리</small>
-      </td>
-    </tr>
-  </table>
+  ## 📱 앱 미리보기
+
+  <!-- 메인 앱 스크린샷 슬라이드 -->
+  <div align="center">
+    <h3>🎯 메인 화면들</h3>
+    
+    <div class="app-carousel">
+      <input type="radio" id="slide1" name="carousel" checked style="display: none;">
+      <input type="radio" id="slide2" name="carousel" style="display: none;">
+      <input type="radio" id="slide3" name="carousel" style="display: none;">
+      <input type="radio" id="slide4" name="carousel" style="display: none;">
+      
+      <div class="carousel-container" style="position: relative; width: 300px; height: 600px; overflow: hidden; margin: 20px auto; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        
+        <div class="slide" id="slide-1" style="position: absolute; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        
+        <div class="slide" id="slide-2" style="position: absolute; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        
+        <div class="slide" id="slide-3" style="position: absolute; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        
+        <div class="slide" id="slide-4" style="position: absolute; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out;">
+          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        
+        <!-- 네비게이션 화살표 -->
+        <label for="slide4" class="nav-arrow prev" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; padding: 10px 15px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10;">❮</label>
+        <label for="slide2" class="nav-arrow next" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; padding: 10px 15px; border-radius: 50%; cursor: pointer; font-size: 18px; z-index: 10;">❯</label>
+      </div>
+      
+      <!-- 네비게이션 점들 -->
+      <div class="nav-dots" style="text-align: center; margin-top: 10px;">
+        <label for="slide1" style="display: inline-block; width: 12px; height: 12px; background: #ccc; border-radius: 50%; margin: 0 5px; cursor: pointer;"></label>
+        <label for="slide2" style="display: inline-block; width: 12px; height: 12px; background: #ccc; border-radius: 50%; margin: 0 5px; cursor: pointer;"></label>
+        <label for="slide3" style="display: inline-block; width: 12px; height: 12px; background: #ccc; border-radius: 50%; margin: 0 5px; cursor: pointer;"></label>
+        <label for="slide4" style="display: inline-block; width: 12px; height: 12px; background: #ccc; border-radius: 50%; margin: 0 5px; cursor: pointer;"></label>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    #slide1:checked ~ .carousel-container #slide-1,
+    #slide2:checked ~ .carousel-container #slide-2,
+    #slide3:checked ~ .carousel-container #slide-3,
+    #slide4:checked ~ .carousel-container #slide-4 {
+      opacity: 1;
+    }
+    
+    #slide1:checked ~ .nav-dots label:nth-child(1),
+    #slide2:checked ~ .nav-dots label:nth-child(2),
+    #slide3:checked ~ .nav-dots label:nth-child(3),
+    #slide4:checked ~ .nav-dots label:nth-child(4) {
+      background: #007AFF;
+    }
+    
+    #slide1:checked ~ .carousel-container .prev { for: slide4; }
+    #slide1:checked ~ .carousel-container .next { for: slide2; }
+    #slide2:checked ~ .carousel-container .prev { for: slide1; }
+    #slide2:checked ~ .carousel-container .next { for: slide3; }
+    #slide3:checked ~ .carousel-container .prev { for: slide2; }
+    #slide3:checked ~ .carousel-container .next { for: slide4; }
+    #slide4:checked ~ .carousel-container .prev { for: slide3; }
+    #slide4:checked ~ .carousel-container .next { for: slide1; }
+  </style>
   
   ---
   
