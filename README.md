@@ -20,23 +20,11 @@
   
   ## 📱 메인 앱 화면들
   
-  <div style="overflow-x: auto; white-space: nowrap; padding: 20px 0;">
-    <div style="display: inline-block; margin-right: 20px; text-align: center;">
-      <h4>스플래시</h4>
-      <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" width="250" style="border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"/>
-    </div>
-    <div style="display: inline-block; margin-right: 20px; text-align: center;">
-      <h4>로그인</h4>
-      <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="250" style="border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"/>
-    </div>
-    <div style="display: inline-block; margin-right: 20px; text-align: center;">
-      <h4>메인 화면</h4>
-      <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="250" style="border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"/>
-    </div>
-    <div style="display: inline-block; margin-right: 20px; text-align: center;">
-      <h4>마이페이지</h4>
-      <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="250" style="border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"/>
-    </div>
+  <div style="overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 20px 0; width: 100%; -webkit-overflow-scrolling: touch;">
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" width="250" style="display: inline-block; margin-right: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); vertical-align: top;"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="250" style="display: inline-block; margin-right: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); vertical-align: top;"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="250" style="display: inline-block; margin-right: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); vertical-align: top;"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="250" style="display: inline-block; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); vertical-align: top;"/>
   </div>
 
   <details>
