@@ -102,7 +102,7 @@ export default function SignupStep2Screen({ navigation }) {
         phoneVerified: true,
       });
       
-      Alert.alert('인증 완료', '휴대폰 인증이 완료되었습니다!');
+      Alert.alert('인증 완료', '휴대폰 인증이 완료되었습니다! 다음 버튼을 눌러주세요.');
     } else {
       Alert.alert('인증 실패', '인증번호가 올바르지 않습니다. (0000을 입력해주세요)');
     }
@@ -339,7 +339,7 @@ export default function SignupStep2Screen({ navigation }) {
                   <View style={styles.verificationInputContainer}>
                     <TextInput
                       style={styles.verificationInput}
-                      placeholder="인증번호 4자리를 입력해주세요"
+                      placeholder="인증번호 4자리를 입력해주세요(0000)"
                       value={verificationCode}
                       onChangeText={setVerificationCode}
                       keyboardType="numeric"
@@ -352,6 +352,7 @@ export default function SignupStep2Screen({ navigation }) {
                       <Text style={styles.confirmButtonText}>확인</Text>
                     </TouchableOpacity>
                   </View>
+                  
                 </View>
               )}
 
@@ -805,5 +806,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  mvpText: {
+    fontSize: 16,
+    color: '#FF0000',
+    textAlign: 'center',
+    marginTop: 16,
+    fontWeight: '600',
+    backgroundColor: '#FFFF00',
+    padding: 8,
   },
 });

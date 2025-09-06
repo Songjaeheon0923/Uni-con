@@ -75,7 +75,6 @@ export const SignupProvider = ({ children }) => {
         schoolEmail: '',
       });
       await AsyncStorage.removeItem('@signup_data');
-      console.log('회원가입 데이터 초기화 완료');
     } catch (error) {
       console.error('회원가입 데이터 초기화 실패:', error);
     }
@@ -94,7 +93,6 @@ export const SignupProvider = ({ children }) => {
     // AsyncStorage에 저장
     try {
       await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
-      console.log('[1단계] 이메일/비밀번호 저장:', { email: data.email, password: data.password });
     } catch (error) {
       console.error('1단계 데이터 저장 실패:', error);
     }
@@ -117,14 +115,6 @@ export const SignupProvider = ({ children }) => {
     // AsyncStorage에 저장
     try {
       await AsyncStorage.setItem('@signup_data', JSON.stringify(updatedData));
-      console.log('[2단계] 개인정보/휴대폰 인증:', {
-        name: data.name,
-        nationality: data.nationality,
-        residentNumber: `${data.residentNumber1}-${data.residentNumber2}***`,
-        phoneNumber: data.phoneNumber,
-        carrier: data.carrier,
-        phoneVerified: data.phoneVerified,
-      });
     } catch (error) {
       console.error('2단계 데이터 저장 실패:', error);
     }
@@ -206,7 +196,9 @@ export const SignupProvider = ({ children }) => {
 
   // 앱 시작 시 데이터 로드
   useEffect(() => {
-    loadSignupData();
+    // 개발 중 캐시 제거를 위해 임시로 주석 해제
+    clearSignupData();
+    // loadSignupData();
   }, []);
 
   const value = {

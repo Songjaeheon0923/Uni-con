@@ -106,21 +106,34 @@ export default function LoginScreen({ navigation }) {
               {/* 이메일 입력 */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Email</Text>
-                <TextInput
-                  style={[
-                    styles.inputContainer, 
-                    emailFocused && styles.inputContainerFocused,
-                    { paddingHorizontal: 16 }
-                  ]}
-                  placeholder="Example@email.com"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                />
+                <View style={[
+                  styles.inputContainer,
+                  emailFocused && styles.inputContainerFocused
+                ]}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Example@email.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                  />
+                  {email.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setEmail('')}
+                      style={styles.clearIcon}
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={22}
+                        color="#999"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               {/* 비밀번호 입력 */}
@@ -333,9 +346,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     fontSize: 14,
     color: '#333',
-    paddingVertical: 16,
+    paddingVertical: 0,
+    height: 45,
+    textAlignVertical: 'center',
   },
   eyeIcon: {
+    padding: 8,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clearIcon: {
     padding: 8,
     marginLeft: 8,
     justifyContent: 'center',
