@@ -20,12 +20,9 @@
   
   ## 📱 메인 앱 화면들
   
-  <p float="left">
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시 화면" width="200" />
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200" />
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200" />
-    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200" />
-  </p>
+  | 스플래시 | 로그인 | 메인 | 마이페이지 |
+  |:-------:|:-------:|:-------:|:-------:|
+  | ![스플래시](https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png) | ![로그인](https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png) | ![메인](https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png) | ![마이페이지](https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png) |
 
   <details>
     <summary><strong>🗺️ 지도 검색</strong> - 위치 기반 매물 탐색</summary>
