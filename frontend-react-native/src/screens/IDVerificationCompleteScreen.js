@@ -19,10 +19,11 @@ export default function IDVerificationCompleteScreen({ navigation }) {
     // 인증 처리 시뮬레이션
     const timer = setTimeout(() => {
       setIsProcessing(false);
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
+
 
   const handleNext = () => {
     navigation.navigate('SchoolVerification');
