@@ -1,8 +1,16 @@
 # Uni-con 🏠
 
 <div align="center">
-  <img src="frontend-react-native/assets/logo.svg" alt="Uni-con Logo" width="200"/>
-  <img src="frontend-react-native/assets/icon.png" alt="Uni-con Icon" width="100"/>
+  <table style="border: none;">
+    <tr>
+      <td align="center" style="vertical-align: middle; padding-right: 20px;">
+        <img src="frontend-react-native/assets/logo.svg" alt="Uni-con Logo" width="200"/>
+      </td>
+      <td align="center" style="vertical-align: middle; padding-left: 20px;">
+        <img src="frontend-react-native/assets/icon.png" alt="Uni-con Icon" width="100"/>
+      </td>
+    </tr>
+  </table>
   <h3>청년을 위한 스마트 방 찾기 & 룸메이트 매칭 플랫폼</h3>
   <p>저장된 성향을 바탕으로 나와 딱 맞는 룸메이트를 추천해드려요!</p>
 </div>
