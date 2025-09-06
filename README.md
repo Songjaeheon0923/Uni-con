@@ -18,120 +18,46 @@
 <div align="center">
 
   
-  <!-- 앱 스크린샷 슬라이더 -->
-  <div style="max-width: 600px; margin: 0 auto; position: relative;">
-    <input type="radio" name="carousel" id="slide1" checked style="display: none;">
-    <input type="radio" name="carousel" id="slide2" style="display: none;">
-    <input type="radio" name="carousel" id="slide3" style="display: none;">
-    <input type="radio" name="carousel" id="slide4" style="display: none;">
-    <input type="radio" name="carousel" id="slide5" style="display: none;">
-    <input type="radio" name="carousel" id="slide6" style="display: none;">
+  <!-- 앱 스크린샷 갤러리 -->
+  <details>
+    <summary><strong>📱 로그인 화면</strong> - 간편한 이메일 로그인</summary>
+    <br/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="300"/>
+  </details>
 
-    <div style="overflow: hidden; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-      <div style="display: flex; transition: transform 0.5s ease;">
-        <div style="min-width: 100%; text-align: center; padding: 20px;">
-          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="250"/>
-          <br/><br/>
-          <strong>로그인 화면</strong>
-          <br/>
-          <sub>간편한 이메일 로그인</sub>
-        </div>
-        <div style="min-width: 100%; text-align: center; padding: 20px;">
-          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="250"/>
-          <br/><br/>
-          <strong>메인 화면</strong>
-          <br/>
-          <sub>모든 기능이 한눈에</sub>
-        </div>
-        <div style="min-width: 100%; text-align: center; padding: 20px;">
-          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="250"/>
-          <br/><br/>
-          <strong>지도 검색</strong>
-          <br/>
-          <sub>위치 기반 매물 탐색</sub>
-        </div>
-        <div style="min-width: 100%; text-align: center; padding: 20px;">
-          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="250"/>
-          <br/><br/>
-          <strong>룸메이트 매칭</strong>
-          <br/>
-          <sub>AI 기반 맞춤 매칭</sub>
-        </div>
-        <div style="min-width: 100%; text-align: center; padding: 20px;">
-          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="250"/>
-          <br/><br/>
-          <strong>실시간 채팅</strong>
-          <br/>
-          <sub>안전한 소통 공간</sub>
-        </div>
-        <div style="min-width: 100%; text-align: center; padding: 20px;">
-          <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="250"/>
-          <br/><br/>
-          <strong>계약서 분석</strong>
-          <br/>
-          <sub>AI 계약서 검토</sub>
-        </div>
-      </div>
-    </div>
+  <details>
+    <summary><strong>🏠 메인 화면</strong> - 모든 기능이 한눈에</summary>
+    <br/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="300"/>
+  </details>
 
-    <!-- Navigation Buttons -->
-    <div style="text-align: center; margin-top: 15px;">
-      <label for="slide1" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; cursor: pointer; transition: background 0.3s;"></label>
-      <label for="slide2" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; cursor: pointer; transition: background 0.3s;"></label>
-      <label for="slide3" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; cursor: pointer; transition: background 0.3s;"></label>
-      <label for="slide4" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; cursor: pointer; transition: background 0.3s;"></label>
-      <label for="slide5" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; cursor: pointer; transition: background 0.3s;"></label>
-      <label for="slide6" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ddd; margin: 0 5px; cursor: pointer; transition: background 0.3s;"></label>
-    </div>
+  <details>
+    <summary><strong>🗺️ 지도 검색</strong> - 위치 기반 매물 탐색</summary>
+    <br/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="300"/>
+  </details>
 
-    <!-- Left Arrow - Previous -->
-    <label for="slide6" id="prev1" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❮</label>
-    <label for="slide1" id="prev2" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❮</label>
-    <label for="slide2" id="prev3" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❮</label>
-    <label for="slide3" id="prev4" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❮</label>
-    <label for="slide4" id="prev5" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❮</label>
-    <label for="slide5" id="prev6" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❮</label>
+  <details>
+    <summary><strong>👥 룸메이트 매칭</strong> - AI 기반 맞춤 매칭</summary>
+    <br/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="300"/>
+  </details>
 
-    <!-- Right Arrow - Next -->
-    <label for="slide2" id="next1" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❯</label>
-    <label for="slide3" id="next2" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❯</label>
-    <label for="slide4" id="next3" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❯</label>
-    <label for="slide5" id="next4" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❯</label>
-    <label for="slide6" id="next5" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❯</label>
-    <label for="slide1" id="next6" style="position: absolute; top: 50%; right: 15px; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 50%; font-size: 18px; user-select: none; display: none;">❯</label>
-  </div>
+  <details>
+    <summary><strong>💬 실시간 채팅</strong> - 안전한 소통 공간</summary>
+    <br/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="300"/>
+  </details>
 
-  <style>
-    /* Slide positioning */
-    #slide1:checked ~ div div { transform: translateX(0%); }
-    #slide2:checked ~ div div { transform: translateX(-100%); }
-    #slide3:checked ~ div div { transform: translateX(-200%); }
-    #slide4:checked ~ div div { transform: translateX(-300%); }
-    #slide5:checked ~ div div { transform: translateX(-400%); }
-    #slide6:checked ~ div div { transform: translateX(-500%); }
-    
-    /* Dot indicators */
-    #slide1:checked ~ div:nth-of-type(2) label:nth-of-type(1) { background: #333; }
-    #slide2:checked ~ div:nth-of-type(2) label:nth-of-type(2) { background: #333; }
-    #slide3:checked ~ div:nth-of-type(2) label:nth-of-type(3) { background: #333; }
-    #slide4:checked ~ div:nth-of-type(2) label:nth-of-type(4) { background: #333; }
-    #slide5:checked ~ div:nth-of-type(2) label:nth-of-type(5) { background: #333; }
-    #slide6:checked ~ div:nth-of-type(2) label:nth-of-type(6) { background: #333; }
+  <details>
+    <summary><strong>📋 계약서 분석</strong> - AI 계약서 검토</summary>
+    <br/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="300"/>
+  </details>
 
-    /* Arrow visibility */
-    #slide1:checked ~ #prev1 { display: block; }
-    #slide1:checked ~ #next1 { display: block; }
-    #slide2:checked ~ #prev2 { display: block; }
-    #slide2:checked ~ #next2 { display: block; }
-    #slide3:checked ~ #prev3 { display: block; }
-    #slide3:checked ~ #next3 { display: block; }
-    #slide4:checked ~ #prev4 { display: block; }
-    #slide4:checked ~ #next4 { display: block; }
-    #slide5:checked ~ #prev5 { display: block; }
-    #slide5:checked ~ #next5 { display: block; }
-    #slide6:checked ~ #prev6 { display: block; }
-    #slide6:checked ~ #next6 { display: block; }
-  </style>
+  <p align="center">
+    <em>👆 각 항목을 클릭하여 앱 스크린샷을 확인해보세요!</em>
+  </p>
 
 
 </div>
