@@ -20,7 +20,16 @@
   
   ## 📱 메인 앱 화면들
   
-  <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="200"/> <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
+  <nobr>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/main/mypage.png" alt="마이페이지" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/chat/chat_main.png" alt="실시간 채팅" width="200"/>
+    <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
+  </nobr>
 
 
 </div>
@@ -184,26 +193,6 @@ cp .env.example .env
 npx expo start
 ```
 
-4. **앱 실행**
-- **모바일**: Expo Go 앱을 설치하고 QR 코드 스캔
-- **웹**: `w` 키를 눌러 웹 브라우저에서 실행
-- **Android**: `a` 키를 눌러 Android 에뮬레이터에서 실행
-- **iOS**: `i` 키를 눌러 iOS 시뮬레이터에서 실행 (Mac only)
-
-### 빌드 및 배포
-
-**APK 빌드**
-```bash
-cd frontend-react-native
-eas build --platform android --profile production-apk
-```
-
-**웹 배포**
-```bash
-cd frontend-react-native
-npm run build
-npm run serve
-```
 
 ## 📁 프로젝트 구조
 
