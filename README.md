@@ -3,11 +3,11 @@
 <div align="center">
   <table style="border: none;">
     <tr>
-      <td align="center" style="vertical-align: middle; padding-right: 20px;">
-        <img src="frontend-react-native/assets/logo.svg" alt="Uni-con Logo" width="200" style="background-color: white; border-radius: 8px; padding: 10px;"/>
+      <td align="center" style="vertical-align: middle; padding-right: 20px; border: none;">
+        <img src="./frontend-react-native/assets/logo.svg" alt="Uni-con Logo" width="200" style="background-color: white; border-radius: 8px; padding: 10px; border: none;"/>
       </td>
-      <td align="center" style="vertical-align: middle; padding-left: 20px;">
-        <img src="frontend-react-native/assets/icon.png" alt="Uni-con Icon" width="100"/>
+      <td align="center" style="vertical-align: middle; padding-left: 20px; border: none;">
+        <img src="./frontend-react-native/assets/icon.png" alt="Uni-con Icon" width="100" style="border: none;"/>
       </td>
     </tr>
   </table>
@@ -22,34 +22,34 @@
   <table>
     <tr>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200"/>
+        <img src="./frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200"/>
         <br/>
         <sub>로그인 화면</sub>
       </td>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
+        <img src="./frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
         <br/>
         <sub>메인 화면</sub>
       </td>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="200"/>
+        <img src="./frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="200"/>
         <br/>
         <sub>지도 검색</sub>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
+        <img src="./frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
         <br/>
         <sub>룸메이트 매칭</sub>
       </td>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="200"/>
+        <img src="./frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="200"/>
         <br/>
         <sub>실시간 채팅</sub>
       </td>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
+        <img src="./frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
         <br/>
         <sub>계약서 분석</sub>
       </td>
@@ -88,9 +88,9 @@
 
 ### 🏡 스마트 매물 검색
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem1.png" alt="매물 상세보기" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem2.png" alt="매물 정보" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/interested/interested.png" alt="관심 매물" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/roomitem/roomitem1.png" alt="매물 상세보기" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/roomitem/roomitem2.png" alt="매물 정보" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/interested/interested.png" alt="관심 매물" width="200"/>
 </div>
 
 - **실시간 매물 정보**: 최신 원룸, 투룸, 오피스텔, 아파트 정보 제공
@@ -100,8 +100,8 @@
 
 ### 🗺️ 지도 기반 탐색
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/map/map_big.png" alt="지도 확대" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/map/map_big.png" alt="지도 확대" width="200"/>
 </div>
 
 - **직관적인 위치 검색**: Google Maps 기반 실시간 매물 위치 표시
@@ -110,9 +110,9 @@
 
 ### 👥 AI 룸메이트 매칭
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/matching/test_start.png" alt="매칭 테스트" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/matching/test_result.png" alt="테스트 결과" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/matching/test_start.png" alt="매칭 테스트" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/matching/test_result.png" alt="테스트 결과" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
 </div>
 
 - **성향 분석 테스트**: 생활 패턴, 청소 습관, 수면 패턴 등 다양한 요소 분석
@@ -122,9 +122,9 @@
 
 ### 💬 실시간 채팅
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 목록" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/chat/chat_inchat.png" alt="채팅 화면" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/chat/chat_inchat_modalchange1.png" alt="채팅 기능" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 목록" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/chat/chat_inchat.png" alt="채팅 화면" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/chat/chat_inchat_modalchange1.png" alt="채팅 기능" width="200"/>
 </div>
 
 - **매물 공유**: 채팅창에서 바로 매물 정보 공유
@@ -134,9 +134,9 @@
 
 ### 🤖 AI 정책 챗봇
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/notice/notice_main.png" alt="정책 메인" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/notice/notice_ai.png" alt="AI 챗봇" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/notice/notice_detail.png" alt="정책 상세" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/notice/notice_main.png" alt="정책 메인" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/notice/notice_ai.png" alt="AI 챗봇" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/notice/notice_detail.png" alt="정책 상세" width="200"/>
 </div>
 
 - **맞춤형 정책 안내**: 청년 주택 정책, 전세 대출 등 개인별 추천
@@ -146,9 +146,9 @@
 
 ### 📋 계약서 AI 분석
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석 시작" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/contract/contract_ing.png" alt="분석 중" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/contract/contract_result_1.png" alt="분석 결과" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석 시작" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/contract/contract_ing.png" alt="분석 중" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/contract/contract_result_1.png" alt="분석 결과" width="200"/>
 </div>
 
 - **위험 조항 탐지**: AI가 계약서의 불리한 조항 자동 분석
@@ -158,8 +158,8 @@
 
 ### 🏠 매물 찾기 도우미
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem_getroommate1.png" alt="룸메이트 찾기" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem_getroommate2.png" alt="함께 찾기" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/roomitem/roomitem_getroommate1.png" alt="룸메이트 찾기" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/roomitem/roomitem_getroommate2.png" alt="함께 찾기" width="200"/>
 </div>
 
 - **함께 찾기**: 룸메이트와 함께 매물을 찾는 기능
@@ -168,10 +168,10 @@
 
 ### 📱 기본 앱 기능
 <div align="center">
-  <img src="frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 페이지" width="200"/>
-  <img src="frontend-react-native/assets/screenshots/main/mypage.png" alt="마이 페이지" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 페이지" width="200"/>
+  <img src="./frontend-react-native/assets/screenshots/main/mypage.png" alt="마이 페이지" width="200"/>
 </div>
 
 - **직관적인 UI/UX**: 깔끔하고 사용하기 쉬운 인터페이스
