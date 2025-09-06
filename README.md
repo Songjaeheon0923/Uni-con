@@ -14,36 +14,36 @@
   <table>
     <tr>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/login.png" alt="로그인 화면" width="200"/>
+        <img src="frontend-react-native/assets/screenshots/main/login.png" alt="로그인 화면" width="200"/>
         <br/>
         <sub>로그인 화면</sub>
       </td>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/signup.png" alt="회원가입 화면" width="200"/>
-        <br/>
-        <sub>회원가입 화면</sub>
-      </td>
-      <td align="center">
-        <img src="frontend-react-native/assets/screenshots/main.png" alt="메인 화면" width="200"/>
+        <img src="frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 화면" width="200"/>
         <br/>
         <sub>메인 화면</sub>
+      </td>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/map/map.png" alt="지도 화면" width="200"/>
+        <br/>
+        <sub>지도 검색</sub>
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/map.png" alt="지도 화면" width="200"/>
-        <br/>
-        <sub>지도 검색</sub>
-      </td>
-      <td align="center">
-        <img src="frontend-react-native/assets/screenshots/roommate.png" alt="룸메이트 매칭" width="200"/>
+        <img src="frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
         <br/>
         <sub>룸메이트 매칭</sub>
       </td>
       <td align="center">
-        <img src="frontend-react-native/assets/screenshots/chat.png" alt="채팅 화면" width="200"/>
+        <img src="frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 화면" width="200"/>
         <br/>
         <sub>실시간 채팅</sub>
+      </td>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석" width="200"/>
+        <br/>
+        <sub>계약서 분석</sub>
       </td>
     </tr>
   </table>
@@ -79,31 +79,96 @@
 ## 📱 주요 기능
 
 ### 🏡 스마트 매물 검색
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem1.png" alt="매물 상세보기" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem2.png" alt="매물 정보" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/interested/interested.png" alt="관심 매물" width="200"/>
+</div>
+
 - **실시간 매물 정보**: 최신 원룸, 투룸, 오피스텔, 아파트 정보 제공
-- **지도 기반 검색**: 직관적인 위치 기반 매물 탐색
-- **상세 필터링**: 가격, 면적, 교통, 옵션별 맞춤 검색
+- **상세 매물 보기**: 풍부한 이미지와 상세 정보로 매물 파악
 - **관심 매물 저장**: 마음에 드는 매물을 북마크하여 쉽게 관리
+- **매물 공유 기능**: SNS나 채팅으로 매물 정보 간편 공유
+
+### 🗺️ 지도 기반 탐색
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/map/map.png" alt="지도 검색" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/map/map_big.png" alt="지도 확대" width="200"/>
+</div>
+
+- **직관적인 위치 검색**: Google Maps 기반 실시간 매물 위치 표시
+- **상세 필터링**: 가격, 면적, 교통, 옵션별 맞춤 검색
+- **주변 정보**: 대학교, 지하철역, 편의시설 거리 정보 제공
 
 ### 👥 AI 룸메이트 매칭
-- **성향 분석**: 생활 패턴, 청소 습관, 수면 패턴 등 다양한 요소 분석
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/matching/test_start.png" alt="매칭 테스트" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/matching/test_result.png" alt="테스트 결과" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
+</div>
+
+- **성향 분석 테스트**: 생활 패턴, 청소 습관, 수면 패턴 등 다양한 요소 분석
 - **맞춤형 추천**: AI 알고리즘을 통한 최적의 룸메이트 매칭
 - **매칭률 표시**: 나와의 궁합도를 퍼센트로 확인
 - **안전한 연결**: 대학교 이메일 인증을 통한 신뢰할 수 있는 매칭
 
 ### 💬 실시간 채팅
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/chat/chat_main.png" alt="채팅 목록" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/chat/chat_inchat.png" alt="채팅 화면" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/chat/chat_inchat_modalchange1.png" alt="채팅 기능" width="200"/>
+</div>
+
 - **매물 공유**: 채팅창에서 바로 매물 정보 공유
 - **빠른 액션**: 규칙/가이드, 정산/결제 등 편의 기능
 - **안전한 소통**: 본인 인증 완료된 사용자들과의 안전한 대화
+- **채팅 관리**: 차단, 신고 등 안전 기능 제공
 
 ### 🤖 AI 정책 챗봇
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/notice/notice_main.png" alt="정책 메인" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/notice/notice_ai.png" alt="AI 챗봇" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/notice/notice_detail.png" alt="정책 상세" width="200"/>
+</div>
+
 - **맞춤형 정책 안내**: 청년 주택 정책, 전세 대출 등 개인별 추천
-- **실시간 상담**: 복잡한 부동산 정책을 쉽게 설명
+- **실시간 AI 상담**: 복잡한 부동산 정책을 쉽게 설명
 - **최신 정보**: 정부 정책 업데이트 실시간 반영
+- **정책 상세보기**: 신청 방법, 조건 등 자세한 정보 제공
 
 ### 📋 계약서 AI 분석
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/contract/contract_start.png" alt="계약서 분석 시작" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/contract/contract_ing.png" alt="분석 중" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/contract/contract_result_1.png" alt="분석 결과" width="200"/>
+</div>
+
 - **위험 조항 탐지**: AI가 계약서의 불리한 조항 자동 분석
 - **체크리스트 제공**: 놓치기 쉬운 중요 사항 확인
 - **법적 조언**: 전문가 수준의 계약서 검토 서비스
+- **분석 리포트**: 상세한 계약서 분석 결과 제공
+
+### 🏠 매물 찾기 도우미
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem_getroommate1.png" alt="룸메이트 찾기" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/roomitem/roomitem_getroommate2.png" alt="함께 찾기" width="200"/>
+</div>
+
+- **함께 찾기**: 룸메이트와 함께 매물을 찾는 기능
+- **조건 공유**: 서로의 조건을 맞춰 최적의 매물 추천
+- **공동 관심 목록**: 둘 다 관심 있는 매물 자동 필터링
+
+### 📱 기본 앱 기능
+<div align="center">
+  <img src="frontend-react-native/assets/screenshots/main/splash.png" alt="스플래시" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/main/login.png" alt="로그인" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/main/mainpage.png" alt="메인 페이지" width="200"/>
+  <img src="frontend-react-native/assets/screenshots/main/mypage.png" alt="마이 페이지" width="200"/>
+</div>
+
+- **직관적인 UI/UX**: 깔끔하고 사용하기 쉬운 인터페이스
+- **개인 정보 관리**: 프로필, 관심사, 매칭 기록 관리
+- **다양한 로그인 방식**: 이메일, 소셜 로그인 지원
 
 ## 🏗️ 기술 스택
 
@@ -219,12 +284,12 @@ Uni-con/
 ### 회원가입 & 인증
 - 📧 이메일 인증
 - 📱 휴대폰 인증 (MVP: 0000 입력으로 테스트)
-- 🆔 신분증 인증 (카메라 촬영)
-- 🎓 학교 이메일 인증
+- 🆔 신분증 인증 (실제 로직 x)
+- 🎓 학교 이메일 인증(MVP: 0000 입력으로 테스트)
 
 ### 메인 기능
 - 🏠 매물 검색 및 상세보기
-- 🗺️ 지도 기반 탐색 (Google Maps API)
+- 🗺️ 지도 기반 매물 탐색 (Google Maps API)
 - 👥 룸메이트 추천 및 매칭
 - 💬 실시간 채팅
 - 📋 계약서 분석
