@@ -8,7 +8,72 @@
 </div>
 
 <div align="center">
-  <img src="frontend-react-native/assets/mainpage.png" alt="Uni-con Main Page" width="300"/>
+  <h4>📱 앱 미리보기</h4>
+  
+  <!-- 앱 스크린샷 슬라이드 -->
+  <table>
+    <tr>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/login.png" alt="로그인 화면" width="200"/>
+        <br/>
+        <sub>로그인 화면</sub>
+      </td>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/signup.png" alt="회원가입 화면" width="200"/>
+        <br/>
+        <sub>회원가입 화면</sub>
+      </td>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/main.png" alt="메인 화면" width="200"/>
+        <br/>
+        <sub>메인 화면</sub>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/map.png" alt="지도 화면" width="200"/>
+        <br/>
+        <sub>지도 검색</sub>
+      </td>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/roommate.png" alt="룸메이트 매칭" width="200"/>
+        <br/>
+        <sub>룸메이트 매칭</sub>
+      </td>
+      <td align="center">
+        <img src="frontend-react-native/assets/screenshots/chat.png" alt="채팅 화면" width="200"/>
+        <br/>
+        <sub>실시간 채팅</sub>
+      </td>
+    </tr>
+  </table>
+
+  <!-- 라이브 데모 링크 -->
+  <p>
+    <a href="https://expo.dev/@your-username/uni-con">
+      <img src="https://img.shields.io/badge/📱_Live_Demo-Expo_Go-000020?style=for-the-badge&logo=expo" alt="Live Demo"/>
+    </a>
+    <a href="https://uni-con-web.vercel.app">
+      <img src="https://img.shields.io/badge/🌐_Web_Demo-Live-4285F4?style=for-the-badge&logo=google-chrome" alt="Web Demo"/>
+    </a>
+  </p>
+
+  <!-- QR 코드 -->
+  <details>
+    <summary>📱 <strong>모바일에서 바로 체험하기</strong></summary>
+    <br/>
+    <img src="frontend-react-native/assets/qr-code.png" alt="Expo QR Code" width="200"/>
+    <p><em>Expo Go 앱으로 QR 코드를 스캔하세요</em></p>
+  </details>
+
+  <!-- 앱 데모 비디오 -->
+  <details>
+    <summary>🎥 <strong>앱 사용법 영상보기</strong></summary>
+    <br/>
+    <img src="frontend-react-native/assets/demo.gif" alt="Uni-con App Demo" width="300"/>
+    <p><em>실제 앱 사용 모습</em></p>
+  </details>
+
 </div>
 
 ## 📱 주요 기능
