@@ -1,4 +1,4 @@
-# Uni-con 🏠
+# e:room
 
 <div align="center">
   <table style="border: none;">
@@ -11,7 +11,7 @@
       </td>
     </tr>
   </table>
-  <h3>청년을 위한 스마트 방 찾기 & 룸메이트 매칭 플랫폼</h3>
+  <h3>청년을 위한 스마트 룸메이트 매칭 & 부동산 통합 관리 플랫폼</h3>
   <p>저장된 성향을 바탕으로 나와 딱 맞는 룸메이트를 추천해드려요!</p>
 </div>
 
@@ -245,12 +245,6 @@ Uni-con/
 - `main`: 프로덕션 배포용
 - `develop`: 개발 통합 브랜치
 - `web-version-improvements`: 웹 버전 개선 작업
-
-### 테스트 계정
-```
-이메일: testuser@example.com
-비밀번호: testpass
-```
 
 ### 환경 변수 설정
 
