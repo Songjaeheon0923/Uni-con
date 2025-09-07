@@ -29,6 +29,8 @@
     <img src="https://raw.githubusercontent.com/Songjaeheon0923/Uni-con/main/frontend-react-native/assets/screenshots/matching/matching_bytest.png" alt="룸메이트 매칭" width="200"/>
   </nobr>
 
+## 보고서 & 사용법 영상
+https://drive.google.com/drive/folders/1ezP0RN9BSXTFHBncKS9sNiG7q0h2Gpz3?usp=sharing
 
 </div>
 
